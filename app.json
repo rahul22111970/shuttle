@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "SHUTTLE",
+    "slug": "shuttle",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rahulpareek.shuttle"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "scheme": "shuttle"
+  }
+}
