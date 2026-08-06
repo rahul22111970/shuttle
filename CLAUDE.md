@@ -26,6 +26,27 @@ Shared spine: identity, rating, match records, the scoring engine, the op log. A
 
 One human can hold both. The account type decides which surface opens, not what they are permitted to become.
 
+## How migrations run, decided 2026-08-06
+
+**No Docker, no local Supabase stack.** Docker Desktop on this machine starts its
+processes but its VM engine never answers `_ping`, and it demands a Docker Hub
+sign-in. Rather than fight it, migrations and RLS tests run directly against the
+hosted project with `psql` and the DB password from `.secrets.env`.
+
+    psql "postgresql://postgres:<url-encoded-password>@db.<ref>.supabase.co:5432/postgres?sslmode=require"
+
+Verified working 2026-08-06 on both the direct host and the `aws-0-ap-south-1`
+session pooler. Postgres 17.6. `psql` is on PATH via `brew link --force libpq`.
+The password contains `@`, so url-encode it before building the connection string.
+
+This also means `supabase login` and `supabase link` are not needed for P0 or P1.
+
+What this costs, stated so nobody is surprised later: tests share one database, so
+they cannot run in parallel and must clean up after themselves; a destructive
+migration hits the real project. That is acceptable only while the project is
+empty. Before real users, either fix Docker for a local stack or stand up a second
+Supabase project as staging. Revisit at P2.
+
 ## Security, non-negotiable
 
 - RLS on every table in the same migration that creates it. A table without RLS does not ship.

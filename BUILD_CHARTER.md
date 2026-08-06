@@ -13,6 +13,8 @@ How the app gets built. Product decisions live in PRODUCT.md; this file is the p
 
 Fable builds this project at Rahul's explicit direction (2026-08-06), against the usual routing where Opus owns volume. The reason to keep it: correctness in the scoring and rating engines is worth more than throughput, and a wrong draw at a real event is the stated reputational risk in PRODUCT.md.
 
+**Build sessions run from 21:30 IST, starting Fri 2026-08-07.** Set `/model claude-fable-5` before the first slice of a session. Slices S0-01 and S0-02 predate this and were built on Opus; nothing needs redoing, but the engine slices in P1 are the ones the model choice is actually for.
+
 ## The reviewer matrix
 
 Different eyes per commit type. A reviewer reads the diff and the spec, and nothing else.

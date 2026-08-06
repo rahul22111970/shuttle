@@ -42,6 +42,8 @@ The charter's definition of done applies to all slices; it is not repeated below
 
 **Waiver, recorded once so no reviewer re-litigates it.** The standing gate's "deployed preview returns HTTP 200" cannot be satisfied by S0-01 through S0-04, because Vercel is S0-05 and blocked on Rahul. Those four slices are exempt from that clause only. Every other clause of the standing gate still applies to them, and the exemption ends at S0-05.
 
+**Migration path changed 2026-08-06.** Docker Desktop on this machine cannot start its VM engine, so there is no local Supabase stack. Migrations and RLS tests run against the hosted project via `psql` and the DB password. Every S0-06+ acceptance criterion reading `supabase db reset` should read: apply the migration with psql, then assert. `supabase login` and `supabase link` are not needed for P0 or P1. Full reasoning and the cost of this choice are in CLAUDE.md.
+
 ## Schema truth: logs, projections, plain rows
 
 **Event logs** (append-only; `UPDATE`/`DELETE` revoked at the grant level, no update/delete policies exist; each has a named test proving update is denied):
