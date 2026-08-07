@@ -1,0 +1,64 @@
+# SHUTTLE CI: the standing gates from BACKLOG.md, run on every push.
+name: ci
+
+on: [push]
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx expo export -p web
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The standing-gate grep. The bracketed characters stop this file from
+      # matching its own pattern; the strings it hunts are service(_)role and
+      # client(_)secret in any non-markdown file.
+      #
+      # -l prints only filenames: the scanner must never echo the caught value
+      # into a CI log, which outlives the push that removes it from history.
+      #
+      # Proven to fail, not assumed: branch ci-secret-scan-fixture added a file
+      # containing a fake service(_)role string; secret-scan went red while the
+      # other three jobs stayed green, on run 31204102475, and again after
+      # review hardening with -l in place, logging the filename only, on run
+      # 31204428956. The branch was deleted after. Run references also in the commit message that
+      # introduced this workflow.
+      - run: |
+          if git grep -liE 'service_r[o]le|client_secr[e]t' -- ':!*.md'; then
+            echo 'secret-like string committed; see secret-scan in ci.yml'
+            exit 1
+          fi
