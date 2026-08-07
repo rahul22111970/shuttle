@@ -7,5 +7,6 @@ import Index from "./index";
 // screen stays unbound and every query throws notImplemented.
 it("renders the entry screen", async () => {
   await render(<Index />);
-  expect(screen.getByText("SHUTTLE")).toBeTruthy();
+  // findByText waits out the initial session check before the screen draws.
+  expect(await screen.findByText("SHUTTLE")).toBeTruthy();
 });
