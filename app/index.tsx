@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Session } from "@supabase/supabase-js";
+import Onboarding from "../components/onboarding";
+import { getProfile, type Profile } from "../lib/profile";
 import { supabase } from "../lib/supabase";
-import { color, radius, size, space, tracking } from "../theme/tokens";
+import { color, layout, radius, size, space, tracking } from "../theme/tokens";
 
 export default function Index() {
   const [session, setSession] = useState<Session | null>(null);
@@ -10,6 +12,9 @@ export default function Index() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // undefined = not yet fetched; null = fetched, none exists
+  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
+  const [profileError, setProfileError] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -20,21 +25,78 @@ export default function Index() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (!userId) {
+      setProfile(undefined);
+      return;
+    }
+    setProfileError(false);
+    getProfile()
+      .then(setProfile)
+      .catch(() => setProfileError(true));
+  }, [userId]);
+
   if (!ready) {
-    return <View style={styles.root} />;
+    return (
+      <View style={styles.root}>
+        <Text style={styles.mark}>SHUTTLE</Text>
+      </View>
+    );
+  }
+
+  if (session) {
+    if (profileError) {
+      return (
+        <View style={styles.root}>
+          <Text style={styles.mark}>SHUTTLE</Text>
+          <Text style={styles.error}>Could not load your profile.</Text>
+          <Pressable
+            style={styles.button}
+            onPress={() => {
+              setProfileError(false);
+              getProfile().then(setProfile).catch(() => setProfileError(true));
+            }}
+          >
+            <Text style={styles.buttonText}>Try again</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    if (profile === undefined) {
+      return (
+        <View style={styles.root}>
+          <Text style={styles.mark}>SHUTTLE</Text>
+        </View>
+      );
+    }
+    if (profile === null) {
+      return (
+        <Onboarding
+          userId={session.user.id}
+          email={session.user.email ?? ""}
+          onDone={setProfile}
+          onSignOut={() => supabase.auth.signOut()}
+        />
+      );
+    }
+    return (
+      <View style={styles.root}>
+        <Text style={styles.mark}>SHUTTLE</Text>
+        <Text style={styles.body}>
+          {profile.display_name} · {profile.account_type}
+        </Text>
+        <Pressable style={styles.button} onPress={() => supabase.auth.signOut()}>
+          <Text style={styles.buttonText}>Sign out</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   return (
     <View style={styles.root}>
       <Text style={styles.mark}>SHUTTLE</Text>
-      {session ? (
-        <>
-          <Text style={styles.body}>{session.user.email}</Text>
-          <Pressable style={styles.button} onPress={() => supabase.auth.signOut()}>
-            <Text style={styles.buttonText}>Sign out</Text>
-          </Pressable>
-        </>
-      ) : sent ? (
+      {sent ? (
         <Text style={styles.body}>Link sent. Open it from your email.</Text>
       ) : (
         <>
@@ -86,7 +148,7 @@ const styles = StyleSheet.create({
   body: { fontSize: size.body, color: color.ink2, textAlign: "center" },
   input: {
     alignSelf: "stretch",
-    maxWidth: 360,
+    maxWidth: layout.column,
     marginHorizontal: "auto",
     borderWidth: 1,
     borderColor: color.lineStrong,

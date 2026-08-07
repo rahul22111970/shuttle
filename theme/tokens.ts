@@ -40,6 +40,9 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 // 1.25 from a 15px body. Label is 11 by decree, not by ratio.
 export const size = { label: 11, body: 15, lead: 19, display: 23, hero: 29 } as const;
 
+// The one form-column width. Screens centre it; 390 minus padding fits inside.
+export const layout = { column: 360 } as const;
+
 // Ratios, not pixels. React Native letterSpacing is absolute, so a consumer
 // multiplies by its own size. Pinning one number here silently gives the wrong
 // percentage at every other step.
