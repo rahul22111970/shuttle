@@ -61,3 +61,4 @@ export function winnerOf(config: GameConfig, score: Score, lastPoint: Side): Sid
   }
   return null;
 }
+export * from "./match";
