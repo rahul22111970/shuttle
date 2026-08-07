@@ -5,7 +5,12 @@
     "types": [
       "jest",
       "node"
-    ]
+    ],
+    "paths": {
+      "@shuttle/*": [
+        "./packages/*/src"
+      ]
+    }
   },
   "include": [
     "**/*.ts",
