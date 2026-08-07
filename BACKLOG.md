@@ -33,7 +33,7 @@ Written by the PM role per BUILD_CHARTER.md, 2026-08-06. One slice = one commit 
 
 - **S0-04**: Supabase project created; `EXPO_PUBLIC_SUPABASE_URL` + anon key delivered.
 - **S0-05**: Vercel project + token for CI deploys.
-- **S0-11**: Google OAuth client ID + secret in the Supabase dashboard.
+- ~~**S0-11**: Google OAuth client ID + secret~~ — CUT 2026-08-08, see the slice.
 - Apple developer account: NOT needed until P4. Nothing in P0/P1 waits on it.
 
 ## Standing gate, every slice
@@ -117,7 +117,7 @@ Gate: Rahul signs in on his phone through the web build.
 - Delivers: router gate on `account_type`. Player: Today · Session · Compete · Me tabs (Today/Session/Compete are placeholder cards, Compete says the P2 truth: "Friendly tournaments arrive later."). Organiser: single stub surface stating the console comes later.
 - Accept: e2e: player account lands on Today; organiser account lands on the organiser stub; route test proves an organiser opening a player deep link is redirected to their surface; 390px scroll-width check; empty states render with copy.
 
-### S0-11 · auth(google) · Google OAuth, web flow — **BLOCKED: Rahul (OAuth client)**
+### S0-11 · auth(google) · Google OAuth, web flow — **CUT 2026-08-08 (Rahul): magic link is the one door for P0/P1. Revisit only if real users ask for it.**
 - Deps: S0-07. Reviewer: security-reflexes.
 - Delivers: "Continue with Google" on the sign-in screen via Supabase OAuth redirect. Web flow only; native scheme work is P4.
 - Accept: playwright asserts the button navigates to a URL whose host is `accounts.google.com`; `git grep -i client_secret` returns nothing; magic-link path still passes its e2e (no regression).
