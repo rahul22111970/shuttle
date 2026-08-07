@@ -1,43 +1,18 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import type { Session } from "@supabase/supabase-js";
+import { Redirect } from "expo-router";
 import Onboarding from "../components/onboarding";
-import { getProfile, type Profile } from "../lib/profile";
+import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { color, layout, radius, size, space, tracking } from "../theme/tokens";
 
 export default function Index() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [ready, setReady] = useState(false);
+  const { ready, session, profile, profileError, reloadProfile, setProfile } = useAuth();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // undefined = not yet fetched; null = fetched, none exists
-  const [profile, setProfile] = useState<Profile | null | undefined>(undefined);
-  const [profileError, setProfileError] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setReady(true);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  const userId = session?.user.id;
-  useEffect(() => {
-    if (!userId) {
-      setProfile(undefined);
-      return;
-    }
-    setProfileError(false);
-    getProfile()
-      .then(setProfile)
-      .catch(() => setProfileError(true));
-  }, [userId]);
-
-  if (!ready) {
+  if (!ready || (session && profile === undefined && !profileError)) {
     return (
       <View style={styles.root}>
         <Text style={styles.mark}>SHUTTLE</Text>
@@ -51,22 +26,9 @@ export default function Index() {
         <View style={styles.root}>
           <Text style={styles.mark}>SHUTTLE</Text>
           <Text style={styles.error}>Could not load your profile.</Text>
-          <Pressable
-            style={styles.button}
-            onPress={() => {
-              setProfileError(false);
-              getProfile().then(setProfile).catch(() => setProfileError(true));
-            }}
-          >
+          <Pressable style={styles.button} onPress={reloadProfile}>
             <Text style={styles.buttonText}>Try again</Text>
           </Pressable>
-        </View>
-      );
-    }
-    if (profile === undefined) {
-      return (
-        <View style={styles.root}>
-          <Text style={styles.mark}>SHUTTLE</Text>
         </View>
       );
     }
@@ -80,17 +42,7 @@ export default function Index() {
         />
       );
     }
-    return (
-      <View style={styles.root}>
-        <Text style={styles.mark}>SHUTTLE</Text>
-        <Text style={styles.body}>
-          {profile.display_name} · {profile.account_type}
-        </Text>
-        <Pressable style={styles.button} onPress={() => supabase.auth.signOut()}>
-          <Text style={styles.buttonText}>Sign out</Text>
-        </Pressable>
-      </View>
-    );
+    return <Redirect href={profile?.account_type === "organiser" ? "/organiser" : "/today"} />;
   }
 
   return (
