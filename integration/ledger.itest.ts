@@ -115,6 +115,12 @@ it("the fixture sequence yields the engine's exact nets, and money is conserved"
   expect(sum).toBe(0);
 });
 
+it("a settlement to a stranger is refused: phantoms are forever", async () => {
+  await expect(
+    recordSettlement(groupId, userId, strangerId, 100)
+  ).rejects.toMatchObject({ code: "42501" });
+});
+
 it("ledger_insert_non_member_denied", async () => {
   await signInAs(strangerEmail);
   await expect(addExpense(groupId, 100, [strangerId])).rejects.toMatchObject({

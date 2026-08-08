@@ -72,6 +72,33 @@ do $$ begin
   end;
 end $$;
 
+-- ledger_settlement_to_stranger_denied (0010): a phantom payee would be
+-- uncorrectable forever in an immutable log
+do $$ begin
+  begin
+    insert into public.ledger_events (group_id, seq, type, payer_id, amount_paise, participant_ids, created_by) values
+      ('00000000-0000-4000-8000-000000000901', 2, 'settlement',
+       '00000000-0000-4000-8000-000000000aaa', 100,
+       array['00000000-0000-4000-8000-000000000ccc']::uuid[],
+       '00000000-0000-4000-8000-000000000aaa');
+    raise exception 'TEST FAIL ledger_settlement_to_stranger_denied: insert succeeded';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- ledger_expense_with_stranger_participant_denied (0010)
+do $$ begin
+  begin
+    insert into public.ledger_events (group_id, seq, type, payer_id, amount_paise, participant_ids, created_by) values
+      ('00000000-0000-4000-8000-000000000901', 2, 'expense',
+       '00000000-0000-4000-8000-000000000aaa', 100,
+       array['00000000-0000-4000-8000-000000000aaa','00000000-0000-4000-8000-000000000ccc']::uuid[],
+       '00000000-0000-4000-8000-000000000aaa');
+    raise exception 'TEST FAIL ledger_expense_with_stranger_participant_denied: insert succeeded';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
 -- shape: settlements flow to exactly one person, never the payer
 do $$ begin
   begin
