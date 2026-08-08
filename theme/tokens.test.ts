@@ -28,7 +28,8 @@ it("holds the scale decisions", () => {
   expect(radius).toEqual({ card: 16, control: 10 });
   expect(space.xs).toBe(4);
   // 15 * 1.25^n, rounded. Label is 11 by decree, not by ratio.
-  expect(size).toEqual({ label: 11, body: 15, lead: 19, display: 23, hero: 29 });
+  // digits is the scorer display tier, off the 1.25 ratio by decree (S1-15)
+  expect(size).toEqual({ label: 11, body: 15, lead: 19, display: 23, hero: 29, digits: 96 });
   expect(tracking).toEqual({ label: 0.08, display: -0.02 });
 });
 

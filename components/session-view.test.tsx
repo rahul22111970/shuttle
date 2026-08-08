@@ -54,6 +54,7 @@ it("renders the roster with attending chips and the right call to action", async
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onScoreGame={noop}
     />
   );
   expect(screen.getByText("Asha")).toBeTruthy();
@@ -76,6 +77,7 @@ it("offers the out and start-night actions once you are in", async () => {
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onScoreGame={noop}
     />
   );
   expect(screen.getByText("Can't make it")).toBeTruthy();
@@ -104,6 +106,7 @@ it("draws the inline action error without losing the roster", async () => {
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onScoreGame={noop}
     />
   );
   expect(screen.getByText("That did not go through. Try again.")).toBeTruthy();
@@ -125,6 +128,7 @@ it("labels are actions, never Submit or OK, in any state", async () => {
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onScoreGame={noop}
     />
   );
   const states = [

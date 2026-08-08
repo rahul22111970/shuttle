@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { router } from "expo-router";
+import { PRESETS } from "@shuttle/score";
 import SessionView from "../../components/session-view";
 import { useAuth } from "../../lib/auth";
 import {
@@ -16,6 +18,7 @@ import {
   type Roster,
   type Session,
 } from "../../lib/session";
+import { startMatch } from "../../lib/scoring";
 
 type Data = {
   group: Group | null;
@@ -29,7 +32,9 @@ export default function SessionTab() {
   const selfId = authSession?.user.id ?? "";
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
-  const [busyAction, setBusyAction] = useState<"in" | "out" | "start" | "create" | "plan" | null>(null);
+  const [busyAction, setBusyAction] = useState<
+    "in" | "out" | "start" | "create" | "plan" | "score" | null
+  >(null);
   const [actionError, setActionError] = useState(false);
 
   const load = useCallback(async () => {
@@ -64,6 +69,27 @@ export default function SessionTab() {
     try {
       await fn();
       await load();
+    } catch {
+      setActionError(true);
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  // the scorer opens from the session, never a tab: create the casual
+  // default and go
+  const onScoreGame = async () => {
+    if (!data?.group || !data.session) return;
+    setBusyAction("score");
+    setActionError(false);
+    try {
+      const liveMatch = await startMatch(
+        data.group.id,
+        PRESETS.casual1x21,
+        [],
+        data.session.id
+      );
+      router.push(`/match/${liveMatch.matchId}`);
     } catch {
       setActionError(true);
     } finally {
@@ -107,6 +133,7 @@ export default function SessionTab() {
       onRsvpIn={act("in", () => rsvpIn(data.session!.id))}
       onRsvpOut={act("out", () => rsvpOut(data.session!.id))}
       onStartNight={act("start", () => startNight(data.session!.id))}
+      onScoreGame={onScoreGame}
     />
   );
 }

@@ -24,11 +24,12 @@ export type SessionViewProps =
       members: readonly Member[];
       roster: Roster;
       selfId: string;
-      busyAction: "in" | "out" | "start" | null;
+      busyAction: "in" | "out" | "start" | "score" | null;
       actionError: boolean;
       onRsvpIn: () => void;
       onRsvpOut: () => void;
       onStartNight: () => void;
+      onScoreGame: () => void;
     };
 
 // Planning presets instead of a date picker: four honest choices cover a
@@ -176,6 +177,15 @@ export default function SessionView(props: SessionViewProps) {
       </Card>
       {props.actionError ? (
         <ErrorNote>That did not go through. Try again.</ErrorNote>
+      ) : null}
+      {session.status === "live" ? (
+        <Button
+          label="Score a game"
+          busy={busyAction === "score"}
+          busyLabel="Setting up…"
+          disabled={busyAction !== null && busyAction !== "score"}
+          onPress={props.onScoreGame}
+        />
       ) : null}
       {session.status === "planned" ? (
         selfIn ? (
