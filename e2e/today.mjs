@@ -61,6 +61,8 @@ try {
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
   await page.getByText("Tomorrow 7 pm").click();
+  await page.getByText(/^Plan .*\d/).click();
+  await page.getByText(/in the group/).waitFor({ timeout: 15000 });
   await page.getByText("I'm in").click();
   await page.getByText("Start the night").click();
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
@@ -154,6 +156,11 @@ try {
   console.log("PASS the quick-log door opens");
 } catch (e) {
   failed = e;
+  try {
+    const dir = "/private/tmp/claude-501/-Users-rahulpareek-Documents-AiLearningAgent/c175e803-074d-4ab0-8b99-4c3aa0d81652/scratchpad";
+    const pages = browser ? browser.contexts().flatMap((c) => c.pages()) : [];
+    if (pages[0]) await pages[0].screenshot({ path: `${dir}/today-fail.png` });
+  } catch {}
 } finally {
   if (browser) await browser.close();
   if (server) server.kill();

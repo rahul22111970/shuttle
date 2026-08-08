@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Member, Roster, Session } from "../lib/session";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
+import DateTimeInput from "./datetime-input";
 import { Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
 
 export type SessionViewProps =
@@ -31,28 +32,25 @@ export type SessionViewProps =
       onStartNight: () => void;
     };
 
-// Planning presets instead of a date picker: four honest choices cover a
-// group night, and nothing can be typed wrong. Past presets filter out, so
-// "Today 7 pm" disappears at 7. ponytail: groups whose nights vary need a
-// pick-another-time escape hatch eventually; build it when a real group asks.
-function presets(): { label: string; iso: string }[] {
+// Suggestions fill the picker; the picker is the truth; one button plans.
+// "YYYY-MM-DDTHH:mm" is the input's native local format.
+function toLocalInput(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function suggestions(): { label: string; local: string }[] {
   const at = (daysAhead: number, hour: number) => {
     const d = new Date();
     d.setDate(d.getDate() + daysAhead);
     d.setHours(hour, 0, 0, 0);
-    return d.toISOString();
+    return toLocalInput(d);
   };
   return [
-    { label: "Today 7 pm", iso: at(0, 19) },
-    { label: "Tomorrow 7 am", iso: at(1, 7) },
-    { label: "Tomorrow 7 pm", iso: at(1, 19) },
-    { label: "Sunday 7 am", iso: (() => {
-        const d = new Date();
-        d.setDate(d.getDate() + ((7 - d.getDay()) % 7 || 7));
-        d.setHours(7, 0, 0, 0);
-        return d.toISOString();
-      })() },
-  ].filter((p) => new Date(p.iso) > new Date());
+    { label: "Tonight 7 pm", local: at(0, 19) },
+    { label: "Tomorrow 7 am", local: at(1, 7) },
+    { label: "Tomorrow 7 pm", local: at(1, 19) },
+  ].filter((p) => new Date(p.local) > new Date());
 }
 
 function sessionDateLabel(iso: string): string {
@@ -67,6 +65,7 @@ function sessionDateLabel(iso: string): string {
 
 export default function SessionView(props: SessionViewProps) {
   const [groupName, setGroupName] = useState("");
+  const [when, setWhen] = useState<string>(() => suggestions()[0]?.local ?? toLocalInput(new Date(Date.now() + 3600000)));
 
   if (props.kind === "loading") {
     return (
@@ -119,25 +118,37 @@ export default function SessionView(props: SessionViewProps) {
   }
 
   if (props.kind === "no-session") {
+    const chosen = new Date(when);
+    const valid = !Number.isNaN(chosen.getTime()) && chosen > new Date();
     return (
       <Screen>
         <Card>
-          <Text style={styles.title}>{props.groupName}</Text>
+          <Text style={styles.title}>Plan a night</Text>
           <Text style={styles.copy}>Nothing planned. Pick a night.</Text>
           <View style={styles.presetRow}>
-            {presets().map((p) => (
+            {suggestions().map((p) => (
               <Pressable
                 key={p.label}
                 accessibilityRole="button"
-                accessibilityState={{ disabled: props.busy }}
-                style={[styles.preset, props.busy && styles.presetBusy]}
-                disabled={props.busy}
-                onPress={() => props.onPlanSession(p.iso)}
+                accessibilityState={{ selected: when === p.local }}
+                style={[styles.preset, when === p.local && styles.presetOn]}
+                onPress={() => setWhen(p.local)}
               >
-                <Text style={styles.presetText}>{p.label}</Text>
+                <Text style={[styles.presetText, when === p.local && styles.presetTextOn]}>
+                  {p.label}
+                </Text>
               </Pressable>
             ))}
           </View>
+          <DateTimeInput value={when} onChange={setWhen} label="Pick a date and time" />
+          <Button
+            label={valid ? `Plan ${sessionDateLabel(chosen.toISOString())}` : "Pick a time to come"}
+            busy={props.busy}
+            busyLabel="Planning…"
+            disabled={!valid}
+            onPress={() => props.onPlanSession(chosen.toISOString())}
+          />
+          <Text style={styles.quiet}>The group sees it on Today and taps I'm in.</Text>
           {props.actionError ? (
             <ErrorNote>That did not go through. Try again.</ErrorNote>
           ) : null}
@@ -214,14 +225,14 @@ const styles = StyleSheet.create({
   },
   presetRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   preset: {
-    borderWidth: 1,
-    borderColor: color.lineStrong,
-    borderRadius: radius.control,
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    backgroundColor: color.inkWash,
   },
-  presetBusy: { opacity: 0.4 },
-  presetText: { fontFamily: font.body, fontSize: size.body, color: color.ink },
+  presetOn: { backgroundColor: color.courtWash },
+  presetText: { fontFamily: font.bold, fontSize: 13, color: color.ink2 },
+  presetTextOn: { color: color.court },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",

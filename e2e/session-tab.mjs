@@ -64,6 +64,7 @@ try {
   // plan via preset: Tomorrow always exists; Today filters out after 7 pm
   // and this project builds at 21:30 IST
   await page.getByText("Tomorrow 7 pm").click();
+  await page.getByText(/^Plan .*\d/).click();
   await page.getByText(/in the group/).waitFor({ timeout: 15000 });
   console.log("PASS session planned via preset");
 

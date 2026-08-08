@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, userEvent } from "@testing-library/react-native";
 import SessionView from "./session-view";
 import type { Session } from "../lib/session";
 
@@ -34,7 +34,23 @@ it("renders the no-session state with the planning presets", async () => {
     <SessionView kind="no-session" groupName="Tuesday Gang" busy={false} actionError={false} onPlanSession={noop} />
   );
   expect(screen.getByText("Nothing planned. Pick a night.")).toBeTruthy();
-  expect(screen.getByText("Tomorrow 7 pm")).toBeTruthy(); // always exists; Today filters after 7 pm
+  expect(screen.getByText("Tomorrow 7 pm")).toBeTruthy(); // always exists; Tonight filters after 7 pm
+  expect(screen.getByText(/^Plan .*\d/)).toBeTruthy();
+  expect(screen.getByText("The group sees it on Today and taps I'm in.")).toBeTruthy();
+});
+
+it("tapping a suggestion selects it; only the Plan button plans", async () => {
+  const onPlanSession = jest.fn();
+  await render(
+    <SessionView kind="no-session" groupName="Tuesday Gang" busy={false} actionError={false} onPlanSession={onPlanSession} />
+  );
+  const user = userEvent.setup();
+  await user.press(screen.getByText("Tomorrow 7 am"));
+  expect(onPlanSession).not.toHaveBeenCalled();
+  await user.press(screen.getByText(/^Plan .*\d/));
+  expect(onPlanSession).toHaveBeenCalledTimes(1);
+  const iso = onPlanSession.mock.calls[0][0];
+  expect(new Date(iso).getHours()).toBe(7);
 });
 
 it("renders the roster with attending chips and the right call to action", async () => {

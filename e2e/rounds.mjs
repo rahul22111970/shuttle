@@ -82,6 +82,8 @@ try {
   }
 
   await page.getByText("Tomorrow 7 pm").click();
+  await page.getByText(/^Plan .*\d/).click();
+  await page.getByText(/in the group/).waitFor({ timeout: 15000 });
   await page.getByText("I'm in").click();
   await page.getByText("Start the night").waitFor({ timeout: 15000 });
   await page.getByText("Start the night").click();
