@@ -1,0 +1,142 @@
+import { supabase } from "./supabase";
+
+export type Group = {
+  id: string;
+  name: string;
+  captain_id: string;
+  created_at: string;
+};
+
+export type Session = {
+  id: string;
+  group_id: string;
+  starts_at: string;
+  status: "planned" | "live" | "closed";
+  created_at: string;
+};
+
+export type SessionEventType =
+  | "rsvp_in"
+  | "rsvp_out"
+  | "check_in"
+  | "round_generated"
+  | "session_closed";
+
+export type SessionEvent = {
+  id: string;
+  session_id: string;
+  seq: number;
+  type: SessionEventType;
+  actor_id: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+};
+
+async function currentUserId(): Promise<string> {
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw error ?? new Error("not signed in");
+  return data.user.id;
+}
+
+// Creates the group and seats the creator as captain AND first member, so
+// the captain is never invisible in their own roster (S1-07 review note).
+// ponytail: two statements, no transaction; a crash between them orphans a
+// captain-only group that is visible but unusable. Move to a create_group
+// RPC when it bites.
+export async function createGroup(name: string): Promise<Group> {
+  const uid = await currentUserId();
+  const { data, error } = await supabase
+    .from("groups")
+    .insert({ name, captain_id: uid })
+    .select()
+    .single<Group>();
+  if (error) throw error;
+  const membership = await supabase
+    .from("group_members")
+    .insert({ group_id: data.id, player_id: uid });
+  if (membership.error) throw membership.error;
+  return data;
+}
+
+export async function createSession(groupId: string, startsAt: string): Promise<Session> {
+  const { data, error } = await supabase
+    .from("sessions")
+    .insert({ group_id: groupId, starts_at: startsAt })
+    .select()
+    .single<Session>();
+  if (error) throw error;
+  return data;
+}
+
+// Every session-event write goes through the RPC: server-computed seq,
+// advisory-lock serialisation, actor always the caller. No direct inserts.
+export async function appendSessionEvent(
+  sessionId: string,
+  type: SessionEventType,
+  payload: Record<string, unknown> = {}
+): Promise<SessionEvent> {
+  const { data, error } = await supabase
+    .rpc("append_session_event", {
+      p_session_id: sessionId,
+      p_type: type,
+      p_payload: payload,
+    })
+    .single<SessionEvent>();
+  if (error) throw error;
+  return data;
+}
+
+export const rsvpIn = (sessionId: string) => appendSessionEvent(sessionId, "rsvp_in");
+export const rsvpOut = (sessionId: string) => appendSessionEvent(sessionId, "rsvp_out");
+export const checkIn = (sessionId: string) => appendSessionEvent(sessionId, "check_in");
+
+// The close is an event first (the log is the truth) and a status flip
+// second (the plain-row projection the session list reads).
+export async function closeSession(sessionId: string): Promise<void> {
+  await appendSessionEvent(sessionId, "session_closed");
+  const { error } = await supabase
+    .from("sessions")
+    .update({ status: "closed" })
+    .eq("id", sessionId);
+  if (error) throw error;
+}
+
+export async function fetchSessionEvents(sessionId: string): Promise<SessionEvent[]> {
+  const { data, error } = await supabase
+    .from("session_events")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("seq", { ascending: true })
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as SessionEvent[];
+}
+
+export type Roster = {
+  attending: readonly string[];
+  checkedIn: readonly string[];
+};
+
+// Pure replay in the canonical (seq, created_at, id) order the fetch
+// already applies: rsvp_in adds, rsvp_out removes (and un-checks),
+// check_in implies attendance.
+export function rosterFromEvents(events: readonly SessionEvent[]): Roster {
+  const attending = new Set<string>();
+  const checkedIn = new Set<string>();
+  for (const event of events) {
+    if (event.type === "rsvp_in") attending.add(event.actor_id);
+    else if (event.type === "rsvp_out") {
+      attending.delete(event.actor_id);
+      checkedIn.delete(event.actor_id);
+    } else if (event.type === "check_in") {
+      attending.add(event.actor_id);
+      checkedIn.add(event.actor_id);
+    }
+  }
+  return { attending: [...attending], checkedIn: [...checkedIn] };
+}
+
+export async function getRoster(sessionId: string): Promise<Roster> {
+  return rosterFromEvents(await fetchSessionEvents(sessionId));
+}
