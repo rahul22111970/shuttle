@@ -15,7 +15,14 @@ const scoring = (over: Partial<ScoringProps> = {}): ScoringProps => ({
   caughtUp: false,
   onTap: noop,
   onUndo: noop,
+  onLeave: noop,
   ...over,
+});
+
+it("scoring carries a way out that promises the game stays live", async () => {
+  await render(<ScorerView {...scoring()} />);
+  expect(screen.getByLabelText("Leave scoring")).toBeTruthy();
+  expect(screen.getByText("The game stays live. Come back from the session tab.")).toBeTruthy();
 });
 
 it("renders the loading state by name", async () => {

@@ -7,6 +7,7 @@ import { pairKey } from "@shuttle/split";
 import { addExpense, groupBalances, recordSettlement } from "../lib/ledger";
 import type { Profile } from "../lib/profile";
 import type { Member } from "../lib/session";
+import { foley } from "../lib/foley";
 import { supabase } from "../lib/supabase";
 import LedgerView, { type DebtorRow } from "./ledger-view";
 
@@ -147,6 +148,7 @@ export default function LedgerPanel({
         setActionError(false);
         try {
           await recordSettlement(groupId, debtorId, captainId, amountPaise, sessionId);
+          foley.drop();
           // the chip flips in place; the next load recomputes from the log
           setSettled((prev) => new Set(prev).add(debtorId));
         } catch {

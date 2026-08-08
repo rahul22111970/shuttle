@@ -6,6 +6,7 @@
     "@expo-google-fonts/archivo": "^0.4.2",
     "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
+    "@expo/vector-icons": "^15.1.1",
     "@supabase/supabase-js": "^2.112.2",
     "expo": "~57.0.11",
     "expo-constants": "~57.0.9",

@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { MatchConfig, Side } from "@shuttle/score";
 import ScorerView from "../../components/scorer-view";
 import { useAuth } from "../../lib/auth";
+import { foley } from "../../lib/foley";
 import { recordRatings } from "../../lib/rating";
 import {
   fetchMatch,
@@ -71,7 +72,9 @@ export default function MatchScorer() {
     try {
       const next = side ? await scorePoint(live, side) : await undoPoint(live);
       setLive(next);
+      if (side) foley.drive();
       if (next.state.finished) {
+        foley.smash();
         setRow((r) => (r ? { ...r, status: "complete", snapshot: next.state } : r));
       }
     } catch (e) {
@@ -114,6 +117,7 @@ export default function MatchScorer() {
       caughtUp={caughtUp}
       onTap={(side) => act(side)}
       onUndo={() => act(null)}
+      onLeave={() => router.back()}
     />
   );
 }

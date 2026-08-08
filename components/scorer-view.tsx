@@ -14,6 +14,7 @@ export type ScorerViewProps =
   | {
       kind: "scoring";
       state: MatchState;
+      onLeave: () => void;
       scorerName: string;
       pendingSide: Side | null;
       // the offline-write-failed state: the tap did not land, the handle
@@ -79,13 +80,24 @@ export default function ScorerView(props: ScorerViewProps) {
     );
   }
 
-  const { state, scorerName, pendingSide, onTap, onUndo } = props;
+  const { state, scorerName, pendingSide, onTap, onUndo, onLeave } = props;
   const serving = servingSide(state);
   const gamesNote =
     state.games.length > 0 ? state.games.map((g) => `${g.a}–${g.b}`).join(" · ") : null;
 
   return (
     <View style={styles.root}>
+      <View style={styles.scoreHead}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Leave scoring"
+          style={({ pressed }) => [styles.backb, pressed && { opacity: 0.6 }]}
+          onPress={onLeave}
+        >
+          <Text style={styles.backbText}>‹</Text>
+        </Pressable>
+        <Text style={styles.headNote}>The game stays live. Come back from the session tab.</Text>
+      </View>
       <View style={styles.zones}>
         {(["a", "b"] as const).map((side) => (
           <Pressable
@@ -147,6 +159,17 @@ export default function ScorerView(props: ScorerViewProps) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0, padding: space.md, gap: space.md },
+  scoreHead: { flexDirection: "row", alignItems: "center", gap: space.md },
+  backb: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: color.inkWash,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backbText: { fontFamily: font.bold, fontSize: 22, lineHeight: 24, color: color.ink },
+  headNote: { flex: 1, fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   zones: { flex: 1, flexDirection: "row", gap: space.md },
   zone: {
     flex: 1,

@@ -1,4 +1,5 @@
 import { Redirect, Tabs } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../lib/auth";
 import { color, font, size, space, tracking } from "../../theme/tokens";
@@ -22,15 +23,38 @@ export default function PlayerLayout() {
         headerShown: false,
         tabBarActiveTintColor: color.court,
         tabBarInactiveTintColor: color.ink3,
-        tabBarStyle: { backgroundColor: color.card, borderTopColor: color.line },
+        tabBarStyle: { backgroundColor: color.card, borderTopColor: color.line, height: 64, paddingBottom: 8, paddingTop: 6 },
         tabBarLabelStyle: { fontFamily: font.bold, fontSize: 12, letterSpacing: 0.6 },
-        tabBarIconStyle: { display: "none" },
       }}
     >
-      <Tabs.Screen name="today" options={{ title: "Today" }} />
-      <Tabs.Screen name="session" options={{ title: "Session" }} />
-      <Tabs.Screen name="compete" options={{ title: "Compete" }} />
-      <Tabs.Screen name="me" options={{ title: "Me" }} />
+      <Tabs.Screen
+        name="today"
+        options={{
+          title: "Today",
+          tabBarIcon: ({ color: c }) => <Feather name="home" size={20} color={c} />,
+        }}
+      />
+      <Tabs.Screen
+        name="session"
+        options={{
+          title: "Session",
+          tabBarIcon: ({ color: c }) => <Feather name="calendar" size={20} color={c} />,
+        }}
+      />
+      <Tabs.Screen
+        name="compete"
+        options={{
+          title: "Compete",
+          tabBarIcon: ({ color: c }) => <Feather name="award" size={20} color={c} />,
+        }}
+      />
+      <Tabs.Screen
+        name="me"
+        options={{
+          title: "Me",
+          tabBarIcon: ({ color: c }) => <Feather name="user" size={20} color={c} />,
+        }}
+      />
     </Tabs>
   );
 }

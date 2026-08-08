@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { router } from "expo-router";
 import { PRESETS } from "@shuttle/score";
 import QuickLogView, { logLabelFor, type PickRow } from "../components/quick-log-view";
+import { foley } from "../lib/foley";
 import { useAuth } from "../lib/auth";
 import { quickLog, type Participant } from "../lib/scoring";
 import { listGroupMembers, listGroups, type Member } from "../lib/session";
@@ -111,6 +112,7 @@ export default function QuickLog() {
             a: Number(scoreA),
             b: Number(scoreB),
           });
+          foley.drive();
           // back to the Today scene we came from (its focus effect refetches);
           // replacing minted an orphan scene over the tab navigator
           backToToday();

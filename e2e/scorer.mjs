@@ -115,6 +115,17 @@ try {
   await digit(1, 0);
   console.log("PASS undo reverts the displayed score");
 
+  // leave mid-match: the game stays live and resumes from the session tab
+  await page.getByLabel("Leave scoring").click();
+  await page.getByText("The night is on.").waitFor({ timeout: 15000 });
+  await page.getByText("Live now").waitFor({ timeout: 15000 });
+  await page.getByText("Scorer Runner · Bela").waitFor({ timeout: 15000 });
+  await page.getByText("2–0").waitFor({ timeout: 15000 });
+  await page.getByText("Continue scoring").click();
+  await page.getByLabel("Point to side A").waitFor({ timeout: 15000 });
+  await digit(0, 2);
+  console.log("PASS leaving keeps the game live and it resumes with the score intact");
+
   // side A runs out the game, each tap gated on its own digit landing
   for (let i = 0; i < 19; i++) {
     await page.getByLabel("Point to side A").click();

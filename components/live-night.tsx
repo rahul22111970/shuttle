@@ -4,6 +4,7 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
+import { foley } from "../lib/foley";
 import { generateRound, talliesForSession, type RoundGeneratedPayload } from "../lib/rounds";
 import {
   checkIn,
@@ -19,7 +20,12 @@ import LedgerPanel from "./ledger-panel";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
 import { Button, Card, Chip, ErrorNote, Screen } from "./ui";
 
-type MatchLite = { id: string; status: "live" | "complete"; snapshot: { score?: { a: number; b: number } } | null };
+type MatchLite = {
+  id: string;
+  status: "live" | "complete";
+  snapshot: { score?: { a: number; b: number } } | null;
+  match_participants?: { player_id: string; side: "a" | "b" }[];
+};
 
 export default function LiveNight({
   session,
@@ -63,7 +69,7 @@ export default function LiveNight({
       setRounds(payloads);
       const { data, error } = await supabase
         .from("matches")
-        .select("id, status, snapshot")
+        .select("id, status, snapshot, match_participants(player_id, side)")
         .eq("session_id", session.id);
       if (error) throw error;
       setMatches(new Map((data ?? []).map((m) => [m.id, m as MatchLite])));
@@ -215,6 +221,46 @@ export default function LiveNight({
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
       ) : (
         <>
+          {(() => {
+            const currentIds = new Set(
+              rounds.length > 0 ? rounds[rounds.length - 1].matchIds : []
+            );
+            const liveNow = [...matches.values()].filter(
+              (m) =>
+                m.status === "live" &&
+                !currentIds.has(m.id) &&
+                (m.match_participants?.length ?? 0) > 0
+            );
+            if (liveNow.length === 0) return null;
+            return (
+              <Card>
+                <Text style={styles.title}>Live now</Text>
+                {liveNow.map((m) => {
+                  const sideNames = (side: "a" | "b") =>
+                    (m.match_participants ?? [])
+                      .filter((p) => p.side === side)
+                      .map((p) => name(p.player_id))
+                      .join(" & ");
+                  const score = m.snapshot?.score ?? { a: 0, b: 0 };
+                  return (
+                    <View key={m.id} style={styles.liveRow}>
+                      <View style={styles.liveRowBody}>
+                        <Text style={styles.liveRowNames} numberOfLines={1}>
+                          {`${sideNames("a")} · ${sideNames("b")}`}
+                        </Text>
+                        <Text style={styles.liveRowScore}>{`${score.a}–${score.b}`}</Text>
+                      </View>
+                      <Button
+                        label="Continue scoring"
+                        variant="quiet"
+                        onPress={() => router.push(`/match/${m.id}`)}
+                      />
+                    </View>
+                  );
+                })}
+              </Card>
+            );
+          })()}
           <RoundsView {...roundsProps()} />
           <LedgerPanel
             groupId={groupId}
@@ -240,6 +286,15 @@ export default function LiveNight({
 }
 
 const styles = StyleSheet.create({
+  liveRow: { gap: space.sm, paddingVertical: space.xs },
+  liveRowBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  liveRowNames: { flex: 1, fontFamily: font.semibold, fontSize: 14, color: color.ink },
+  liveRowScore: {
+    fontFamily: font.monoBold,
+    fontSize: 15,
+    color: color.court,
+    fontVariant: ["tabular-nums"],
+  },
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   liveNote: { fontFamily: font.body, fontSize: size.body, color: color.court },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
