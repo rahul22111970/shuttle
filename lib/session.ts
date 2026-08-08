@@ -140,3 +140,47 @@ export function rosterFromEvents(events: readonly SessionEvent[]): Roster {
 export async function getRoster(sessionId: string): Promise<Roster> {
   return rosterFromEvents(await fetchSessionEvents(sessionId));
 }
+
+export async function listGroups(): Promise<Group[]> {
+  const { data, error } = await supabase.from("groups").select("*").order("created_at");
+  if (error) throw error;
+  return (data ?? []) as Group[];
+}
+
+export type Member = { id: string; name: string };
+
+export async function listGroupMembers(groupId: string): Promise<Member[]> {
+  const { data, error } = await supabase
+    .from("group_members")
+    .select("player_id, profiles(display_name)")
+    .eq("group_id", groupId);
+  if (error) throw error;
+  return (data ?? []).map((row) => {
+    const r = row as unknown as { player_id: string; profiles: { display_name: string } | null };
+    return { id: r.player_id, name: r.profiles?.display_name ?? "Player" };
+  });
+}
+
+// the next session that still matters: planned or live, soonest first
+export async function nextSession(groupId: string): Promise<Session | null> {
+  const { data, error } = await supabase
+    .from("sessions")
+    .select("*")
+    .eq("group_id", groupId)
+    .in("status", ["planned", "live"])
+    .order("starts_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<Session>();
+  if (error) throw error;
+  return data;
+}
+
+// start-night is a plain-row status flip: the log's event types have no
+// session_started; rounds (S1-16) will write round_generated events
+export async function startNight(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from("sessions")
+    .update({ status: "live" })
+    .eq("id", sessionId);
+  if (error) throw error;
+}

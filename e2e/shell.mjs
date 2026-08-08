@@ -71,7 +71,8 @@ try {
   console.log("PASS 390px holds on Today");
 
   await player.getByText("Session", { exact: true }).click();
-  await player.getByText("Nothing planned. Your next session shows up here.").waitFor({ timeout: 15000 });
+  // S1-10 made Session real: a fresh user sees the no-group empty state
+  await player.getByText("No group yet").waitFor({ timeout: 15000 });
   await player.getByText("Compete", { exact: true }).click();
   await player.getByText("Friendly tournaments arrive later.").waitFor({ timeout: 15000 });
   await player.getByText("Me", { exact: true }).click();

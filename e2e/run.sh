@@ -8,3 +8,4 @@ npx expo export -p web >/dev/null
 node e2e/auth-magic-link.mjs
 node e2e/onboarding.mjs
 node e2e/shell.mjs
+node e2e/session-tab.mjs
