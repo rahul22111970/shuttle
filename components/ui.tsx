@@ -5,8 +5,12 @@ import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "rea
 import type { ReactNode } from "react";
 import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 
-export function Screen({ children }: { children: ReactNode }) {
-  return <View style={styles.screen}>{children}</View>;
+export function Screen({ children, testID }: { children: ReactNode; testID?: string }) {
+  return (
+    <View style={styles.screen} testID={testID}>
+      {children}
+    </View>
+  );
 }
 
 export function Wordmark() {

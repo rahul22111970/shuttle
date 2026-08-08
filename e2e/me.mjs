@@ -1,0 +1,193 @@
+// e2e for S1-24: the Me tab against admin-seeded matches with hand-computed
+// figures. Seed: 3 doubles wins with Bela (oldest first), then 1 singles
+// loss most recent. Expect 75% wins, streak L1, chemistry Bela 100% · 3.
+import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { createClient } from "@supabase/supabase-js";
+import { chromium } from "playwright";
+
+const parseEnv = (path) =>
+  Object.fromEntries(
+    readFileSync(path, "utf8")
+      .split("\n")
+      .filter((l) => l.includes("=") && !l.startsWith("#"))
+      .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)])
+  );
+
+const pub = parseEnv(".env.local");
+const sec = parseEnv(".secrets.env");
+const APP = "http://localhost:3000";
+
+const admin = createClient(pub.EXPO_PUBLIC_SUPABASE_URL, sec.SUPABASE_ADMIN_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
+
+const stamp = Date.now();
+const email = `e2e-me-${stamp}@shuttle-e2e.test`;
+let userId, server, browser, failed, groupId;
+const fixtureIds = [];
+
+const CASUAL = { kind: "standard", bestOf: 1, pointsTo: 21, cap: null, goldenPoint: true };
+
+async function seedMatch(participants, score, createdAt) {
+  const winner = score.a === score.b ? null : score.a > score.b ? "a" : "b";
+  const m = await admin
+    .from("matches")
+    .insert({
+      group_id: groupId,
+      status: "complete",
+      config: CASUAL,
+      created_by: userId,
+      created_at: createdAt,
+      snapshot: {
+        config: CASUAL,
+        points: [],
+        games: [score],
+        gamesWon: { a: winner === "a" ? 1 : 0, b: winner === "b" ? 1 : 0 },
+        score: { a: 0, b: 0 },
+        finished: true,
+        winner,
+        events: [],
+        quickLog: true,
+      },
+    })
+    .select("id")
+    .single();
+  if (m.error) throw m.error;
+  if (participants.length > 0) {
+    const rows = participants.map((p) => ({ match_id: m.data.id, ...p }));
+    const ins = await admin.from("match_participants").insert(rows);
+    if (ins.error) throw ins.error;
+  }
+  const ev = await admin.from("match_events").insert({
+    match_id: m.data.id,
+    seq: 1,
+    type: "result",
+    payload: { score },
+    scorer_id: userId,
+  });
+  if (ev.error) throw ev.error;
+}
+
+try {
+  server = spawn("node", ["e2e/serve.mjs"], { stdio: "ignore" });
+  for (let i = 0; i < 50; i++) {
+    const up = await fetch(APP).then(() => true).catch(() => false);
+    if (up) break;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+
+  const created = await admin.auth.admin.createUser({ email, email_confirm: true });
+  if (created.error) throw created.error;
+  userId = created.data.user.id;
+  const link = await admin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: { redirectTo: APP },
+  });
+  if (link.error) throw link.error;
+
+  browser = await chromium.launch({ channel: "chrome" });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+
+  await page.goto(link.data.properties.action_link);
+  await page.getByPlaceholder("Your name").fill("Me Runner");
+  await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
+  await page.getByText("Start playing").click();
+  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
+
+  // empty state first
+  await page.getByRole("tab", { name: "Me" }).click();
+  await page.getByText("Me Runner").waitFor({ timeout: 15000 });
+  await page.getByText("No games yet. Score one tonight.").waitFor({ timeout: 15000 });
+  await page.getByText("Play 3 games with someone to see your chemistry.").waitFor({ timeout: 15000 });
+  console.log("PASS a new player's Me is fully drawn empty");
+
+  // group + fixtures + the hand-computed season
+  await page.getByRole("tab", { name: "Session" }).click();
+  await page.getByPlaceholder("Group name").fill(`Me Gang ${stamp}`);
+  await page.getByText("Start the group").click();
+  await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
+  const g = await admin.from("groups").select("id").eq("name", `Me Gang ${stamp}`).single();
+  if (g.error) throw g.error;
+  groupId = g.data.id;
+  for (const nm of ["Bela", "Chirag", "Dev"]) {
+    const u = await admin.auth.admin.createUser({
+      email: `e2e-me-${nm.toLowerCase()}-${stamp}@shuttle-e2e.test`,
+      email_confirm: true,
+    });
+    if (u.error) throw u.error;
+    fixtureIds.push(u.data.user.id);
+    await admin.from("profiles").insert({ id: u.data.user.id, display_name: nm, account_type: "player" });
+    await admin.from("group_members").insert({ group_id: groupId, player_id: u.data.user.id });
+  }
+  const [bela, chirag, dev] = fixtureIds;
+  const at = (minAgo) => new Date(Date.now() - minAgo * 60000).toISOString();
+  // 3 doubles wins with Bela, then the most recent: a singles loss
+  for (const [i, score] of [[40, { a: 21, b: 15 }], [30, { a: 21, b: 18 }], [20, { a: 21, b: 10 }]].entries()) {
+    void i;
+    await seedMatch(
+      [
+        { player_id: userId, side: "a" },
+        { player_id: bela, side: "a" },
+        { player_id: chirag, side: "b" },
+        { player_id: dev, side: "b" },
+      ],
+      score[1],
+      at(score[0])
+    );
+  }
+  await seedMatch(
+    [
+      { player_id: userId, side: "a" },
+      { player_id: chirag, side: "b" },
+    ],
+    { a: 12, b: 21 },
+    at(5)
+  );
+
+  // the figures, hand-computed: 3 of 4 = 75%, streak L1, Bela 100% of 3.
+  // Every assertion scoped to the Me screen: blurred tabs can stay in the
+  // DOM and Today renders the same strings through different code.
+  await page.getByRole("tab", { name: "Today" }).click();
+  await page.getByRole("tab", { name: "Me" }).click();
+  const me = page.getByTestId("me-screen");
+  await me.getByText("75%").waitFor({ timeout: 15000 });
+  console.log("PASS win % equals the fixture output");
+  await me.getByText("L1").waitFor({ timeout: 15000 });
+  console.log("PASS the streak reads L1 after the recent loss");
+  await me.getByText("100% · 3 games").waitFor({ timeout: 15000 });
+  await me.getByText("Bela", { exact: true }).waitFor({ timeout: 15000 });
+  console.log("PASS chemistry shows Bela at 100% of 3");
+  await me.getByText("Chirag d. Me Runner").waitFor({ timeout: 15000 });
+  await me.getByText("21–12").waitFor({ timeout: 15000 });
+  console.log("PASS the loss reads winners-first with a flipped score");
+
+  const width = await page.evaluate(() => document.body.scrollWidth);
+  if (width > 390) throw new Error(`scrollWidth ${width} > 390`);
+  console.log("PASS 390px holds on Me");
+} catch (e) {
+  failed = e;
+} finally {
+  if (browser) await browser.close();
+  if (server) server.kill();
+  if (!groupId) {
+    const g = await admin.from("groups").select("id").eq("name", `Me Gang ${stamp}`).maybeSingle();
+    groupId = g.data?.id;
+  }
+  if (groupId) {
+    const { error } = await admin.from("groups").delete().eq("id", groupId);
+    if (error) console.error("cleanup group:", error.message);
+  }
+  for (const id of [userId, ...fixtureIds]) {
+    if (!id) continue;
+    const { error } = await admin.auth.admin.deleteUser(id);
+    if (error) console.error("cleanup user:", error.message);
+  }
+}
+
+if (failed) {
+  console.error("FAIL me e2e:", failed.message ?? failed);
+  process.exit(1);
+}
+console.log("me e2e: all assertions passed");
