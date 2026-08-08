@@ -69,6 +69,10 @@ export default function Index() {
               setError(null);
               const { error: sendError } = await supabase.auth.signInWithOtp({
                 email: email.trim(),
+                // send the link back to wherever this build is served from;
+                // Supabase honours it only if the origin is allowlisted in
+                // Auth → URL Configuration
+                options: { emailRedirectTo: window.location.origin },
               });
               if (sendError) setError("That did not send. Check the address and try again.");
               else setSent(true);
