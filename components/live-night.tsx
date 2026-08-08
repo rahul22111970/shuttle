@@ -2,13 +2,12 @@
 // and the casual Score-a-game door. Owns all live-session data fetching so
 // SessionView stays a planned-session concern.
 import { useCallback, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
-import { PRESETS } from "@shuttle/score";
 import { generateRound, talliesForSession, type RoundGeneratedPayload } from "../lib/rounds";
-import { startMatch } from "../lib/scoring";
 import {
   checkIn,
+  rsvpOut,
   fetchSessionEvents,
   rosterFromEvents,
   type Member,
@@ -41,7 +40,7 @@ export default function LiveNight({
   const [checkedIn, setCheckedIn] = useState<readonly string[]>([]);
   const [matches, setMatches] = useState<Map<string, MatchLite>>(new Map());
   const [standings, setStandings] = useState<StandingRow[]>([]);
-  const [busy, setBusy] = useState<"round" | "checkin" | "score" | null>(null);
+  const [busy, setBusy] = useState<"round" | "checkin" | "score" | "mark" | null>(null);
   const [roundError, setRoundError] = useState(false);
   const [nightError, setNightError] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -90,7 +89,7 @@ export default function LiveNight({
 
   // round failures draw inside the rounds card; check-in and score-a-game
   // failures draw under the night card, so no state can fail silently
-  const act = (which: "round" | "checkin" | "score", fn: () => Promise<unknown>) => async () => {
+  const act = (which: "round" | "checkin" | "score" | "mark", fn: () => Promise<unknown>) => async () => {
     setBusy(which);
     setRoundError(false);
     setNightError(false);
@@ -183,9 +182,20 @@ export default function LiveNight({
       <Card>
         <Text style={styles.title}>{groupName}</Text>
         <Text style={styles.liveNote}>The night is on.</Text>
+        <Text style={styles.quiet}>Tap a name when they arrive.</Text>
         <View style={styles.chipRow}>
           {members.map((m) => (
-            <Chip key={m.id} label={m.name} active={checkedInSet.has(m.id)} />
+            <Pressable
+              key={m.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Mark ${m.name} ${checkedInSet.has(m.id) ? "out" : "here"}`}
+              disabled={busy === "mark"}
+              onPress={act("mark", () =>
+                checkedInSet.has(m.id) ? rsvpOut(session.id, m.id) : checkIn(session.id, m.id)
+              )}
+            >
+              <Chip label={m.name} active={checkedInSet.has(m.id)} />
+            </Pressable>
           ))}
         </View>
         <Text style={styles.quiet}>{checkedIn.length} checked in</Text>
@@ -222,8 +232,7 @@ export default function LiveNight({
         busy={busy === "score"}
         busyLabel="Setting up…"
         onPress={act("score", async () => {
-          const live = await startMatch(groupId, PRESETS.casual1x21, [], session.id);
-          router.push(`/match/${live.matchId}`);
+          router.push(`/new-match?group=${groupId}&session=${session.id}`);
         })}
       />
     </Screen>

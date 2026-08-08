@@ -87,8 +87,13 @@ export async function appendSessionEvent(
 }
 
 export const rsvpIn = (sessionId: string) => appendSessionEvent(sessionId, "rsvp_in");
-export const rsvpOut = (sessionId: string) => appendSessionEvent(sessionId, "rsvp_out");
-export const checkIn = (sessionId: string) => appendSessionEvent(sessionId, "check_in");
+// forPlayer marks SOMEONE ELSE (stub players cannot sign in; whoever holds
+// a phone marks arrivals). The actor stays honest — actor_id is the writer,
+// the subject rides in the payload and replay reads it there.
+export const rsvpOut = (sessionId: string, forPlayer?: string) =>
+  appendSessionEvent(sessionId, "rsvp_out", forPlayer ? { player_id: forPlayer } : {});
+export const checkIn = (sessionId: string, forPlayer?: string) =>
+  appendSessionEvent(sessionId, "check_in", forPlayer ? { player_id: forPlayer } : {});
 
 // The close is an event first (the log is the truth) and a status flip
 // second (the plain-row projection the session list reads).
@@ -132,13 +137,17 @@ export function rosterFromEvents(events: readonly SessionEvent[]): Roster {
   const attending = new Set<string>();
   const checkedIn = new Set<string>();
   for (const event of ordered) {
-    if (event.type === "rsvp_in") attending.add(event.actor_id);
+    // the subject defaults to the actor; a payload player_id marks someone
+    // else (arrivals logged from the captain's phone)
+    const subject =
+      typeof event.payload.player_id === "string" ? event.payload.player_id : event.actor_id;
+    if (event.type === "rsvp_in") attending.add(subject);
     else if (event.type === "rsvp_out") {
-      attending.delete(event.actor_id);
-      checkedIn.delete(event.actor_id);
+      attending.delete(subject);
+      checkedIn.delete(subject);
     } else if (event.type === "check_in") {
-      attending.add(event.actor_id);
-      checkedIn.add(event.actor_id);
+      attending.add(subject);
+      checkedIn.add(subject);
     }
   }
   return { attending: [...attending], checkedIn: [...checkedIn] };

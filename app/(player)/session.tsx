@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "expo-router";
 import SessionView from "../../components/session-view";
 import { useAuth } from "../../lib/auth";
 import {
@@ -55,9 +56,13 @@ export default function SessionTab() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // focus, not mount: rounds, arrivals and roster changes land while this
+  // tab is away (the members list went stale until a hard reload before)
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
 
   // action failures stay inline: the screen keeps its data and says what
   // failed; the full error screen is reserved for load() failures

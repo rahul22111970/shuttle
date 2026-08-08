@@ -67,8 +67,30 @@ try {
   await page.getByText("I'm here").click();
   await page.getByText("1 checked in", { exact: true }).waitFor({ timeout: 15000 });
 
-  // LIVE-SCORE a casual game: the S1-15 condition's subject
+  const g = await admin.from("groups").select("id").eq("name", `Today Gang ${stamp}`).single();
+  if (g.error) throw g.error;
+  groupId = g.data.id;
+  // pilot-scale roster so the 390px check measures the real chip wall
+  const names = ["Bela", "Chirag", "Dev", "Esha", "Farhan", "Gauri", "Harsh", "Lakshminarayanan"];
+  for (const [i, name] of names.entries()) {
+    const u = await admin.auth.admin.createUser({
+      email: `e2e-today-f${i}-${stamp}@shuttle-e2e.test`,
+      email_confirm: true,
+    });
+    if (u.error) throw u.error;
+    fixtureIds.push(u.data.user.id);
+    await admin.from("profiles").insert({ id: u.data.user.id, display_name: name, account_type: "player" });
+    await admin.from("group_members").insert({ group_id: groupId, player_id: u.data.user.id });
+  }
+  fixtureId = fixtureIds[0];
+
+  // LIVE-SCORE a casual game: the S1-15 condition's subject, seated 1v1
+  // through the who-plays picker
   await page.getByText("Score a game").click();
+  await page.getByText("Who plays").waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Bela" }).click();
+  await page.getByRole("button", { name: "Bela · A" }).click();
+  await page.getByText("Start scoring").click();
   await page.getByLabel("Point to side A").waitFor({ timeout: 15000 });
   const digit = (idx, value) =>
     page.waitForFunction(
@@ -87,23 +109,12 @@ try {
   await page.getByText("Back to the night").click();
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
 
+  // arrivals logged from this phone: tapping a name checks THEM in
+  await page.getByRole("button", { name: "Mark Chirag here" }).click();
+  await page.getByText("2 checked in", { exact: true }).waitFor({ timeout: 15000 });
+  console.log("PASS tapping a name marks that player's arrival");
+
   // seed a debt: fixture B paid 500 for both -> Runner owes 250
-  const g = await admin.from("groups").select("id").eq("name", `Today Gang ${stamp}`).single();
-  if (g.error) throw g.error;
-  groupId = g.data.id;
-  // pilot-scale roster so the 390px check measures the real chip wall
-  const names = ["Bela", "Chirag", "Dev", "Esha", "Farhan", "Gauri", "Harsh", "Lakshminarayanan"];
-  for (const [i, name] of names.entries()) {
-    const u = await admin.auth.admin.createUser({
-      email: `e2e-today-f${i}-${stamp}@shuttle-e2e.test`,
-      email_confirm: true,
-    });
-    if (u.error) throw u.error;
-    fixtureIds.push(u.data.user.id);
-    await admin.from("profiles").insert({ id: u.data.user.id, display_name: name, account_type: "player" });
-    await admin.from("group_members").insert({ group_id: groupId, player_id: u.data.user.id });
-  }
-  fixtureId = fixtureIds[0];
   const exp = await admin.from("ledger_events").insert({
     group_id: groupId,
     seq: 1,
@@ -125,7 +136,7 @@ try {
   console.log("PASS the balance equals the engine output, debtor side");
 
   // the live-scored match is in the feed (S1-15 condition)
-  await page.getByText("Side A d. Side B").waitFor({ timeout: 15000 });
+  await page.getByText("Today Runner d. Bela").waitFor({ timeout: 15000 });
   await page.getByText("21–0").waitFor({ timeout: 15000 });
   console.log("PASS the live-scored match appears in the feed");
 

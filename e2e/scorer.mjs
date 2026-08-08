@@ -25,7 +25,7 @@ const admin = createClient(pub.EXPO_PUBLIC_SUPABASE_URL, sec.SUPABASE_ADMIN_KEY,
 
 const stamp = Date.now();
 const email = `e2e-scorer-${stamp}@shuttle-e2e.test`;
-let userId, server, browser, failed, groupId;
+let userId, fixtureId, server, browser, failed, groupId;
 
 try {
   server = spawn("node", ["e2e/serve.mjs"], { stdio: "ignore" });
@@ -58,16 +58,33 @@ try {
   await page.getByPlaceholder("Group name").fill(`Scorer Gang ${stamp}`);
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
+
+  // a second member so the who-plays picker can form 1v1
+  const g0 = await admin.from("groups").select("id").eq("name", `Scorer Gang ${stamp}`).single();
+  if (g0.error) throw g0.error;
+  groupId = g0.data.id;
+  const fx = await admin.auth.admin.createUser({
+    email: `e2e-scorer-f-${stamp}@shuttle-e2e.test`,
+    email_confirm: true,
+  });
+  if (fx.error) throw fx.error;
+  fixtureId = fx.data.user.id;
+  await admin.from("profiles").insert({ id: fixtureId, display_name: "Bela", account_type: "player" });
+  await admin.from("group_members").insert({ group_id: groupId, player_id: fixtureId });
   await page.getByText("Tomorrow 7 pm").click();
   await page.getByText("I'm in").click();
   await page.getByText("Start the night").waitFor({ timeout: 15000 });
   await page.getByText("Start the night").click();
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
 
-  // open the scorer
+  // open the scorer through the who-plays picker (S1-28): seat 1v1
   await page.getByText("Score a game").click();
+  await page.getByText("Who plays").waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Bela" }).click();
+  await page.getByRole("button", { name: "Bela · A" }).click();
+  await page.getByText("Start scoring").click();
   await page.getByLabel("Point to side A").waitFor({ timeout: 15000 });
-  console.log("PASS scorer opens from the live night");
+  console.log("PASS scorer opens seated from the live night picker");
 
   const width = await page.evaluate(() => document.body.scrollWidth);
   if (width > 390) throw new Error(`scrollWidth ${width} > 390`);
@@ -110,12 +127,19 @@ try {
   const g = await admin.from("groups").select("id").eq("name", `Scorer Gang ${stamp}`).single();
   if (g.error) throw g.error;
   groupId = g.data.id;
-  const m = await admin.from("matches").select("status, snapshot").eq("group_id", groupId).single();
+  const m = await admin
+    .from("matches")
+    .select("status, snapshot, match_participants(player_id, side)")
+    .eq("group_id", groupId)
+    .single();
   if (m.error) throw m.error;
   if (m.data.status !== "complete" || m.data.snapshot.winner !== "a") {
     throw new Error(`match row wrong: ${m.data.status} ${m.data.snapshot?.winner}`);
   }
-  console.log("PASS the result is in the database, winner a, status complete");
+  const seats = Object.fromEntries(m.data.match_participants.map((p) => [p.player_id, p.side]));
+  if (seats[userId] !== "a" || seats[fixtureId] !== "b")
+    throw new Error(`participants ${JSON.stringify(seats)}`);
+  console.log("PASS the result is in the database, winner a, status complete, both seated");
 
   await page.getByText("Back to the night").click();
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
@@ -139,8 +163,9 @@ try {
     const { error } = await admin.from("groups").delete().eq("id", groupId);
     if (error) console.error("cleanup group:", error.message);
   }
-  if (userId) {
-    const { error } = await admin.auth.admin.deleteUser(userId);
+  for (const id of [userId, fixtureId]) {
+    if (!id) continue;
+    const { error } = await admin.auth.admin.deleteUser(id);
     if (error) console.error("cleanup user:", error.message);
   }
 }

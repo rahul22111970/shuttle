@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   presetOn: { borderColor: color.court, backgroundColor: color.courtWash },
   presetText: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   presetTextOn: { color: color.courtDeep },
-  amount: { flex: 1 },
+  amount: { flex: 1, minWidth: 0 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   debtors: { gap: space.sm },
   debtorRow: {
