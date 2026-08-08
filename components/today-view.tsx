@@ -5,7 +5,7 @@
 import { StyleSheet, Text, View } from "react-native";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import { rupees } from "./ledger-view";
-import { Button, Card, ErrorNote, Screen } from "./ui";
+import { AppBar, Button, Card, ErrorNote, Screen } from "./ui";
 
 export type FeedRow = {
   id: string;
@@ -67,10 +67,7 @@ export default function TodayView(props: TodayViewProps) {
 
   return (
     <Screen>
-      <View style={styles.heading}>
-        <Text style={styles.headingWord}>Today</Text>
-        <Text style={styles.headingDate}>{props.dateLine}</Text>
-      </View>
+      <AppBar title="Today" sub={props.dateLine} onAction={props.onLogGame} actionLabel="Log a game" />
       <Card>
         <Text style={styles.title}>Next session</Text>
         {!props.hasGroup ? (
@@ -125,18 +122,18 @@ export default function TodayView(props: TodayViewProps) {
         <Text style={styles.title}>This week</Text>
         <View style={styles.statRow}>
           <View style={styles.stat}>
-            <Text style={styles.statNumber}>{week.sessions}</Text>
             <Text style={styles.statLabel}>Sessions</Text>
+            <Text style={styles.statNumber}>{week.sessions}</Text>
           </View>
           <View style={styles.stat}>
-            <Text style={styles.statNumber}>{week.games}</Text>
             <Text style={styles.statLabel}>Games</Text>
+            <Text style={styles.statNumber}>{week.games}</Text>
           </View>
           <View style={styles.stat}>
+            <Text style={styles.statLabel}>Wins</Text>
             <Text style={styles.statNumber}>
               {week.winsPct === null ? "–" : `${week.winsPct}%`}
             </Text>
-            <Text style={styles.statLabel}>Wins</Text>
           </View>
         </View>
         {feed.length === 0 ? (
@@ -175,47 +172,37 @@ export default function TodayView(props: TodayViewProps) {
 }
 
 const styles = StyleSheet.create({
-  heading: { width: "100%", maxWidth: layout.column, gap: space.xs },
-  headingWord: {
-    fontFamily: font.display,
-    fontSize: size.hero,
-    color: color.ink,
-    letterSpacing: size.hero * tracking.display,
-  },
-  headingDate: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
-  sessionWhen: { fontFamily: font.medium, fontSize: size.lead, color: color.ink },
+  sessionWhen: { fontFamily: font.bold, fontSize: 15.5, color: color.ink },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   chip: {
-    borderWidth: 1,
-    borderColor: color.line,
     borderRadius: 999,
-    paddingVertical: space.xs,
-    paddingHorizontal: space.md,
-    backgroundColor: color.fog1,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    backgroundColor: color.inkWash,
   },
-  chipGoing: { borderColor: color.courtWash, backgroundColor: color.courtWash },
-  chipText: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
-  chipTextGoing: { fontFamily: font.medium, color: color.courtDeep },
-  owe: { fontFamily: font.medium, fontSize: size.display, color: color.cork },
-  owed: { fontFamily: font.medium, fontSize: size.display, color: color.court },
+  chipGoing: { backgroundColor: color.courtWash },
+  chipText: { fontFamily: font.bold, fontSize: 12.5, color: color.ink2 },
+  chipTextGoing: { color: color.court },
+  owe: { fontFamily: font.monoBold, fontSize: 21, color: color.cork, fontVariant: ["tabular-nums"] },
+  owed: { fontFamily: font.monoBold, fontSize: 21, color: color.court, fontVariant: ["tabular-nums"] },
   statRow: {
     flexDirection: "row",
-    gap: space.xl,
+    gap: 22,
     paddingBottom: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
   stat: { gap: 2 },
   statNumber: {
-    fontFamily: font.mono,
-    fontSize: size.display,
+    fontFamily: font.monoBold,
+    fontSize: 21,
     color: color.ink,
     fontVariant: ["tabular-nums"],
   },
-  statLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  statLabel: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   feedRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -225,16 +212,16 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
   },
   badge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   badgeW: { backgroundColor: color.courtWash },
-  badgeL: { backgroundColor: color.fog2 },
-  badgeTextW: { fontFamily: font.medium, fontSize: size.label, color: color.courtDeep },
-  badgeTextL: { fontFamily: font.medium, fontSize: size.label, color: color.ink3 },
+  badgeL: { backgroundColor: color.inkWash },
+  badgeTextW: { fontFamily: font.heavy, fontSize: 13, color: color.court },
+  badgeTextL: { fontFamily: font.heavy, fontSize: 13, color: color.ink2 },
   badgeDot: {
     width: 8,
     height: 8,
@@ -243,11 +230,11 @@ const styles = StyleSheet.create({
     backgroundColor: color.line,
   },
   feedBody: { flex: 1, gap: 2 },
-  feedTeams: { fontFamily: font.body, fontSize: size.body, color: color.ink },
+  feedTeams: { fontFamily: font.semibold, fontSize: 14, color: color.ink },
   feedScore: {
-    fontFamily: font.mono,
-    fontSize: size.body,
-    color: color.ink,
+    fontFamily: font.monoBold,
+    fontSize: 12.5,
+    color: color.ink2,
     fontVariant: ["tabular-nums"],
   },
 });

@@ -111,7 +111,9 @@ export default function QuickLog() {
             a: Number(scoreA),
             b: Number(scoreB),
           });
-          router.replace("/today");
+          // back to the Today scene we came from (its focus effect refetches);
+          // replacing minted an orphan scene over the tab navigator
+          backToToday();
         } catch {
           setActionError(true);
           setBusy(false);

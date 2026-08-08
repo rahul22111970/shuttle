@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { INITIAL_RATING } from "@shuttle/rating";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
-import { Button, Card, ErrorNote, Screen } from "./ui";
+import { AppBar, Button, Card, ErrorNote, Screen } from "./ui";
 
 export type MeFeedRow = {
   id: string;
@@ -76,7 +76,7 @@ export default function MeView(props: MeViewProps) {
   if (props.kind === "loading") {
     return (
       <Screen>
-        <Text style={styles.headingWord}>{props.name}</Text>
+        <AppBar title={props.name} />
         <Text style={styles.quiet}>Fetching your games…</Text>
       </Screen>
     );
@@ -85,7 +85,7 @@ export default function MeView(props: MeViewProps) {
   if (props.kind === "error") {
     return (
       <Screen>
-        <Text style={styles.headingWord}>{props.name}</Text>
+        <AppBar title={props.name} />
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
         <Button label="Try again" onPress={props.onRetry} />
       </Screen>
@@ -96,10 +96,7 @@ export default function MeView(props: MeViewProps) {
 
   return (
     <Screen testID="me-screen">
-      <View style={styles.heading}>
-        <Text style={styles.headingWord}>{props.name}</Text>
-        <Text style={styles.headingDate}>{props.detail}</Text>
-      </View>
+      <AppBar title={props.name} sub={props.detail} />
       <Card testID="rating-card">
         <Text style={styles.title}>Rating</Text>
         <View style={styles.formRow}>
@@ -213,29 +210,21 @@ export default function MeView(props: MeViewProps) {
 }
 
 const styles = StyleSheet.create({
-  heading: { width: "100%", maxWidth: layout.column, gap: space.xs },
-  headingWord: {
-    fontFamily: font.display,
-    fontSize: size.hero,
-    color: color.ink,
-    letterSpacing: size.hero * tracking.display,
-  },
-  headingDate: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   formRow: { flexDirection: "row", gap: space.xl },
   stat: { gap: 2 },
   statNumber: {
-    fontFamily: font.mono,
-    fontSize: size.display,
+    fontFamily: font.monoBold,
+    fontSize: 34,
     color: color.ink,
     fontVariant: ["tabular-nums"],
   },
-  statLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  statLabel: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   ratingHero: {
-    fontFamily: font.mono,
-    fontSize: size.digits / 2,
+    fontFamily: font.monoBold,
+    fontSize: 30,
     color: color.ink,
     fontVariant: ["tabular-nums"],
   },
@@ -244,27 +233,27 @@ const styles = StyleSheet.create({
   sparkBarNow: { backgroundColor: color.court },
   streakW: { color: color.court },
   streakL: { color: color.cork },
-  dotRow: { flexDirection: "row", gap: space.sm },
-  dot: { width: 10, height: 10, borderRadius: 5 },
+  dotRow: { flexDirection: "row", gap: 5, alignItems: "center" },
+  dot: { width: 13, height: 13, borderRadius: 4 },
   dotW: { backgroundColor: color.court },
-  dotL: { backgroundColor: color.fog2, borderWidth: 1, borderColor: color.lineStrong },
+  dotL: { backgroundColor: color.inkWash2 },
   dotD: { backgroundColor: color.line },
   chemRow: { gap: space.xs },
   chemHead: { flexDirection: "row", justifyContent: "space-between" },
-  chemName: { flex: 1, fontFamily: font.medium, fontSize: size.body, color: color.ink },
+  chemName: { flex: 1, fontFamily: font.bold, fontSize: 13.5, color: color.ink },
   chemFigure: {
     fontFamily: font.mono,
-    fontSize: size.label,
+    fontSize: 12.5,
     color: color.ink2,
     fontVariant: ["tabular-nums"],
   },
   chemTrack: {
-    height: 6,
+    height: 5,
     borderRadius: 3,
-    backgroundColor: color.fog2,
+    backgroundColor: color.inkWash,
     overflow: "hidden",
   },
-  chemBar: { height: 6, borderRadius: 3, backgroundColor: color.court },
+  chemBar: { height: 5, borderRadius: 3, backgroundColor: color.court },
   feedRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -274,16 +263,16 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
   },
   badge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
   badgeW: { backgroundColor: color.courtWash },
-  badgeL: { backgroundColor: color.fog2 },
-  badgeTextW: { fontFamily: font.medium, fontSize: size.label, color: color.courtDeep },
-  badgeTextL: { fontFamily: font.medium, fontSize: size.label, color: color.ink3 },
+  badgeL: { backgroundColor: color.inkWash },
+  badgeTextW: { fontFamily: font.heavy, fontSize: 13, color: color.court },
+  badgeTextL: { fontFamily: font.heavy, fontSize: 13, color: color.ink2 },
   badgeDot: {
     width: 8,
     height: 8,
@@ -292,11 +281,11 @@ const styles = StyleSheet.create({
     backgroundColor: color.line,
   },
   feedBody: { flex: 1, gap: 2 },
-  feedTeams: { fontFamily: font.body, fontSize: size.body, color: color.ink },
+  feedTeams: { fontFamily: font.semibold, fontSize: 14, color: color.ink },
   feedScore: {
-    fontFamily: font.mono,
-    fontSize: size.body,
-    color: color.ink,
+    fontFamily: font.monoBold,
+    fontSize: 12.5,
+    color: color.ink2,
     fontVariant: ["tabular-nums"],
   },
 });

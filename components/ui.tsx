@@ -1,14 +1,53 @@
 // The shared primitives every screen was quietly duplicating (S0-10 review
 // note, consolidated at S1-10): centered fog screen, ring-shadow card,
 // court button, wordmark, error line. Tokens only, here and nowhere else.
-import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
 import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 
 export function Screen({ children, testID }: { children: ReactNode; testID?: string }) {
+  // a screen must scroll: a fixed View silently swallowed everything below
+  // the fold on real phones. Taps land while the keyboard is up.
   return (
-    <View style={styles.screen} testID={testID}>
+    <ScrollView
+      style={styles.screenScroll}
+      contentContainerStyle={styles.screen}
+      keyboardShouldPersistTaps="handled"
+      testID={testID}
+    >
       {children}
+    </ScrollView>
+  );
+}
+
+export function AppBar({
+  title,
+  sub,
+  onAction,
+  actionLabel,
+}: {
+  title: string;
+  sub?: string;
+  // the mockup's ink square "+" — one accelerator per screen, optional
+  onAction?: () => void;
+  actionLabel?: string;
+}) {
+  return (
+    <View style={styles.appbar}>
+      <View style={styles.appbarText}>
+        <Text style={styles.appbarTitle}>{title}</Text>
+        {sub ? <Text style={styles.appbarSub}>{sub}</Text> : null}
+      </View>
+      {onAction ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel ?? "More"}
+          style={({ pressed }) => [styles.abtn, pressed && styles.pressed]}
+          onPress={onAction}
+        >
+          <Text style={styles.abtnText}>+</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -86,8 +125,12 @@ export function Chip({ label, active = false }: { label: string; active?: boolea
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  screenScroll: {
     flex: 1,
+    backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
+  },
+  screen: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "flex-start",
     gap: space.lg,
@@ -97,6 +140,24 @@ const styles = StyleSheet.create({
     // would cover it
     backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
   },
+  appbar: {
+    width: "100%",
+    maxWidth: layout.column,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  appbarText: { flex: 1, gap: 2 },
+  appbarTitle: { fontFamily: font.heavy, fontSize: 20, color: color.ink, letterSpacing: -0.2 },
+  appbarSub: { fontFamily: font.body, fontSize: 12.5, color: color.ink3 },
+  abtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: color.ink,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  abtnText: { fontFamily: font.medium, fontSize: 20, lineHeight: 22, color: color.fog0 },
   mark: {
     fontFamily: font.display,
     fontSize: size.display,
@@ -109,38 +170,42 @@ const styles = StyleSheet.create({
     maxWidth: layout.column,
     boxShadow: [...shadow.ring],
     borderRadius: radius.card,
-    padding: space.xl,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     gap: space.sm,
     backgroundColor: color.card,
   },
   button: {
     backgroundColor: color.court,
-    borderRadius: radius.control,
-    paddingVertical: space.md,
+    borderRadius: 12,
+    paddingVertical: 12,
     paddingHorizontal: space.xl,
+    alignItems: "center",
+    alignSelf: "stretch",
   },
   buttonBusy: { backgroundColor: color.courtDeep },
   buttonDisabled: { opacity: 0.4 },
-  buttonText: { fontFamily: font.medium, color: color.chalk, fontSize: size.body },
+  buttonText: { fontFamily: font.bold, color: color.chalk, fontSize: 14.5 },
   buttonQuiet: {
+    backgroundColor: color.card,
     borderWidth: 1,
-    borderColor: color.lineStrong,
-    borderRadius: radius.control,
-    paddingVertical: space.md,
+    borderColor: color.line,
+    borderRadius: 13,
+    paddingVertical: 13,
     paddingHorizontal: space.xl,
+    alignItems: "center",
+    alignSelf: "stretch",
   },
-  buttonQuietText: { fontFamily: font.medium, color: color.ink2, fontSize: size.body },
+  buttonQuietText: { fontFamily: font.bold, color: color.ink, fontSize: 14 },
   error: { fontFamily: font.body, fontSize: size.body, color: color.cork, textAlign: "center" },
   pressed: { transform: [{ scale: 0.97 }] },
   chipBase: {
-    borderWidth: 1,
-    borderColor: color.line,
-    borderRadius: radius.card,
-    paddingVertical: space.xs,
-    paddingHorizontal: space.md,
-    backgroundColor: color.card,
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    backgroundColor: color.inkWash,
   },
-  chipActive: { borderColor: color.court, backgroundColor: color.courtWash },
-  chipLabel: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
-  chipLabelActive: { color: color.courtDeep },
+  chipActive: { backgroundColor: color.courtWash },
+  chipLabel: { fontFamily: font.bold, fontSize: 12.5, color: color.ink2 },
+  chipLabelActive: { color: color.court },
 });

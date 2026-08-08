@@ -98,10 +98,11 @@ try {
 
   // empty state first
   await page.getByRole("tab", { name: "Me" }).click();
-  await page.getByText("Me Runner").waitFor({ timeout: 15000 });
-  await page.getByText("No games yet. Score one tonight.").waitFor({ timeout: 15000 });
-  await page.getByText("Play 3 games with someone to see your chemistry.").waitFor({ timeout: 15000 });
-  await page.getByText("Every player starts at 1200. Your line begins with your first game.").waitFor({ timeout: 15000 });
+  const meEmpty = page.getByTestId("me-screen");
+  await meEmpty.getByText("Me Runner").waitFor({ timeout: 15000 });
+  await meEmpty.getByText("No games yet. Score one tonight.").waitFor({ timeout: 15000 });
+  await meEmpty.getByText("Play 3 games with someone to see your chemistry.").waitFor({ timeout: 15000 });
+  await meEmpty.getByText("Every player starts at 1200. Your line begins with your first game.").waitFor({ timeout: 15000 });
   console.log("PASS a new player's Me is fully drawn empty, rating included");
 
   // group + fixtures + the hand-computed season

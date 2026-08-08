@@ -4,7 +4,7 @@
 // standard match zeroes its score field (S1-02).
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import type { MatchState, Side } from "@shuttle/score";
-import { color, font, radius, size, space, tracking } from "../theme/tokens";
+import { color, font, radius, shadow, size, space, tracking } from "../theme/tokens";
 import { Button, Card, ErrorNote, Screen, Wordmark } from "./ui";
 
 export type ScorerViewProps =
@@ -94,14 +94,26 @@ export default function ScorerView(props: ScorerViewProps) {
             accessibilityLabel={`Point to side ${side.toUpperCase()}`}
             accessibilityState={{ disabled: pendingSide !== null }}
             disabled={pendingSide !== null}
-            style={[styles.zone, side === "a" ? styles.zoneA : styles.zoneB]}
+            style={({ pressed }) => [
+              styles.zone,
+              serving === side && styles.zoneServing,
+              pressed && styles.zonePressed,
+            ]}
             onPress={() => onTap(side)}
           >
             <View style={styles.serviceRow}>
               {serving === side ? <View style={styles.serviceDot} /> : null}
-              <Text style={styles.sideLabel}>{side.toUpperCase()}</Text>
+              <Text style={[styles.sideLabel, serving === side && styles.sideLabelServing]}>
+                {side.toUpperCase()}
+              </Text>
             </View>
-            <Text style={[styles.digits, pendingSide === side && styles.digitsPending]}>
+            <Text
+              style={[
+                styles.digits,
+                serving === side && styles.digitsServing,
+                pendingSide === side && styles.digitsPending,
+              ]}
+            >
               {state.score[side]}
             </Text>
           </Pressable>
@@ -138,29 +150,34 @@ const styles = StyleSheet.create({
   zones: { flex: 1, flexDirection: "row", gap: space.md },
   zone: {
     flex: 1,
-    borderRadius: radius.card,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
     gap: space.sm,
+    backgroundColor: color.card,
+    boxShadow: [...shadow.ring],
   },
-  // both zones neutral: green is the live accent, not a side
-  zoneA: { backgroundColor: color.fog2 },
-  zoneB: { backgroundColor: color.fog2 },
+  // the serving side IS the green surface (mockup .pad.srv)
+  zoneServing: { backgroundColor: color.court },
+  zonePressed: { transform: [{ scale: 0.98 }] },
   serviceRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   serviceDot: {
     width: space.sm,
     height: space.sm,
     borderRadius: space.sm / 2,
-    backgroundColor: color.court,
+    backgroundColor: color.chalk,
   },
-  sideLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3, letterSpacing: 2 },
+  sideLabel: { fontFamily: font.bold, fontSize: size.label, color: color.ink3, letterSpacing: 2 },
+  sideLabelServing: { color: color.chalk },
   digits: {
-    fontFamily: font.mono,
-    fontSize: size.digits,
+    fontFamily: font.monoBold,
+    fontSize: 104,
     fontVariant: ["tabular-nums"],
     color: color.ink,
+    letterSpacing: -2,
   },
-  digitsPending: { color: color.ink3 },
+  digitsServing: { color: color.chalk },
+  digitsPending: { opacity: 0.45 },
   games: { fontFamily: font.body, fontSize: size.body, color: color.ink2, textAlign: "center" },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3, textAlign: "center" },
   title: { fontFamily: font.display, fontSize: size.display, color: color.ink, letterSpacing: size.display * tracking.display },

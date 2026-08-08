@@ -21,6 +21,8 @@ it("matches the palette in DESIGN.md exactly", () => {
     cork: "#E4572E",
     corkWash: "rgba(228,87,46,0.10)",
     chalk: "#FFFFFF",
+    inkWash: "rgba(20,24,27,0.05)",
+    inkWash2: "rgba(20,24,27,0.12)",
   });
 });
 

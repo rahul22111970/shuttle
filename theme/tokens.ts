@@ -29,6 +29,10 @@ export const color = {
 
   // Court-line white. Only ever on green surfaces.
   chalk: "#FFFFFF",
+
+  // neutral fills from the mockup: chips at rest, L badges, tool buttons
+  inkWash: "rgba(20,24,27,0.05)",
+  inkWash2: "rgba(20,24,27,0.12)",
 } as const;
 
 // One decision, held. Inner radius is outer minus its padding.
@@ -48,7 +52,11 @@ export const font = {
   display: "Archivo_900Black",
   body: "Inter_400Regular",
   medium: "Inter_500Medium",
+  semibold: "Inter_600SemiBold",
+  bold: "Inter_700Bold",
+  heavy: "Inter_800ExtraBold",
   mono: "IBMPlexMono_500Medium",
+  monoBold: "IBMPlexMono_700Bold",
 } as const;
 
 // The one form-column width. Screens centre it; 390 minus padding fits inside.

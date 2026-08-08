@@ -2,8 +2,14 @@ import { Platform } from "react-native";
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { Archivo_900Black } from "@expo-google-fonts/archivo";
-import { Inter_400Regular, Inter_500Medium } from "@expo-google-fonts/inter";
-import { IBMPlexMono_500Medium } from "@expo-google-fonts/ibm-plex-mono";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
+import { IBMPlexMono_500Medium, IBMPlexMono_700Bold } from "@expo-google-fonts/ibm-plex-mono";
 import { AuthProvider } from "../lib/auth";
 import { color } from "../theme/tokens";
 
@@ -22,7 +28,11 @@ export default function RootLayout() {
     Archivo_900Black,
     Inter_400Regular,
     Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
     IBMPlexMono_500Medium,
+    IBMPlexMono_700Bold,
   });
   // error = fonts unreachable; ship the system stack rather than a blank hall
   if (!loaded && !error) return null;
