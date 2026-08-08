@@ -19,13 +19,15 @@ export type ProfileInput = {
   upi_vpa?: string | null;
 };
 
-// RLS scopes every query to the signed-in user, so "the profile" needs no id.
-// ponytail: the unfiltered select works only while the select policy is
-// owner-only; add .eq("id", uid) when S1 widens the policy for rosters.
+// The S0-08 ceiling came due at S1-17: the select policy widened for
+// rosters, so "the profile" now filters to the signed-in user explicitly.
 export async function getProfile(): Promise<Profile | null> {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) throw userError ?? new Error("not signed in");
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
+    .eq("id", userData.user.id)
     .maybeSingle<Profile>();
   if (error) throw error;
   return data;
