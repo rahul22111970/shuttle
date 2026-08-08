@@ -24,7 +24,13 @@ Written by the PM role per BUILD_CHARTER.md, 2026-08-06. One slice = one commit 
 
 1. Ledger default rules. CORNERS money questions are unanswered: mid-session leaver's share, absentees who booked, the shuttle-wrecker argument. P1 ships equal split per expense participant, editable participants per expense. Real rules wait on Rahul's CORNERS answers.
 2. Mexicano round 1. Standings drive rounds 2+, but round 1 has no tally. Random with injected seed, or seeded by global rating once it exists? P1 ships seeded-random; Rahul confirms. Recorded at S1-04: rest duty also outranks standings (rest ±1 fairness first, then the survivors group by rank), so a top-of-standings player can sit a round; pure-standings rest would bench the weakest repeatedly, against RESEARCH §11's close-matches-drive-retention logic. Rahul can overrule.
-3. Rating constants. Research gives shape (provisional ~10 matches, margin-aware) but no K values or margin curve. Builder proposes constants in the S1-06 spec; PM signs before code.
+3. Rating constants — RESOLVED 2026-08-08, Rahul approved the proposal: initial rating
+   1200; base K 32; provisional K 64 for a player's first 10 rated matches; margin
+   multiplier 1 + ln(1 + pointMargin) / ln(1 + maxMargin), monotone non-decreasing and
+   saturating (a blowout moves ratings about twice a squeaker, never more); doubles =
+   each individual rated against the opposing team's average, both partners share the
+   expected score, deltas applied individually; every constant exported from one module
+   and published in-app. S1-06 is unblocked.
 4. Scorer when nobody rests. 4 players, 1 court, all playing: the resting-player rule produces no scorer. Who holds the phone? Needs a CORNERS answer. P1: any session member may score; attribution still recorded.
 5. Shuttle foley. PRODUCT puts it in v0.1; the P1 mandate omits it. Not scheduled here. Rahul decides if it forces its way into P1 or waits for P2.
 6. Phone uniqueness. Schema makes phone unique-nullable. If two family members share a number this breaks. Accept until it bites?
@@ -157,7 +163,7 @@ Gate: 3 real groups, 4 weeks, retention measured. Engines first, each vertical l
 - Delivers: `@shuttle/split`: fold expense/settlement events into pairwise nets and per-head amounts, amounts in paise.
 - Accept: property tests: sum of all pairwise nets is 0 (conservation); per-head shares of an expense sum exactly to the expense (deterministic paise remainder assignment); a settlement of X reduces that pair's |net| by exactly X; event-order permutations of independent events yield the same nets; no-I/O grep clean.
 
-### S1-06 · engine(rating) · Margin-aware Elo — **spec needs PM sign-off on constants first (open question 3)**
+### S1-06 · engine(rating) · Margin-aware Elo — constants approved 2026-08-08 (open question 3)
 - Deps: S0-01. Reviewer: code-reviewer.
 - Delivers: `@shuttle/rating`: expected score, margin-scaled update, doubles = individual vs average team rating, provisional K for first 10 matches, all constants exported from one module.
 - Accept: property tests: winner's delta ≥ 0 and loser's ≤ 0; delta is monotonically non-decreasing in point margin; provisional K strictly exceeds established K; equal-rating equal-K match has symmetric deltas; deterministic; constants module is the single source (`grep` finds no numeric K outside it); no-I/O grep clean.
