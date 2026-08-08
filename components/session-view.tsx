@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Member, Roster, Session } from "../lib/session";
 import { color, layout, radius, size, space } from "../theme/tokens";
-import { Button, Card, ErrorNote, Screen, Wordmark } from "./ui";
+import { Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
 
 export type SessionViewProps =
   | { kind: "loading" }
@@ -157,14 +157,7 @@ export default function SessionView(props: SessionViewProps) {
         <Text style={styles.copy}>{sessionDateLabel(session.starts_at)}</Text>
         <View style={styles.chipRow}>
           {members.map((m) => (
-            <View
-              key={m.id}
-              style={[styles.chip, attending.has(m.id) && styles.chipIn]}
-            >
-              <Text style={[styles.chipText, attending.has(m.id) && styles.chipTextIn]}>
-                {m.name}
-              </Text>
-            </View>
+            <Chip key={m.id} label={m.name} active={attending.has(m.id)} />
           ))}
         </View>
         <Text style={styles.quiet}>
@@ -235,15 +228,4 @@ const styles = StyleSheet.create({
     gap: space.sm,
     maxWidth: layout.column,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: color.line,
-    borderRadius: radius.card,
-    paddingVertical: space.xs,
-    paddingHorizontal: space.md,
-    backgroundColor: color.card,
-  },
-  chipIn: { borderColor: color.court, backgroundColor: color.courtWash },
-  chipText: { fontSize: size.body, color: color.ink2 },
-  chipTextIn: { color: color.courtDeep },
 });

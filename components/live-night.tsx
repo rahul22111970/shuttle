@@ -16,8 +16,9 @@ import {
 } from "../lib/session";
 import { supabase } from "../lib/supabase";
 import { color, layout, radius, size, space } from "../theme/tokens";
+import LedgerPanel from "./ledger-panel";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
-import { Button, Card, ErrorNote, Screen } from "./ui";
+import { Button, Card, Chip, ErrorNote, Screen } from "./ui";
 
 type MatchLite = { id: string; status: "live" | "complete"; snapshot: { score?: { a: number; b: number } } | null };
 
@@ -25,12 +26,14 @@ export default function LiveNight({
   session,
   groupId,
   groupName,
+  captainId,
   members,
   selfId,
 }: {
   session: Session;
   groupId: string;
   groupName: string;
+  captainId: string;
   members: readonly Member[];
   selfId: string;
 }) {
@@ -182,11 +185,7 @@ export default function LiveNight({
         <Text style={styles.liveNote}>The night is on.</Text>
         <View style={styles.chipRow}>
           {members.map((m) => (
-            <View key={m.id} style={[styles.chip, checkedInSet.has(m.id) && styles.chipIn]}>
-              <Text style={[styles.chipText, checkedInSet.has(m.id) && styles.chipTextIn]}>
-                {m.name}
-              </Text>
-            </View>
+            <Chip key={m.id} label={m.name} active={checkedInSet.has(m.id)} />
           ))}
         </View>
         <Text style={styles.quiet}>{checkedIn.length} checked in</Text>
@@ -205,7 +204,17 @@ export default function LiveNight({
       {failed ? (
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
       ) : (
-        <RoundsView {...roundsProps()} />
+        <>
+          <RoundsView {...roundsProps()} />
+          <LedgerPanel
+            groupId={groupId}
+            sessionId={session.id}
+            captainId={captainId}
+            members={members}
+            checkedIn={checkedIn}
+            selfId={selfId}
+          />
+        </>
       )}
       <Button
         label="Score a game"
@@ -231,15 +240,4 @@ const styles = StyleSheet.create({
     gap: space.sm,
     maxWidth: layout.column,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: color.line,
-    borderRadius: radius.card,
-    paddingVertical: space.xs,
-    paddingHorizontal: space.md,
-    backgroundColor: color.card,
-  },
-  chipIn: { borderColor: color.court, backgroundColor: color.courtWash },
-  chipText: { fontSize: size.body, color: color.ink2 },
-  chipTextIn: { color: color.courtDeep },
 });

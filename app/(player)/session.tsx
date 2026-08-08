@@ -103,6 +103,7 @@ export default function SessionTab() {
         session={data.session}
         groupId={data.group.id}
         groupName={data.group.name}
+        captainId={data.group.captain_id}
         members={data.members}
         selfId={selfId}
       />

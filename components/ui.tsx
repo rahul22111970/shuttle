@@ -58,6 +58,16 @@ export function ErrorNote({ children }: { children: ReactNode }) {
   return <Text style={styles.error}>{children}</Text>;
 }
 
+// The member chip: neutral at rest, court-marked when active (attending,
+// checked in, settled — whatever "counted" means on that screen).
+export function Chip({ label, active = false }: { label: string; active?: boolean }) {
+  return (
+    <View style={[styles.chipBase, active && styles.chipActive]}>
+      <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{label}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -100,4 +110,15 @@ const styles = StyleSheet.create({
   },
   buttonQuietText: { color: color.ink2, fontSize: size.body },
   error: { fontSize: size.body, color: color.cork, textAlign: "center" },
+  chipBase: {
+    borderWidth: 1,
+    borderColor: color.line,
+    borderRadius: radius.card,
+    paddingVertical: space.xs,
+    paddingHorizontal: space.md,
+    backgroundColor: color.card,
+  },
+  chipActive: { borderColor: color.court, backgroundColor: color.courtWash },
+  chipLabel: { fontSize: size.body, color: color.ink2 },
+  chipLabelActive: { color: color.courtDeep },
 });
