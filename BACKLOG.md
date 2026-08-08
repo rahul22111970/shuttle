@@ -62,7 +62,7 @@ The charter's definition of done applies to all slices; it is not repeated below
 
 **Event logs** (append-only; `UPDATE`/`DELETE` revoked at the grant level, no update/delete policies exist; each has a named test proving update is denied):
 - `session_events` — rsvp_in, rsvp_out, check_in, round_generated, session_closed.
-- `match_events` — point, undo, result_logged. Every row carries `scorer_id`.
+- `match_events` — point, undo, result. Every row carries `scorer_id`.
 - `ledger_events` — expense_added, settlement_recorded.
 - `rating_history` — one row per player per rated match. Insert-only.
 
