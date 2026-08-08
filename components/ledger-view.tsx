@@ -47,7 +47,7 @@ const LINK_NOTE = "Shuttle night";
 // UPI apps parse + literally in pn/tn; percent-encoding is the safe form
 const enc = encodeURIComponent;
 
-const rupees = (paise: number) =>
+export const rupees = (paise: number) =>
   `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 
 export function upiLink(vpa: string, captainName: string, amountPaise: number, note: string): string {

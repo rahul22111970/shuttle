@@ -12,3 +12,4 @@ node e2e/session-tab.mjs
 node e2e/scorer.mjs
 node e2e/rounds.mjs
 node e2e/ledger.mjs
+node e2e/today.mjs

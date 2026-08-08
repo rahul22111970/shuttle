@@ -257,6 +257,7 @@ Gate: 3 real groups, 4 weeks, retention measured. Engines first, each vertical l
 - Deps: S1-10, S1-19, S1-14. Reviewer: interface-design.
 - Delivers: Today tab becomes real: next session + RSVP, balance summary (you owe / you are owed, tap → ledger), recent games feed, quick-log entry point. Every card ends in an action.
 - Accept: e2e with seeded data: each card renders its data and its action navigates correctly; balance figure equals engine output for the seed; empty states carry DESIGN copy (snapshot test on empty-state strings); 390px check.
+- Review note (2026-08-08): the ledger UI lives only inside a live night, so Today offers "Open the ledger" only while a night is live; the balance line still shows anytime. A ledger surface reachable outside a live night (debts settle the morning after) needs its own slice — candidate for P1 polish or early P2.
 
 ### S1-22 · ui(quick-log) · Two-tap match log
 - Deps: S1-21, S1-14. Reviewer: interface-design.
