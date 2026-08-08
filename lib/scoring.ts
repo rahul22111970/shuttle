@@ -11,6 +11,7 @@ import {
   type Side,
 } from "@shuttle/score";
 import { supabase } from "./supabase";
+import { recordRatings } from "./rating";
 
 export type MatchRow = {
   id: string;
@@ -120,6 +121,13 @@ export async function startMatch(
 export async function scorePoint(live: LiveMatch, side: Side): Promise<LiveMatch> {
   const state = applyMatchPoint(live.state, side);
   await append(live.matchId, live.nextSeq, { type: "point", side }, state);
+  if (state.finished) {
+    // best-effort: the point is saved either way. No retry surface exists
+    // yet — S1-27's complete screen adds one recordRatings call on load
+    // (idempotent by design); until then a transient failure leaves the
+    // match unrated with only this warning
+    recordRatings(live.matchId).catch((e) => console.warn("rating write failed", e));
+  }
   return { matchId: live.matchId, state, nextSeq: live.nextSeq + 1 };
 }
 
@@ -174,6 +182,7 @@ export async function quickLog(
     quickLog: true,
   };
   await append(row.id, 1, { type: "result", payload: { score: finalScore } }, snapshot);
+  recordRatings(row.id).catch((e) => console.warn("rating write failed", e));
   return { ...row, status: "complete", snapshot: snapshot as unknown as MatchState };
 }
 

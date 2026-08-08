@@ -48,6 +48,11 @@ beforeAll(async () => {
 afterAll(async () => {
   await supabase.auth.signOut();
   if (groupId) {
+    // rating rows reference matches with ON DELETE RESTRICT: sweep first
+    const ratedMs = await admin.from("matches").select("id").eq("group_id", groupId);
+    if (ratedMs.data && ratedMs.data.length > 0) {
+      await admin.from("rating_history").delete().in("match_id", ratedMs.data.map((m) => m.id));
+    }
     const { error } = await admin.from("groups").delete().eq("id", groupId);
     if (error) throw error;
   }

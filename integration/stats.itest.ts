@@ -62,6 +62,11 @@ beforeAll(async () => {
 afterAll(async () => {
   // groups before users, always (itest cleanup doctrine)
   for (const gid of groupIds) {
+    // rating rows reference matches with ON DELETE RESTRICT: sweep first
+    const ratedMs = await admin.from("matches").select("id").eq("group_id", gid);
+    if (ratedMs.data && ratedMs.data.length > 0) {
+      await admin.from("rating_history").delete().in("match_id", ratedMs.data.map((m) => m.id));
+    }
     const { error } = await admin.from("groups").delete().eq("id", gid);
     if (error) console.error("cleanup group:", error.message);
   }

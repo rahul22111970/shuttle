@@ -176,6 +176,12 @@ try {
     groupId = g.data?.id;
   }
   if (groupId) {
+    // rating rows reference matches with ON DELETE RESTRICT: sweep them
+    // before the group delete cascades into matches
+    const ms = await admin.from("matches").select("id").eq("group_id", groupId);
+    if (ms.data && ms.data.length > 0) {
+      await admin.from("rating_history").delete().in("match_id", ms.data.map((m) => m.id));
+    }
     const { error } = await admin.from("groups").delete().eq("id", groupId);
     if (error) console.error("cleanup group:", error.message);
   }
