@@ -79,7 +79,7 @@ try {
   const fixtureId = fixtureIds[0];
 
   // ONE screen: Today -> Log a game -> tap Bela onto B -> score -> log
-  await page.getByText("Today", { exact: true }).click();
+  await page.getByRole("tab", { name: "Today" }).click();
   await page.getByText("Log a game").click();
   await page.getByText("Who played").waitFor({ timeout: 15000 });
   await page.getByText("Qlog Runner · A").waitFor({ timeout: 15000 });
@@ -103,7 +103,7 @@ try {
   await page.getByText("Log 21–15").click();
 
   // the feed shows it immediately, names first
-  await page.getByText("Qlog Runner · Bela").waitFor({ timeout: 15000 });
+  await page.getByText("Qlog Runner d. Bela").waitFor({ timeout: 15000 });
   await page.getByText("21–15").waitFor({ timeout: 15000 });
   console.log("PASS the Today feed shows the logged game immediately");
 

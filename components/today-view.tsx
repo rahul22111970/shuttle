@@ -1,6 +1,7 @@
-// The Today home, presentational and pure. Three cards, each ending in an
-// action: the next session, the money position, the recent games feed with
-// the quick-log door.
+// The Today home, presentational and pure. A dated heading, then three
+// cards, each ending in an action: the next session with the roster's
+// RSVP state, the money position, and recent games written the way
+// players say them ("A d. B") under a this-week stat strip.
 import { StyleSheet, Text, View } from "react-native";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import { rupees } from "./ledger-view";
@@ -8,22 +9,31 @@ import { Button, Card, ErrorNote, Screen } from "./ui";
 
 export type FeedRow = {
   id: string;
-  aLabel: string;
-  bLabel: string;
-  scoreLine: string;
-  whenLabel: string;
+  // "Asha & Bela d. Chirag & Dev" — winners first, or "A · B" when drawn
+  line: string;
+  score: string;
+  when: string;
+  // W/L from the viewer's seat; null when they sat this one out
+  self: "w" | "l" | null;
 };
+
+export type RosterChip = { id: string; name: string; going: boolean };
+
+export type WeekStrip = { sessions: number; games: number; winsPct: number | null };
 
 export type TodayViewProps =
   | { kind: "loading" }
   | { kind: "error"; onRetry: () => void }
   | {
       kind: "ready";
+      dateLine: string;
       // null session = nothing planned; null group = not even a group yet
       hasGroup: boolean;
       sessionLine: { dateLabel: string; live: boolean; selfIn: boolean } | null;
+      roster: readonly RosterChip[];
       // signed paise: positive owes, negative owed, null = no ledger yet
       balancePaise: number | null;
+      week: WeekStrip;
       feed: readonly FeedRow[];
       busyRsvp: boolean;
       actionError: boolean;
@@ -50,25 +60,39 @@ export default function TodayView(props: TodayViewProps) {
     );
   }
 
-  const { sessionLine, balancePaise, feed } = props;
+  const { sessionLine, balancePaise, feed, roster, week } = props;
   const rsvpOpen = sessionLine !== null && !sessionLine.live && !sessionLine.selfIn;
   // the ledger only exists inside a live night; offering it otherwise dead-ends
   const ledgerReachable = props.hasGroup && sessionLine?.live === true;
 
   return (
     <Screen>
+      <View style={styles.heading}>
+        <Text style={styles.headingWord}>Today</Text>
+        <Text style={styles.headingDate}>{props.dateLine}</Text>
+      </View>
       <Card>
         <Text style={styles.title}>Next session</Text>
         {!props.hasGroup ? (
           <Text style={styles.copy}>No sessions yet. Your group's nights will land here.</Text>
         ) : sessionLine ? (
-          <Text style={styles.copy}>
+          <Text style={styles.sessionWhen}>
             {sessionLine.live ? "The night is on." : sessionLine.dateLabel}
-            {sessionLine.selfIn && !sessionLine.live ? " · You're in." : ""}
           </Text>
         ) : (
           <Text style={styles.copy}>Nothing planned. Pick a night.</Text>
         )}
+        {sessionLine && roster.length > 0 ? (
+          <View style={styles.chipWrap}>
+            {roster.map((r) => (
+              <View key={r.id} style={[styles.chip, r.going && styles.chipGoing]}>
+                <Text style={[styles.chipText, r.going && styles.chipTextGoing]}>
+                  {r.going ? `${r.name} ✓` : `${r.name} ?`}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
         {rsvpOpen ? (
           <Button
             label="I'm in"
@@ -98,17 +122,42 @@ export default function TodayView(props: TodayViewProps) {
         ) : null}
       </Card>
       <Card>
-        <Text style={styles.title}>Recent games</Text>
+        <Text style={styles.title}>This week</Text>
+        <View style={styles.statRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{week.sessions}</Text>
+            <Text style={styles.statLabel}>Sessions</Text>
+          </View>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{week.games}</Text>
+            <Text style={styles.statLabel}>Games</Text>
+          </View>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>
+              {week.winsPct === null ? "–" : `${week.winsPct}%`}
+            </Text>
+            <Text style={styles.statLabel}>Wins</Text>
+          </View>
+        </View>
         {feed.length === 0 ? (
           <Text style={styles.copy}>No games yet. Score one tonight.</Text>
         ) : (
           feed.map((row) => (
             <View key={row.id} style={styles.feedRow}>
-              <Text style={styles.feedTeams} numberOfLines={1}>
-                {`${row.aLabel} · ${row.bLabel}`}
-              </Text>
-              <Text style={styles.feedScore}>{row.scoreLine}</Text>
-              <Text style={styles.quiet}>{row.whenLabel}</Text>
+              {row.self ? (
+                <View style={[styles.badge, row.self === "w" ? styles.badgeW : styles.badgeL]}>
+                  <Text style={row.self === "w" ? styles.badgeTextW : styles.badgeTextL}>
+                    {row.self.toUpperCase()}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.badgeDot} />
+              )}
+              <View style={styles.feedBody}>
+                <Text style={styles.feedTeams}>{row.line}</Text>
+                <Text style={styles.quiet}>{row.when}</Text>
+              </View>
+              <Text style={styles.feedScore}>{row.score}</Text>
             </View>
           ))
         )}
@@ -126,18 +175,79 @@ export default function TodayView(props: TodayViewProps) {
 }
 
 const styles = StyleSheet.create({
+  heading: { width: "100%", maxWidth: layout.column, gap: space.xs },
+  headingWord: {
+    fontFamily: font.display,
+    fontSize: size.hero,
+    color: color.ink,
+    letterSpacing: size.hero * tracking.display,
+  },
+  headingDate: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
-  owe: { fontFamily: font.body, fontSize: size.lead, color: color.cork },
-  owed: { fontFamily: font.body, fontSize: size.lead, color: color.court },
+  sessionWhen: { fontFamily: font.medium, fontSize: size.lead, color: color.ink },
+  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  chip: {
+    borderWidth: 1,
+    borderColor: color.line,
+    borderRadius: 999,
+    paddingVertical: space.xs,
+    paddingHorizontal: space.md,
+    backgroundColor: color.fog1,
+  },
+  chipGoing: { borderColor: color.courtWash, backgroundColor: color.courtWash },
+  chipText: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  chipTextGoing: { fontFamily: font.medium, color: color.courtDeep },
+  owe: { fontFamily: font.medium, fontSize: size.display, color: color.cork },
+  owed: { fontFamily: font.medium, fontSize: size.display, color: color.court },
+  statRow: {
+    flexDirection: "row",
+    gap: space.xl,
+    paddingBottom: space.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+  },
+  stat: { gap: 2 },
+  statNumber: {
+    fontFamily: font.mono,
+    fontSize: size.display,
+    color: color.ink,
+    fontVariant: ["tabular-nums"],
+  },
+  statLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   feedRow: {
-    gap: space.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.md,
     borderTopWidth: 1,
     borderTopColor: color.line,
     paddingTop: space.sm,
-    maxWidth: layout.column,
   },
-  feedTeams: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
-  feedScore: { fontFamily: font.mono, fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
+  badge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeW: { backgroundColor: color.courtWash },
+  badgeL: { backgroundColor: color.fog2 },
+  badgeTextW: { fontFamily: font.medium, fontSize: size.label, color: color.courtDeep },
+  badgeTextL: { fontFamily: font.medium, fontSize: size.label, color: color.ink3 },
+  badgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 9,
+    backgroundColor: color.line,
+  },
+  feedBody: { flex: 1, gap: 2 },
+  feedTeams: { fontFamily: font.body, fontSize: size.body, color: color.ink },
+  feedScore: {
+    fontFamily: font.mono,
+    fontSize: size.body,
+    color: color.ink,
+    fontVariant: ["tabular-nums"],
+  },
 });

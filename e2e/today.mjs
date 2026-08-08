@@ -25,6 +25,7 @@ const admin = createClient(pub.EXPO_PUBLIC_SUPABASE_URL, sec.SUPABASE_ADMIN_KEY,
 const stamp = Date.now();
 const email = `e2e-today-${stamp}@shuttle-e2e.test`;
 let userId, server, browser, failed, groupId, fixtureId;
+const fixtureIds = [];
 
 try {
   server = spawn("node", ["e2e/serve.mjs"], { stdio: "ignore" });
@@ -90,14 +91,19 @@ try {
   const g = await admin.from("groups").select("id").eq("name", `Today Gang ${stamp}`).single();
   if (g.error) throw g.error;
   groupId = g.data.id;
-  const u = await admin.auth.admin.createUser({
-    email: `e2e-today-f-${stamp}@shuttle-e2e.test`,
-    email_confirm: true,
-  });
-  if (u.error) throw u.error;
-  fixtureId = u.data.user.id;
-  await admin.from("profiles").insert({ id: fixtureId, display_name: "Bela", account_type: "player" });
-  await admin.from("group_members").insert({ group_id: groupId, player_id: fixtureId });
+  // pilot-scale roster so the 390px check measures the real chip wall
+  const names = ["Bela", "Chirag", "Dev", "Esha", "Farhan", "Gauri", "Harsh", "Lakshminarayanan"];
+  for (const [i, name] of names.entries()) {
+    const u = await admin.auth.admin.createUser({
+      email: `e2e-today-f${i}-${stamp}@shuttle-e2e.test`,
+      email_confirm: true,
+    });
+    if (u.error) throw u.error;
+    fixtureIds.push(u.data.user.id);
+    await admin.from("profiles").insert({ id: u.data.user.id, display_name: name, account_type: "player" });
+    await admin.from("group_members").insert({ group_id: groupId, player_id: u.data.user.id });
+  }
+  fixtureId = fixtureIds[0];
   const exp = await admin.from("ledger_events").insert({
     group_id: groupId,
     seq: 1,
@@ -110,7 +116,7 @@ try {
   if (exp.error) throw exp.error;
 
   // Today: every card with data, every action live
-  await page.getByText("Today", { exact: true }).click();
+  await page.getByRole("tab", { name: "Today" }).click();
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
   console.log("PASS the session card shows the live night");
 
@@ -119,7 +125,7 @@ try {
   console.log("PASS the balance equals the engine output, debtor side");
 
   // the live-scored match is in the feed (S1-15 condition)
-  await page.getByText("Side A · Side B").waitFor({ timeout: 15000 });
+  await page.getByText("Side A d. Side B").waitFor({ timeout: 15000 });
   await page.getByText("21–0").waitFor({ timeout: 15000 });
   console.log("PASS the live-scored match appears in the feed");
 
@@ -131,7 +137,7 @@ try {
   await page.getByText("Open the ledger").click();
   await page.getByText("Add your UPI ID so the group can pay you.").waitFor({ timeout: 15000 });
   console.log("PASS the money card action lands on the ledger");
-  await page.getByText("Today", { exact: true }).click();
+  await page.getByRole("tab", { name: "Today" }).click();
   await page.getByText("Log a game").click();
   await page.getByText("Who played").waitFor({ timeout: 15000 });
   console.log("PASS the quick-log door opens");
@@ -148,7 +154,7 @@ try {
     const { error } = await admin.from("groups").delete().eq("id", groupId);
     if (error) console.error("cleanup group:", error.message);
   }
-  for (const id of [userId, fixtureId]) {
+  for (const id of [userId, ...fixtureIds]) {
     if (!id) continue;
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) console.error("cleanup user:", error.message);
