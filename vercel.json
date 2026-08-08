@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx expo export -p web",
+  "buildCommand": "test -n \"$EXPO_PUBLIC_SUPABASE_URL\" && test -n \"$EXPO_PUBLIC_SUPABASE_ANON_KEY\" && npx expo export -p web",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]

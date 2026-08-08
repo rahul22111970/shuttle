@@ -81,6 +81,17 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       # The definition of done's point 8, machine-checked: the production
       # domain answers 200 and serves the app root, or this push is red.
+      # The bundle grep exists because a 200 with the root element proved
+      # nothing on 2026-08-08: builds without their EXPO_PUBLIC env crashed
+      # at import and served a blank page all night. It greps for the
+      # PROJECT host, not supabase.co generically, because supabase-js ships
+      # "*.supabase.co" in its own bundled code regardless of env; only the
+      # project URL enters the bundle by env inlining. The host is public by
+      # design: it is in every request the app makes.
       - run: |
           test "$(curl -s -o /dev/null -w '%{http_code}' https://shuttle-ten-chi.vercel.app)" = 200
-          curl -s https://shuttle-ten-chi.vercel.app | grep -q 'id="root"'
+          html=$(curl -s https://shuttle-ten-chi.vercel.app)
+          echo "$html" | grep -q 'id="root"'
+          bundle=$(echo "$html" | grep -oE '/_expo/static/js/web/[^"]+\.js' | head -1)
+          test -n "$bundle"
+          curl -s "https://shuttle-ten-chi.vercel.app$bundle" | grep -q 'wpsvzxdbnfinliqzfjik\.supabase\.co'
