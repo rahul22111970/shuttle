@@ -1,35 +1,65 @@
 import { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Redirect } from "expo-router";
 import Onboarding from "../components/onboarding";
+import { Button, Card, ErrorNote, Screen, Wordmark } from "../components/ui";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 
+const FAIL = "Could not sign you in. Try again.";
+
+// Honest placeholder: disabled, labelled, no handler. Feather has no brand
+// glyphs, so the provider name carries the button.
+function Provider({ label }: { label: string }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: true }}
+      disabled
+      style={styles.provider}
+    >
+      <Text style={styles.providerText}>{label}</Text>
+      <View style={styles.soon}>
+        <Text style={styles.soonText}>Soon</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function Index() {
   const { ready, session, profile, profileError, reloadProfile, setProfile } = useAuth();
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [pilotError, setPilotError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!ready || (session && profile === undefined && !profileError)) {
     return (
-      <View style={styles.root}>
-        <Text style={styles.mark}>SHUTTLE</Text>
-      </View>
+      <Screen>
+        <View style={styles.hero}>
+          <Wordmark />
+        </View>
+      </Screen>
     );
   }
 
   if (session) {
     if (profileError) {
       return (
-        <View style={styles.root}>
-          <Text style={styles.mark}>SHUTTLE</Text>
-          <Text style={styles.error}>Could not load your profile.</Text>
-          <Pressable style={styles.button} onPress={reloadProfile}>
-            <Text style={styles.buttonText}>Try again</Text>
-          </Pressable>
-        </View>
+        <Screen>
+          <View style={styles.hero}>
+            <Wordmark />
+          </View>
+          <ErrorNote>Could not load your profile.</ErrorNote>
+          <Card>
+            <Button label="Try again" onPress={reloadProfile} />
+          </Card>
+        </Screen>
       );
     }
     if (profile === null) {
@@ -45,68 +75,128 @@ export default function Index() {
     return <Redirect href={profile?.account_type === "organiser" ? "/organiser" : "/today"} />;
   }
 
+  const stepOnCourt = async () => {
+    setPilotError(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/pilot-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, code }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setPilotError(body?.error ?? FAIL);
+        return;
+      }
+      // verifyOtp sets the session; onAuthStateChange re-renders this screen
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        type: "email",
+        token_hash: body.token_hash,
+      });
+      if (otpError) setPilotError(FAIL);
+    } catch {
+      setPilotError(FAIL);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <View style={styles.root}>
-      <Text style={styles.mark}>SHUTTLE</Text>
-      {sent ? (
-        <Text style={styles.body}>Link sent. Open it from your email.</Text>
-      ) : (
-        <>
-          <Text style={styles.body}>Sign in with your email. No password.</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={color.ink3}
-            autoCapitalize="none"
-            autoComplete="email"
-            inputMode="email"
-          />
-          <Pressable
-            style={styles.button}
-            onPress={async () => {
-              setError(null);
-              const { error: sendError } = await supabase.auth.signInWithOtp({
-                email: email.trim(),
-                // send the link back to wherever this build is served from;
-                // Supabase honours it only if the origin is allowlisted in
-                // Auth → URL Configuration
-                options: { emailRedirectTo: window.location.origin },
-              });
-              if (sendError) setError("That did not send. Check the address and try again.");
-              else setSent(true);
-            }}
-          >
-            <Text style={styles.buttonText}>Email me a sign-in link</Text>
-          </Pressable>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-        </>
-      )}
-    </View>
+    <Screen>
+      <View style={styles.hero}>
+        <Text style={styles.mark}>SHUTTLE</Text>
+        <Text style={styles.tagline}>The night runs on your phone.</Text>
+      </View>
+
+      <Card>
+        <Text style={styles.cardLabel}>Play tonight</Text>
+        <TextInput
+          style={styles.input}
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="Your number"
+          placeholderTextColor={color.ink3}
+          inputMode="tel"
+          autoComplete="tel"
+        />
+        <TextInput
+          style={styles.input}
+          value={code}
+          onChangeText={setCode}
+          placeholder="Group code"
+          placeholderTextColor={color.ink3}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <Button label="Step on court" busy={busy} busyLabel="Checking" onPress={stepOnCourt} />
+        {pilotError ? <ErrorNote>{pilotError}</ErrorNote> : null}
+      </Card>
+
+      <Card>
+        <Text style={styles.cardLabel}>Or use email</Text>
+        {sent ? (
+          <Text style={styles.body}>Link sent. Open it from your email.</Text>
+        ) : (
+          <>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              placeholderTextColor={color.ink3}
+              autoCapitalize="none"
+              autoComplete="email"
+              inputMode="email"
+            />
+            <Button
+              label="Email me a sign-in link"
+              variant="quiet"
+              onPress={async () => {
+                setError(null);
+                const { error: sendError } = await supabase.auth.signInWithOtp({
+                  email: email.trim(),
+                  // send the link back to wherever this build is served from;
+                  // Supabase honours it only if the origin is allowlisted in
+                  // Auth → URL Configuration
+                  options: { emailRedirectTo: window.location.origin },
+                });
+                if (sendError) setError("That did not send. Check the address and try again.");
+                else setSent(true);
+              }}
+            />
+            {error ? <ErrorNote>{error}</ErrorNote> : null}
+          </>
+        )}
+      </Card>
+
+      <View style={styles.providers}>
+        <Provider label="Google" />
+        <Provider label="Apple" />
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space.lg,
-    padding: space.xl,
-    backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
-  },
+  hero: { alignItems: "center", gap: space.sm, marginTop: space.xxl, marginBottom: space.sm },
   mark: {
     fontFamily: font.display,
-    fontSize: size.display,
-    letterSpacing: size.display * tracking.label,
+    fontSize: size.hero,
+    letterSpacing: size.hero * tracking.label,
     color: color.ink,
+  },
+  tagline: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
+  cardLabel: {
+    fontFamily: font.medium,
+    fontSize: size.label,
+    color: color.ink3,
+    textTransform: "uppercase",
+    letterSpacing: size.label * tracking.label,
   },
   body: { fontFamily: font.body, fontSize: size.body, color: color.ink2, textAlign: "center" },
   input: {
     alignSelf: "stretch",
-    maxWidth: layout.column,
-    marginHorizontal: "auto",
     borderWidth: 1,
     borderColor: color.lineStrong,
     borderRadius: radius.control,
@@ -116,12 +206,37 @@ const styles = StyleSheet.create({
     color: color.ink,
     backgroundColor: color.card,
   },
-  button: {
-    backgroundColor: color.court,
-    borderRadius: radius.control,
-    paddingVertical: space.md,
-    paddingHorizontal: space.xl,
+  providers: {
+    width: "100%",
+    maxWidth: layout.column,
+    flexDirection: "row",
+    gap: space.md,
   },
-  buttonText: { fontFamily: font.medium, color: color.chalk, fontSize: size.body },
-  error: { fontFamily: font.body, fontSize: size.body, color: color.cork, textAlign: "center" },
+  provider: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space.sm,
+    backgroundColor: color.card,
+    borderWidth: 1,
+    borderColor: color.line,
+    borderRadius: radius.control + 3,
+    paddingVertical: 13,
+    opacity: 0.45,
+  },
+  providerText: { fontFamily: font.bold, fontSize: 14, color: color.ink },
+  soon: {
+    borderRadius: 999,
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    backgroundColor: color.inkWash,
+  },
+  soonText: {
+    fontFamily: font.medium,
+    fontSize: size.label,
+    color: color.ink3,
+    textTransform: "uppercase",
+    letterSpacing: size.label * tracking.label,
+  },
 });
