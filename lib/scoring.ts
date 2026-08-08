@@ -143,6 +143,14 @@ export async function quickLog(
   // and a one-result quick-log cannot represent a multi-game match. Value
   // plausibility (retirements, abandoned games) stays the caller's business
   // per decision 12.
+  if (
+    !Number.isInteger(finalScore.a) ||
+    !Number.isInteger(finalScore.b) ||
+    finalScore.a < 0 ||
+    finalScore.b < 0
+  ) {
+    throw new Error("scores are whole shuttle counts, zero or more");
+  }
   if (config.kind === "standard") {
     if (finalScore.a === finalScore.b) {
       throw new Error("a standard match cannot tie");

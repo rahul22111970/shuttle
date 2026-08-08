@@ -133,7 +133,7 @@ try {
   console.log("PASS the money card action lands on the ledger");
   await page.getByText("Today", { exact: true }).click();
   await page.getByText("Log a game").click();
-  await page.getByText("Quick log arrives next.").waitFor({ timeout: 15000 });
+  await page.getByText("Who played").waitFor({ timeout: 15000 });
   console.log("PASS the quick-log door opens");
 } catch (e) {
   failed = e;

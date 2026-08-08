@@ -1,21 +1,122 @@
-// Placeholder door for S1-22: Today's Log-a-game action needs a real
-// destination this slice; the two-tap flow replaces this next slice.
-import { StyleSheet, Text } from "react-native";
+// The quick-log controller: members recent-first (self pinned to side A),
+// final score, one write via lib/scoring.quickLog, then back to Today where
+// the feed shows the game.
+import { useCallback, useEffect, useState } from "react";
 import { router } from "expo-router";
-import { color, size } from "../theme/tokens";
-import { Button, Card, Screen } from "../components/ui";
+import { PRESETS } from "@shuttle/score";
+import QuickLogView, { logLabelFor, type PickRow } from "../components/quick-log-view";
+import { useAuth } from "../lib/auth";
+import { quickLog, type Participant } from "../lib/scoring";
+import { listGroupMembers, listGroups, type Member } from "../lib/session";
+import { supabase } from "../lib/supabase";
+
+const backToToday = () =>
+  router.canGoBack() ? router.back() : router.replace("/today");
 
 export default function QuickLog() {
+  const { session: authSession } = useAuth();
+  const selfId = authSession?.user.id ?? "";
+  const [state, setState] = useState<
+    | { kind: "loading" }
+    | { kind: "error" }
+    | { kind: "no-group" }
+    | { kind: "ready"; groupId: string; players: PickRow[] }
+  >({ kind: "loading" });
+  const [scoreA, setScoreA] = useState("");
+  const [scoreB, setScoreB] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const groups = await listGroups();
+      const group = groups[0] ?? null;
+      if (!group) {
+        setState({ kind: "no-group" });
+        return;
+      }
+      const [members, recent] = await Promise.all([
+        listGroupMembers(group.id),
+        supabase
+          .from("matches")
+          .select("match_participants(player_id)")
+          .eq("group_id", group.id)
+          .eq("status", "complete")
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+      if (recent.error) throw recent.error;
+      // recency rank: first appearance across the latest matches wins
+      const rank = new Map<string, number>();
+      (recent.data ?? [])
+        .flatMap((m) => m.match_participants as { player_id: string }[])
+        .forEach((p) => {
+          if (!rank.has(p.player_id)) rank.set(p.player_id, rank.size);
+        });
+      const order = (m: Member) =>
+        m.id === selfId ? -1 : rank.get(m.id) ?? rank.size + 1;
+      const players = [...members]
+        .sort((x, y) => order(x) - order(y))
+        .map((m) => ({
+          id: m.id,
+          name: m.name,
+          side: m.id === selfId ? ("a" as const) : ("none" as const),
+        }));
+      setState({ kind: "ready", groupId: group.id, players });
+    } catch {
+      setState({ kind: "error" });
+    }
+  }, [selfId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (state.kind === "loading") return <QuickLogView kind="loading" />;
+  if (state.kind === "error") return <QuickLogView kind="error" onRetry={load} />;
+  if (state.kind === "no-group") return <QuickLogView kind="no-group" onBack={backToToday} />;
+
+  const logLabel = logLabelFor(state.players, scoreA, scoreB);
+
   return (
-    <Screen>
-      <Card>
-        <Text style={styles.copy}>Quick log arrives next.</Text>
-      </Card>
-      <Button label="Back to Today" variant="quiet" onPress={() => (router.canGoBack() ? router.back() : router.replace("/today"))} />
-    </Screen>
+    <QuickLogView
+      kind="ready"
+      players={state.players}
+      scoreA={scoreA}
+      scoreB={scoreB}
+      busy={busy}
+      actionError={actionError}
+      logLabel={logLabel}
+      onCycle={(id) =>
+        setState({
+          ...state,
+          players: state.players.map((p) =>
+            p.id === id
+              ? { ...p, side: p.side === "none" ? "a" : p.side === "a" ? "b" : "none" }
+              : p
+          ),
+        })
+      }
+      onScoreA={setScoreA}
+      onScoreB={setScoreB}
+      onLog={async () => {
+        if (busy || !logLabel) return;
+        setBusy(true);
+        setActionError(false);
+        try {
+          const participants: Participant[] = state.players
+            .filter((p) => p.side !== "none")
+            .map((p) => ({ player_id: p.id, side: p.side as "a" | "b" }));
+          await quickLog(state.groupId, PRESETS.casual1x21, participants, {
+            a: Number(scoreA),
+            b: Number(scoreB),
+          });
+          router.replace("/today");
+        } catch {
+          setActionError(true);
+          setBusy(false);
+        }
+      }}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  copy: { fontSize: size.body, color: color.ink2 },
-});
