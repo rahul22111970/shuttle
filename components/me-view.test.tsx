@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, userEvent } from "@testing-library/react-native";
 import MeView from "./me-view";
 
 const noop = () => {};
@@ -16,6 +16,11 @@ const ready = (over: Record<string, unknown> = {}) =>
     recent: [],
     onSignOut: noop,
     onOpenMath: noop,
+    captainGroup: null,
+    wiping: false,
+    wipeDone: false,
+    wipeError: false,
+    onWipe: noop,
     ...over,
   }) as Parameters<typeof MeView>[0];
 
@@ -107,6 +112,42 @@ it("recent games use the winners-first idiom with a badge", async () => {
   expect(screen.getByText("Rahul & Sai d. Gautam & Dev")).toBeTruthy();
   expect(screen.getByText("21–17")).toBeTruthy();
   expect(screen.getByText("W")).toBeTruthy();
+});
+
+it("the captain sees the pilot wipe tool", async () => {
+  await render(
+    <MeView {...ready({ captainGroup: { id: "g1", name: "Tuesday Smashers" } })} />
+  );
+  expect(screen.getByText("Captain tools")).toBeTruthy();
+  expect(screen.getByText("Pilot-only. This tool leaves before the app store.")).toBeTruthy();
+  expect(screen.getByText("Wipe Tuesday Smashers's games and money")).toBeTruthy();
+});
+
+it("a non-captain never sees the wipe tool", async () => {
+  await render(<MeView {...ready()} />);
+  expect(screen.queryByText("Captain tools")).toBeNull();
+  expect(screen.queryByText(/Wipe .*games and money/)).toBeNull();
+});
+
+it("the wipe arms on the first tap and fires on the second", async () => {
+  const onWipe = jest.fn();
+  const user = userEvent.setup();
+  await render(
+    <MeView {...ready({ captainGroup: { id: "g1", name: "Tuesday Smashers" }, onWipe })} />
+  );
+  await user.press(screen.getByText("Wipe Tuesday Smashers's games and money"));
+  expect(onWipe).not.toHaveBeenCalled();
+  const armed = screen.getByText("Wipe Tuesday Smashers's games and money · tap again");
+  await user.press(armed);
+  expect(onWipe).toHaveBeenCalledTimes(1);
+});
+
+it("the wipe outcomes read as promised", async () => {
+  const group = { captainGroup: { id: "g1", name: "Tuesday Smashers" } };
+  await render(<MeView {...ready({ ...group, wipeDone: true })} />);
+  expect(screen.getByText("Wiped. Fresh night.")).toBeTruthy();
+  await render(<MeView {...ready({ ...group, wipeError: true })} />);
+  expect(screen.getByText("The wipe failed partway. Tell the builder.")).toBeTruthy();
 });
 
 it("labels are actions, never Submit or OK", async () => {
