@@ -23,7 +23,7 @@ Written by the PM role per BUILD_CHARTER.md, 2026-08-06. One slice = one commit 
 ## Open questions (unresolved by the docs; do not invent answers)
 
 1. Ledger default rules. CORNERS money questions are unanswered: mid-session leaver's share, absentees who booked, the shuttle-wrecker argument. P1 ships equal split per expense participant, editable participants per expense. Real rules wait on Rahul's CORNERS answers.
-2. Mexicano round 1. Standings drive rounds 2+, but round 1 has no tally. Random with injected seed, or seeded by global rating once it exists? P1 ships seeded-random; Rahul confirms.
+2. Mexicano round 1. Standings drive rounds 2+, but round 1 has no tally. Random with injected seed, or seeded by global rating once it exists? P1 ships seeded-random; Rahul confirms. Recorded at S1-04: rest duty also outranks standings (rest ±1 fairness first, then the survivors group by rank), so a top-of-standings player can sit a round; pure-standings rest would bench the weakest repeatedly, against RESEARCH §11's close-matches-drive-retention logic. Rahul can overrule.
 3. Rating constants. Research gives shape (provisional ~10 matches, margin-aware) but no K values or margin curve. Builder proposes constants in the S1-06 spec; PM signs before code.
 4. Scorer when nobody rests. 4 players, 1 court, all playing: the resting-player rule produces no scorer. Who holds the phone? Needs a CORNERS answer. P1: any session member may score; attribution still recorded.
 5. Shuttle foley. PRODUCT puts it in v0.1; the P1 mandate omits it. Not scheduled here. Rahul decides if it forces its way into P1 or waits for P2.
