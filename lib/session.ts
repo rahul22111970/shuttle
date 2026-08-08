@@ -118,13 +118,20 @@ export type Roster = {
   checkedIn: readonly string[];
 };
 
-// Pure replay in the canonical (seq, created_at, id) order the fetch
-// already applies: rsvp_in adds, rsvp_out removes (and un-checks),
-// check_in implies attendance.
+// Pure replay: rsvp_in adds, rsvp_out removes (and un-checks), check_in
+// implies attendance. The canonical (seq, created_at, id) sort lives HERE
+// (S1-09 review carry): realtime and any other caller deliver events in
+// arrival order, and replay must not depend on who fetched.
 export function rosterFromEvents(events: readonly SessionEvent[]): Roster {
+  const ordered = [...events].sort(
+    (x, y) =>
+      x.seq - y.seq ||
+      x.created_at.localeCompare(y.created_at) ||
+      x.id.localeCompare(y.id)
+  );
   const attending = new Set<string>();
   const checkedIn = new Set<string>();
-  for (const event of events) {
+  for (const event of ordered) {
     if (event.type === "rsvp_in") attending.add(event.actor_id);
     else if (event.type === "rsvp_out") {
       attending.delete(event.actor_id);

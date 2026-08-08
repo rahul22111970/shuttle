@@ -40,6 +40,7 @@ Written by the PM role per BUILD_CHARTER.md, 2026-08-06. One slice = one commit 
 4. Scorer when nobody rests. 4 players, 1 court, all playing: the resting-player rule produces no scorer. Who holds the phone? Needs a CORNERS answer. P1: any session member may score; attribution still recorded.
 5. Shuttle foley. PRODUCT puts it in v0.1; the P1 mandate omits it. Not scheduled here. Rahul decides if it forces its way into P1 or waits for P2.
 6. Phone uniqueness. Schema makes phone unique-nullable. If two family members share a number this breaks. Accept until it bites?
+7. Session-group consistency (S1-16 review). startMatch, quickLog and generateRound all take groupId alongside sessionId with no cross-check; a caller in two groups could file a session match under the wrong group. Fix once, DB-level (derive group_id from the session row or a check constraint), across all three callers — not piecemeal.
 
 ## Blocked on Rahul
 
