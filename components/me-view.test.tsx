@@ -8,12 +8,14 @@ const ready = (over: Record<string, unknown> = {}) =>
     kind: "ready",
     name: "Rahul Pareek",
     detail: "Player · +917018654784",
+    rating: { current: 1200, provisional: true, series: [] },
     winPct: null,
     streak: 0,
     lastTen: [],
     chemistry: [],
     recent: [],
     onSignOut: noop,
+    onOpenMath: noop,
     ...over,
   }) as Parameters<typeof MeView>[0];
 
@@ -25,6 +27,36 @@ it("a new player sees name, detail and every empty state", async () => {
   expect(screen.getByText("Play 3 games with someone to see your chemistry.")).toBeTruthy();
   expect(screen.getByText("Your games will land here.")).toBeTruthy();
   expect(screen.getByText("Sign out")).toBeTruthy();
+});
+
+it("the rating hero shows the current number and its state", async () => {
+  await render(
+    <MeView {...ready({ rating: { current: 1252, provisional: true, series: [1232, 1252] } })} />
+  );
+  expect(screen.getByText("1252")).toBeTruthy();
+  expect(screen.getByText("Finding your level")).toBeTruthy();
+  expect(screen.getByTestId("rating-spark")).toBeTruthy();
+  expect(screen.getByText("How the rating works")).toBeTruthy();
+});
+
+it("an unrated player sees 1200 and the first-game line, no spark", async () => {
+  await render(<MeView {...ready()} />);
+  expect(screen.getByText("1200")).toBeTruthy();
+  expect(
+    screen.getByText("Every player starts at 1200. Your line begins with your first game.")
+  ).toBeTruthy();
+  expect(screen.queryByTestId("rating-spark")).toBeNull();
+});
+
+it("an established player reads Established", async () => {
+  await render(
+    <MeView
+      {...ready({
+        rating: { current: 1301, provisional: false, series: Array(12).fill(1300) },
+      })}
+    />
+  );
+  expect(screen.getByText("Established")).toBeTruthy();
 });
 
 it("the form card shows win %, a W streak in court green, and the dots", async () => {

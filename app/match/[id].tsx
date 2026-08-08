@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { MatchConfig, Side } from "@shuttle/score";
 import ScorerView from "../../components/scorer-view";
 import { useAuth } from "../../lib/auth";
+import { recordRatings } from "../../lib/rating";
 import {
   fetchMatch,
   fetchMatchEvents,
@@ -53,6 +54,14 @@ export default function MatchScorer() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // the S1-26 retry surface: idempotent, so a completion whose rating
+  // write failed in scorePoint's fire-and-forget gets a second chance
+  // every time this screen shows the result
+  const complete = row?.status === "complete" || live?.state.finished === true;
+  useEffect(() => {
+    if (complete) recordRatings(id).catch((e) => console.warn("rating write failed", e));
+  }, [complete, id]);
 
   const act = async (side: Side | null) => {
     if (!live) return;

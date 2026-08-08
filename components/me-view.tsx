@@ -2,6 +2,7 @@
 // form card (win % hero, streak, last-10 dots), partner chemistry bars,
 // recent games in the feed idiom, sign out at the bottom.
 import { StyleSheet, Text, View } from "react-native";
+import { INITIAL_RATING } from "@shuttle/rating";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
 import { Button, Card, ErrorNote, Screen } from "./ui";
@@ -21,6 +22,13 @@ export type ChemistryRow = {
   winPct: number | null;
 };
 
+export type RatingLine = {
+  current: number;
+  provisional: boolean;
+  // rating_after series, oldest first; empty until the first rated game
+  series: readonly number[];
+};
+
 export type MeViewProps =
   | { kind: "loading"; name: string }
   | { kind: "error"; name: string; onRetry: () => void }
@@ -28,13 +36,38 @@ export type MeViewProps =
       kind: "ready";
       name: string;
       detail: string;
+      rating: RatingLine;
       winPct: number | null;
       streak: number;
       lastTen: readonly Form[];
       chemistry: readonly ChemistryRow[];
       recent: readonly MeFeedRow[];
       onSignOut: () => void;
+      onOpenMath: () => void;
     };
+
+// the sparkline as pure Views: one thin bar per rated game, height
+// normalised to the series range, most recent bar in full court green
+function Spark({ series }: { series: readonly number[] }) {
+  const shown = series.slice(-20);
+  const lo = Math.min(...shown);
+  const hi = Math.max(...shown);
+  const span = Math.max(1, hi - lo);
+  return (
+    <View style={styles.spark} testID="rating-spark">
+      {shown.map((r, i) => (
+        <View
+          key={i}
+          style={[
+            styles.sparkBar,
+            { height: 8 + Math.round(((r - lo) / span) * 32) },
+            i === shown.length - 1 && styles.sparkBarNow,
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
 
 const streakLabel = (streak: number) =>
   streak === 0 ? null : streak > 0 ? `W${streak}` : `L${-streak}`;
@@ -67,6 +100,25 @@ export default function MeView(props: MeViewProps) {
         <Text style={styles.headingWord}>{props.name}</Text>
         <Text style={styles.headingDate}>{props.detail}</Text>
       </View>
+      <Card testID="rating-card">
+        <Text style={styles.title}>Rating</Text>
+        <View style={styles.formRow}>
+          <View style={styles.stat}>
+            <Text style={styles.ratingHero}>{props.rating.current}</Text>
+            <Text style={styles.statLabel}>
+              {props.rating.provisional ? "Finding your level" : "Established"}
+            </Text>
+          </View>
+          {props.rating.series.length >= 2 ? (
+            <Spark series={props.rating.series} />
+          ) : (
+            <Text style={styles.quiet}>
+              {`Every player starts at ${INITIAL_RATING}. Your line begins with your first game.`}
+            </Text>
+          )}
+        </View>
+        <Button label="How the rating works" variant="quiet" onPress={props.onOpenMath} />
+      </Card>
       <Card>
         <Text style={styles.title}>Form</Text>
         {props.lastTen.length === 0 ? (
@@ -181,6 +233,15 @@ const styles = StyleSheet.create({
     fontVariant: ["tabular-nums"],
   },
   statLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  ratingHero: {
+    fontFamily: font.mono,
+    fontSize: size.digits / 2,
+    color: color.ink,
+    fontVariant: ["tabular-nums"],
+  },
+  spark: { flex: 1, flexDirection: "row", alignItems: "flex-end", gap: 3, minHeight: 40 },
+  sparkBar: { width: 6, flexShrink: 1, borderRadius: 2, backgroundColor: color.courtWash },
+  sparkBarNow: { backgroundColor: color.court },
   streakW: { color: color.court },
   streakL: { color: color.cork },
   dotRow: { flexDirection: "row", gap: space.sm },

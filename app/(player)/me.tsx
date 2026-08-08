@@ -1,8 +1,14 @@
 // The Me controller: fetch every match the player took part in across
 // groups, resolve names in one profiles query, aggregate with lib/stats.
 import { useCallback, useRef, useState } from "react";
+import { router } from "expo-router";
 import { useFocusEffect } from "expo-router";
-import MeView, { type ChemistryRow, type MeFeedRow } from "../../components/me-view";
+import MeView, {
+  type ChemistryRow,
+  type MeFeedRow,
+  type RatingLine,
+} from "../../components/me-view";
+import { INITIAL_RATING, PROVISIONAL_MATCHES } from "@shuttle/rating";
 import { useAuth } from "../../lib/auth";
 import {
   chemistry,
@@ -54,6 +60,7 @@ export default function Me() {
         lastTen: Form[];
         chemistry: ChemistryRow[];
         recent: MeFeedRow[];
+        rating: RatingLine;
       }
   >({ kind: "loading" });
   const loadSeq = useRef(0);
@@ -64,7 +71,17 @@ export default function Me() {
       if (seq === loadSeq.current) setState(next);
     };
     try {
-      const played = await fetchPlayedMatches(selfId);
+      const [played, ratingRes] = await Promise.all([
+        fetchPlayedMatches(selfId),
+        supabase
+          .from("rating_history")
+          .select("rating_after, created_at")
+          .eq("player_id", selfId)
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true }),
+      ]);
+      if (ratingRes.error) throw ratingRes.error;
+      const series = ratingRes.data.map((r) => r.rating_after);
       const ids = [
         ...new Set(played.flatMap((m) => [...m.partnerIds, ...m.opponentIds])),
       ];
@@ -77,6 +94,11 @@ export default function Me() {
       const name = (id: string) => names.get(id) ?? "Player";
       paint({
         kind: "ready",
+        rating: {
+          current: series.length > 0 ? series[series.length - 1] : INITIAL_RATING,
+          provisional: series.length < PROVISIONAL_MATCHES,
+          series,
+        },
         winPct: winPct(played),
         streak: currentStreak(played),
         lastTen: lastTen(played),
@@ -113,12 +135,14 @@ export default function Me() {
       kind="ready"
       name={heading}
       detail={detail}
+      rating={state.rating}
       winPct={state.winPct}
       streak={state.streak}
       lastTen={state.lastTen}
       chemistry={state.chemistry}
       recent={state.recent}
       onSignOut={() => supabase.auth.signOut()}
+      onOpenMath={() => router.push("/rating-math")}
     />
   );
 }

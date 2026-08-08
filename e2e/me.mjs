@@ -101,7 +101,8 @@ try {
   await page.getByText("Me Runner").waitFor({ timeout: 15000 });
   await page.getByText("No games yet. Score one tonight.").waitFor({ timeout: 15000 });
   await page.getByText("Play 3 games with someone to see your chemistry.").waitFor({ timeout: 15000 });
-  console.log("PASS a new player's Me is fully drawn empty");
+  await page.getByText("Every player starts at 1200. Your line begins with your first game.").waitFor({ timeout: 15000 });
+  console.log("PASS a new player's Me is fully drawn empty, rating included");
 
   // group + fixtures + the hand-computed season
   await page.getByRole("tab", { name: "Session" }).click();
@@ -146,6 +147,33 @@ try {
     at(5)
   );
 
+  // a seeded rating line over the four matches: hero must equal the
+  // LATEST rating_after (1276), spark must render
+  const matchesForRating = await admin
+    .from("matches")
+    .select("id, created_at")
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: true });
+  if (matchesForRating.error) throw matchesForRating.error;
+  const series = [
+    { before: 1200, after: 1232 },
+    { before: 1232, after: 1265 },
+    { before: 1265, after: 1290 },
+    { before: 1290, after: 1276 },
+  ];
+  for (const [i, m] of matchesForRating.data.entries()) {
+    const r = await admin.from("rating_history").insert({
+      player_id: userId,
+      match_id: m.id,
+      rating_before: series[i].before,
+      rating_after: series[i].after,
+      k: 64,
+      created_by: userId,
+      created_at: m.created_at,
+    });
+    if (r.error) throw r.error;
+  }
+
   // the figures, hand-computed: 3 of 4 = 75%, streak L1, Bela 100% of 3.
   // Every assertion scoped to the Me screen: blurred tabs can stay in the
   // DOM and Today renders the same strings through different code.
@@ -163,9 +191,28 @@ try {
   await me.getByText("21–12").waitFor({ timeout: 15000 });
   console.log("PASS the loss reads winners-first with a flipped score");
 
+  // S1-27: the hero equals the latest rating_after, the line renders
+  await me.getByText("1276").waitFor({ timeout: 15000 });
+  await me.getByTestId("rating-spark").waitFor({ timeout: 15000 });
+  await me.getByText("Finding your level").waitFor({ timeout: 15000 });
+  console.log("PASS the rating hero equals the latest rating_after, with a line");
+
   const width = await page.evaluate(() => document.body.scrollWidth);
   if (width > 390) throw new Error(`scrollWidth ${width} > 390`);
   console.log("PASS 390px holds on Me");
+
+  // the published math carries the engine constants
+  await me.getByText("How the rating works").click();
+  const math = page.getByTestId("rating-math");
+  await math.getByText("Everyone starts at 1200. A win adds points to the winner and takes them from the loser. Nothing else moves your number.").waitFor({ timeout: 15000 });
+  await math.getByText(/Yours is 32\./).waitFor({ timeout: 15000 });
+  await math.getByText(/first 10 rated/).waitFor({ timeout: 15000 });
+  await math.getByText(/use 64, so you find/).waitFor({ timeout: 15000 });
+  await math.getByText(/a 400-point gap/).waitFor({ timeout: 15000 });
+  await math.getByText("You are rated against the opposing pair's average. Partners are scored one by one: at the same K, the stronger partner gains less from the same win.").waitFor({ timeout: 15000 });
+  const widthMath = await page.evaluate(() => document.body.scrollWidth);
+  if (widthMath > 390) throw new Error(`math scrollWidth ${widthMath} > 390`);
+  console.log("PASS the math page publishes the engine constants at 390px");
 } catch (e) {
   failed = e;
 } finally {
