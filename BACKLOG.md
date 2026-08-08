@@ -30,7 +30,13 @@ Written by the PM role per BUILD_CHARTER.md, 2026-08-06. One slice = one commit 
    saturating (a blowout moves ratings about twice a squeaker, never more); doubles =
    each individual rated against the opposing team's average, both partners share the
    expected score, deltas applied individually; every constant exported from one module
-   and published in-app. S1-06 is unblocked.
+   and published in-app. S1-06 is unblocked. Reading recorded at S1-06 build: the
+   proposal's "both partners share the expected score" contradicts decision 8's
+   "individual vs opposing team average" for unequal partners; decision 8's letter is
+   implemented (the stronger partner carries a higher expected score and gains less from
+   the same win — self-correcting per player). rating_history is rebuildable, so this is
+   reversible by replay. RAHUL CONFIRMS at or before S1-27, where the math goes public
+   in-app.
 4. Scorer when nobody rests. 4 players, 1 court, all playing: the resting-player rule produces no scorer. Who holds the phone? Needs a CORNERS answer. P1: any session member may score; attribution still recorded.
 5. Shuttle foley. PRODUCT puts it in v0.1; the P1 mandate omits it. Not scheduled here. Rahul decides if it forces its way into P1 or waits for P2.
 6. Phone uniqueness. Schema makes phone unique-nullable. If two family members share a number this breaks. Accept until it bites?
@@ -278,7 +284,7 @@ Gate: 3 real groups, 4 weeks, retention measured. Engines first, each vertical l
 ### S1-26 · api(rating) · Compute and record ratings
 - Deps: S1-25, S1-06, S1-14. Reviewer: code-reviewer.
 - Delivers: on match completion, compute deltas with `@shuttle/rating` and insert one row per participant; a TS `rebuildRatings(playerId)` that replays the player's match history through the engine.
-- Accept: integration: completing a rated doubles match inserts 4 rows whose deltas equal the engine fixture; `rating_replay_equality` test: rebuild from match history equals stored `rating_history`; unrated match types (quick-log opt-out if configured) insert nothing (named test).
+- Accept: integration: completing a rated doubles match inserts 4 rows whose deltas equal the engine fixture; `rating_replay_equality` test: rebuild from match history equals stored `rating_history`; unrated match types (quick-log opt-out if configured) insert nothing (named test); named fixture `bestof_points_deficit_clamps_to_zero`: a bestOf winner with fewer total points than the loser is rated at margin 0 (the engine throws on negative margins by design — the clamp is this caller's contract, per the S1-06 review).
 
 ### S1-27 · ui(rating-line) · Rating on Me + the published math
 - Deps: S1-26, S1-24. Reviewer: interface-design.
