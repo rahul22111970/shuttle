@@ -6,7 +6,8 @@ cd "$(dirname "$0")"
 source ./conn.sh
 
 psql "$DB_URL" -qAtX -c "create table if not exists public.schema_migrations (
-  filename text primary key, applied_at timestamptz not null default now());"
+  filename text primary key, applied_at timestamptz not null default now());
+revoke all on table public.schema_migrations from anon, authenticated;"
 
 for f in migrations/*.sql; do
   name=$(basename "$f")
