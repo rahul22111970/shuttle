@@ -41,7 +41,10 @@ const navTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: Platform.OS === "web" ? "transparent" : color.fog0,
+    // OPAQUE on purpose: this container is what hides the inactive tab
+    // scenes stacked beneath the active one — transparent here made every
+    // tab bleed through its neighbours. The var still flips it per theme.
+    background: color.fog0,
   },
 };
 
