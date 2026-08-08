@@ -2,11 +2,12 @@
 // form card (win % hero, streak, last-10 dots), partner chemistry bars,
 // recent games in the feed idiom, sign out at the bottom.
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { INITIAL_RATING } from "@shuttle/rating";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
-import { AppBar, Button, Card, ErrorNote, Screen } from "./ui";
+import type { ThemeChoice } from "../lib/theme";
+import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
 
 export type MeFeedRow = {
   id: string;
@@ -43,6 +44,9 @@ export type MeViewProps =
       lastTen: readonly Form[];
       chemistry: readonly ChemistryRow[];
       recent: readonly MeFeedRow[];
+      // the choice only changes web today; native ships light until EAS dark
+      themeChoice: ThemeChoice;
+      onTheme: (c: ThemeChoice) => void;
       onSignOut: () => void;
       onOpenMath: () => void;
       // pilot-only captain tools; null hides the card entirely
@@ -243,6 +247,24 @@ export default function MeView(props: MeViewProps) {
           ) : null}
         </Card>
       ) : null}
+      <Card>
+        <Text style={styles.title}>Appearance</Text>
+        <View style={styles.themeRow}>
+          {(["auto", "light", "dark"] as const).map((c) => (
+            <Pressable
+              key={c}
+              accessibilityRole="button"
+              accessibilityState={{ selected: props.themeChoice === c }}
+              onPress={() => props.onTheme(c)}
+            >
+              <Chip
+                label={c.charAt(0).toUpperCase() + c.slice(1)}
+                active={props.themeChoice === c}
+              />
+            </Pressable>
+          ))}
+        </View>
+      </Card>
       <Button label="Sign out" variant="quiet" onPress={props.onSignOut} />
     </Screen>
   );
@@ -278,6 +300,7 @@ const styles = StyleSheet.create({
   dotW: { backgroundColor: color.court },
   dotL: { backgroundColor: color.inkWash2 },
   dotD: { backgroundColor: color.line },
+  themeRow: { flexDirection: "row", gap: space.sm },
   chemRow: { gap: space.xs },
   chemHead: { flexDirection: "row", justifyContent: "space-between" },
   chemName: { flex: 1, fontFamily: font.bold, fontSize: 13.5, color: color.ink },

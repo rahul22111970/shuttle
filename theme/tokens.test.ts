@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
-import { color, radius, size, space, tracking } from "./tokens";
+import { PALETTES, color, radius, size, space, tracking } from "./tokens";
 
 // The whole palette is the contract with DESIGN.md, not just the famous five.
 // A typo in courtDeep or either wash would otherwise ship silently.
 it("matches the palette in DESIGN.md exactly", () => {
-  expect(color).toEqual({
+  expect(PALETTES.light).toEqual({
     fog0: "#F7F9FA",
     fog1: "#F1F4F5",
     fog2: "#ECEFF1",
@@ -24,6 +24,18 @@ it("matches the palette in DESIGN.md exactly", () => {
     inkWash: "rgba(20,24,27,0.05)",
     inkWash2: "rgba(20,24,27,0.12)",
   });
+});
+
+// Dark is the same contract with different values: a key missing there
+// would leave that token stuck on its light value after the flip.
+it("dark carries exactly the light keys", () => {
+  expect(Object.keys(PALETTES.dark).sort()).toEqual(Object.keys(PALETTES.light).sort());
+});
+
+// jest runs as native, where color is the static light palette; on web each
+// key becomes var(--sh-*) and the root layout supplies both palettes.
+it("color resolves to the light palette off web", () => {
+  expect(color).toEqual(PALETTES.light);
 });
 
 it("holds the scale decisions", () => {

@@ -10,6 +10,7 @@ import MeView, {
 } from "../../components/me-view";
 import { INITIAL_RATING, PROVISIONAL_MATCHES } from "@shuttle/rating";
 import { useAuth } from "../../lib/auth";
+import { getThemeChoice, setThemeChoice, type ThemeChoice } from "../../lib/theme";
 import {
   chemistry,
   currentStreak,
@@ -64,6 +65,7 @@ export default function Me() {
         captainGroup: { id: string; name: string } | null;
       }
   >({ kind: "loading" });
+  const [themeChoice, setTheme] = useState<ThemeChoice>(getThemeChoice);
   const loadSeq = useRef(0);
   const [wipe, setWipe] = useState<"idle" | "wiping" | "done" | "error">("idle");
 
@@ -169,6 +171,11 @@ export default function Me() {
       lastTen={state.lastTen}
       chemistry={state.chemistry}
       recent={state.recent}
+      themeChoice={themeChoice}
+      onTheme={(c) => {
+        setThemeChoice(c);
+        setTheme(c);
+      }}
       onSignOut={() => supabase.auth.signOut()}
       onOpenMath={() => router.push("/rating-math")}
       captainGroup={state.captainGroup}
