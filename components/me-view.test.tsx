@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, within } from "@testing-library/react-native";
 import MeView from "./me-view";
 
 const noop = () => {};
@@ -14,6 +14,8 @@ const ready = (over: Record<string, unknown> = {}) =>
     lastTen: [],
     chemistry: [],
     recent: [],
+    themeChoice: "auto",
+    onTheme: noop,
     onSignOut: noop,
     onOpenMath: noop,
     ...over,
@@ -107,6 +109,15 @@ it("recent games use the winners-first idiom with a badge", async () => {
   expect(screen.getByText("Rahul & Sai d. Gautam & Dev")).toBeTruthy();
   expect(screen.getByText("21–17")).toBeTruthy();
   expect(screen.getByText("W")).toBeTruthy();
+});
+
+it("the appearance chips render and the active one matches the choice", async () => {
+  await render(<MeView {...ready({ themeChoice: "dark" })} />);
+  expect(screen.getByText("Appearance")).toBeTruthy();
+  expect(screen.getByText("Auto")).toBeTruthy();
+  expect(screen.getByText("Light")).toBeTruthy();
+  const active = screen.getByRole("button", { selected: true });
+  expect(within(active).getByText("Dark")).toBeTruthy();
 });
 
 it("labels are actions, never Submit or OK", async () => {
