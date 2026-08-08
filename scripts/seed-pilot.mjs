@@ -4,7 +4,10 @@
 // captain's phone signs in. Run from app/:
 //
 //   node scripts/seed-pilot.mjs --captain you@example.com \
-//     --group "Saturday Gang" "Name One" "Name Two" ...
+//     --group "Saturday Gang" "Name One:9876543210" "Name Two" ...
+//
+// A :phone suffix (10-digit Indian) is stored on the stub profile so a
+// future real signup can be matched by number.
 //
 // Idempotent: an existing group of that name is reused, an existing stub
 // of the same display name is skipped.
@@ -52,12 +55,12 @@ let { data: group } = await admin
   .from("groups")
   .select("id, name")
   .eq("name", groupName)
-  .eq("created_by", captain.id)
+  .eq("captain_id", captain.id)
   .maybeSingle();
 if (!group) {
   const created = await admin
     .from("groups")
-    .insert({ name: groupName, created_by: captain.id })
+    .insert({ name: groupName, captain_id: captain.id })
     .select("id, name")
     .single();
   if (created.error) throw created.error;
@@ -78,7 +81,9 @@ const { data: existing, error: exErr } = await admin
 if (exErr) throw exErr;
 const have = new Set(existing.map((r) => r.profiles.display_name));
 
-for (const name of names) {
+for (const entry of names) {
+  const [name, rawPhone] = entry.split(":");
+  const phone = rawPhone ? `+91${rawPhone.replace(/\D/g, "").slice(-10)}` : null;
   if (have.has(name)) {
     console.log(`skip ${name} (already in the group)`);
     continue;
@@ -91,13 +96,13 @@ for (const name of names) {
   if (u.error) throw u.error;
   const p = await admin
     .from("profiles")
-    .insert({ id: u.data.user.id, display_name: name, account_type: "player" });
+    .insert({ id: u.data.user.id, display_name: name, account_type: "player", phone });
   if (p.error) throw p.error;
   const m = await admin
     .from("group_members")
     .insert({ group_id: group.id, player_id: u.data.user.id });
   if (m.error) throw m.error;
-  console.log(`seeded ${name}`);
+  console.log(`seeded ${name}${phone ? " " + phone : ""}`);
 }
 
 const { count } = await admin
