@@ -4,4 +4,6 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 set -a; source .env.local; source .secrets.env; INTEGRATION=1; set +a
-npx jest --testMatch '**/*.itest.ts'
+# --runInBand: shared hosted project, serial by doctrine (CLAUDE.md); a
+# parallel first run flaked, exact contention unproven and not worth chasing
+npx jest --runInBand --testMatch '**/*.itest.ts'
