@@ -2,7 +2,7 @@
 // action: the next session, the money position, the recent games feed with
 // the quick-log door.
 import { StyleSheet, Text, View } from "react-native";
-import { color, layout, size, space } from "../theme/tokens";
+import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import { rupees } from "./ledger-view";
 import { Button, Card, ErrorNote, Screen } from "./ui";
 
@@ -126,11 +126,11 @@ export default function TodayView(props: TodayViewProps) {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  copy: { fontSize: size.body, color: color.ink2 },
-  quiet: { fontSize: size.label, color: color.ink3 },
-  owe: { fontSize: size.lead, color: color.cork },
-  owed: { fontSize: size.lead, color: color.court },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
+  quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  owe: { fontFamily: font.body, fontSize: size.lead, color: color.cork },
+  owed: { fontFamily: font.body, fontSize: size.lead, color: color.court },
   feedRow: {
     gap: space.xs,
     borderTopWidth: 1,
@@ -138,6 +138,6 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     maxWidth: layout.column,
   },
-  feedTeams: { fontSize: size.body, color: color.ink2 },
-  feedScore: { fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
+  feedTeams: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
+  feedScore: { fontFamily: font.mono, fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
 });

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { parseIndianPhone } from "../lib/phone";
 import { upsertProfile, type AccountType, type Profile } from "../lib/profile";
-import { color, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
+import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 
 const TYPES: { value: AccountType; label: string; detail: string }[] = [
   { value: "player", label: "Player", detail: "Play nights, score games, settle up." },
@@ -105,14 +105,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: space.lg,
     padding: space.xl,
-    backgroundColor: color.fog0,
+    backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
   },
   mark: {
+    fontFamily: font.display,
     fontSize: size.display,
     letterSpacing: size.display * tracking.label,
     color: color.ink,
   },
-  signedInAs: { fontSize: size.label, color: color.ink3 },
+  signedInAs: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   signOut: { color: color.court },
   typeRow: { flexDirection: "row", gap: space.md, alignSelf: "stretch", maxWidth: layout.column, marginHorizontal: "auto" },
   typeCard: {
@@ -127,8 +128,8 @@ const styles = StyleSheet.create({
     backgroundColor: color.card,
   },
   typeCardOn: { borderColor: color.court, backgroundColor: color.courtWash },
-  typeLabel: { fontSize: size.body, color: color.ink },
-  typeDetail: { fontSize: size.label, color: color.ink2 },
+  typeLabel: { fontFamily: font.body, fontSize: size.body, color: color.ink },
+  typeDetail: { fontFamily: font.body, fontSize: size.label, color: color.ink2 },
   input: {
     alignSelf: "stretch",
     maxWidth: layout.column,
@@ -137,6 +138,7 @@ const styles = StyleSheet.create({
     borderColor: color.lineStrong,
     borderRadius: radius.control,
     padding: space.md,
+    fontFamily: font.body,
     fontSize: size.body,
     color: color.ink,
     backgroundColor: color.card,
@@ -148,6 +150,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
   },
   buttonBusy: { backgroundColor: color.courtDeep },
-  buttonText: { color: color.chalk, fontSize: size.body },
-  error: { fontSize: size.body, color: color.cork, textAlign: "center" },
+  buttonText: { fontFamily: font.medium, color: color.chalk, fontSize: size.body },
+  error: { fontFamily: font.body, fontSize: size.body, color: color.cork, textAlign: "center" },
 });

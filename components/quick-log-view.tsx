@@ -1,7 +1,7 @@
 // The quick log, presentational and pure. One screen: tap players onto
 // sides, type the final score, one button that says what it will do.
 import { StyleSheet, Text, TextInput, View, Pressable } from "react-native";
-import { color, radius, size, space } from "../theme/tokens";
+import { color, font, radius, size, space, tracking } from "../theme/tokens";
 import { Button, Card, ErrorNote, Screen } from "./ui";
 
 export type PickRow = {
@@ -139,8 +139,8 @@ export default function QuickLogView(props: QuickLogViewProps) {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  quiet: { fontSize: size.label, color: color.ink3 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   pickWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   pick: {
     borderWidth: 1,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: color.card,
   },
   pickOn: { borderColor: color.court, backgroundColor: color.courtWash },
-  pickName: { fontSize: size.body, color: color.ink2 },
+  pickName: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   pickNameOn: { color: color.courtDeep },
   scoreRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   scoreBox: {
@@ -160,11 +160,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.control,
     paddingVertical: space.sm,
     paddingHorizontal: space.lg,
+    fontFamily: font.mono,
     fontSize: size.display,
     color: color.ink,
     minWidth: 72,
     textAlign: "center",
     fontVariant: ["tabular-nums"],
   },
-  scoreDash: { fontSize: size.display, color: color.ink3 },
+  scoreDash: { fontFamily: font.body, fontSize: size.display, color: color.ink3 },
 });

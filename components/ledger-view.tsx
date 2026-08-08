@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { perHeadShares } from "@shuttle/split";
 import type { Member } from "../lib/session";
-import { color, radius, size, space } from "../theme/tokens";
+import { color, font, radius, size, space, tracking } from "../theme/tokens";
 import { Button, Card, Chip, ErrorNote } from "./ui";
 
 export type DebtorRow = {
@@ -256,9 +256,9 @@ export default function LedgerView(props: LedgerViewProps) {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  copy: { fontSize: size.body, color: color.ink2 },
-  quiet: { fontSize: size.label, color: color.ink3 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
+  quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   input: {
     borderWidth: 1,
     borderColor: color.lineStrong,
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   presetOn: { borderColor: color.court, backgroundColor: color.courtWash },
-  presetText: { fontSize: size.body, color: color.ink2 },
+  presetText: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   presetTextOn: { color: color.courtDeep },
   amount: { flex: 1 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
@@ -288,8 +288,8 @@ const styles = StyleSheet.create({
     gap: space.sm,
     flexWrap: "wrap",
   },
-  debtorName: { fontSize: size.body, color: color.ink, flexShrink: 1 },
-  collect: { fontSize: size.body, color: color.court },
+  debtorName: { fontFamily: font.body, fontSize: size.body, color: color.ink, flexShrink: 1 },
+  collect: { fontFamily: font.body, fontSize: size.body, color: color.court },
   settle: {
     borderWidth: 1,
     borderColor: color.lineStrong,
@@ -298,5 +298,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   settleOff: { opacity: 0.4 },
-  settleText: { fontSize: size.label, color: color.ink2 },
+  settleText: { fontFamily: font.body, fontSize: size.label, color: color.ink2 },
 });

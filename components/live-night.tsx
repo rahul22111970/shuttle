@@ -15,7 +15,7 @@ import {
   type Session,
 } from "../lib/session";
 import { supabase } from "../lib/supabase";
-import { color, layout, radius, size, space } from "../theme/tokens";
+import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import LedgerPanel from "./ledger-panel";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
 import { Button, Card, Chip, ErrorNote, Screen } from "./ui";
@@ -231,9 +231,9 @@ export default function LiveNight({
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  liveNote: { fontSize: size.body, color: color.court },
-  quiet: { fontSize: size.label, color: color.ink3 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  liveNote: { fontFamily: font.body, fontSize: size.body, color: color.court },
+  quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",

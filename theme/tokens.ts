@@ -42,6 +42,15 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 // now, umpire console at P3).
 export const size = { label: 11, body: 15, lead: 19, display: 23, hero: 29, digits: 96 } as const;
 
+// The type voices, from DESIGN.md: Archivo for display, Inter for body,
+// IBM Plex Mono (tabular) for every live numeral. Loaded in the root layout.
+export const font = {
+  display: "Archivo_900Black",
+  body: "Inter_400Regular",
+  medium: "Inter_500Medium",
+  mono: "IBMPlexMono_500Medium",
+} as const;
+
 // The one form-column width. Screens centre it; 390 minus padding fits inside.
 export const layout = { column: 360 } as const;
 

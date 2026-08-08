@@ -1,7 +1,7 @@
 import { Redirect, Tabs } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../lib/auth";
-import { color, size, space, tracking } from "../../theme/tokens";
+import { color, font, size, space, tracking } from "../../theme/tokens";
 
 export default function PlayerLayout() {
   const { ready, session, profile, profileError } = useAuth();
@@ -23,7 +23,7 @@ export default function PlayerLayout() {
         tabBarActiveTintColor: color.court,
         tabBarInactiveTintColor: color.ink3,
         tabBarStyle: { backgroundColor: color.card, borderTopColor: color.line },
-        tabBarLabelStyle: { fontSize: size.body },
+        tabBarLabelStyle: { fontFamily: font.medium, fontSize: size.body },
         tabBarIconStyle: { display: "none" },
       }}
     >
@@ -41,9 +41,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: space.xl,
-    backgroundColor: color.fog0,
+    backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
   },
   mark: {
+    fontFamily: font.display,
     fontSize: size.display,
     letterSpacing: size.display * tracking.label,
     color: color.ink,

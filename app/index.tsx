@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Redirect } from "expo-router";
 import Onboarding from "../components/onboarding";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
-import { color, layout, radius, size, space, tracking } from "../theme/tokens";
+import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 
 export default function Index() {
   const { ready, session, profile, profileError, reloadProfile, setProfile } = useAuth();
@@ -94,14 +94,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: space.lg,
     padding: space.xl,
-    backgroundColor: color.fog0,
+    backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
   },
   mark: {
+    fontFamily: font.display,
     fontSize: size.display,
     letterSpacing: size.display * tracking.label,
     color: color.ink,
   },
-  body: { fontSize: size.body, color: color.ink2, textAlign: "center" },
+  body: { fontFamily: font.body, fontSize: size.body, color: color.ink2, textAlign: "center" },
   input: {
     alignSelf: "stretch",
     maxWidth: layout.column,
@@ -110,6 +111,7 @@ const styles = StyleSheet.create({
     borderColor: color.lineStrong,
     borderRadius: radius.control,
     padding: space.md,
+    fontFamily: font.body,
     fontSize: size.body,
     color: color.ink,
     backgroundColor: color.card,
@@ -120,6 +122,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingHorizontal: space.xl,
   },
-  buttonText: { color: color.chalk, fontSize: size.body },
-  error: { fontSize: size.body, color: color.cork, textAlign: "center" },
+  buttonText: { fontFamily: font.medium, color: color.chalk, fontSize: size.body },
+  error: { fontFamily: font.body, fontSize: size.body, color: color.cork, textAlign: "center" },
 });

@@ -3,7 +3,7 @@
 // result; a live card says resume (S1-15 carry). Standings are the night's
 // running tally, tallest first.
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { color, layout, radius, shadow, size, space } from "../theme/tokens";
+import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 import { Button, Card, ErrorNote } from "./ui";
 
 export type CourtCard = {
@@ -143,8 +143,8 @@ export default function RoundsView(props: RoundsViewProps) {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  copy: { fontSize: size.body, color: color.ink2 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   court: {
     boxShadow: [...shadow.ring],
     borderRadius: radius.control,
@@ -158,13 +158,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: space.sm,
   },
-  pair: { fontSize: size.body, color: color.ink, flexShrink: 1 },
+  pair: { fontFamily: font.body, fontSize: size.body, color: color.ink, flexShrink: 1 },
   pairRight: { textAlign: "right" },
-  vs: { fontSize: size.label, color: color.ink3 },
+  vs: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   // the score is the hero wherever it appears
-  finalScore: { fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
-  courtLabel: { fontSize: size.label, color: color.ink3, letterSpacing: 2 },
-  courtNote: { fontSize: size.label, color: color.court },
+  finalScore: { fontFamily: font.body, fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
+  courtLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3, letterSpacing: 2 },
+  courtNote: { fontFamily: font.body, fontSize: size.label, color: color.court },
   scorer: {
     fontSize: size.label,
     color: color.courtDeep,
@@ -180,6 +180,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     maxWidth: layout.column,
   },
-  standingName: { fontSize: size.body, color: color.ink2 },
-  standingPoints: { fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
+  standingName: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
+  standingPoints: { fontFamily: font.body, fontSize: size.body, color: color.ink, fontVariant: ["tabular-nums"] },
 });

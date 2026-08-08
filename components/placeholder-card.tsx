@@ -1,5 +1,5 @@
 import { StyleSheet, Text } from "react-native";
-import { color, size } from "../theme/tokens";
+import { color, font, size, tracking } from "../theme/tokens";
 import { Card, Screen } from "./ui";
 
 // The P0 placeholder every not-yet-real tab shows: a card that tells the
@@ -16,6 +16,6 @@ export default function PlaceholderCard({ title, copy }: { title: string; copy: 
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  copy: { fontSize: size.body, color: color.ink2 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
 });

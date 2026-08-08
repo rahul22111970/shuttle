@@ -2,9 +2,9 @@
 // digits, the service dot on whoever serves, the scorer chip naming who
 // holds the phone. Match-complete reads GAMES, never score — a finished
 // standard match zeroes its score field (S1-02).
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import type { MatchState, Side } from "@shuttle/score";
-import { color, radius, size, space } from "../theme/tokens";
+import { color, font, radius, size, space, tracking } from "../theme/tokens";
 import { Button, Card, ErrorNote, Screen, Wordmark } from "./ui";
 
 export type ScorerViewProps =
@@ -134,7 +134,7 @@ export default function ScorerView(props: ScorerViewProps) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: color.fog0, padding: space.md, gap: space.md },
+  root: { flex: 1, backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0, padding: space.md, gap: space.md },
   zones: { flex: 1, flexDirection: "row", gap: space.md },
   zone: {
     flex: 1,
@@ -153,17 +153,18 @@ const styles = StyleSheet.create({
     borderRadius: space.sm / 2,
     backgroundColor: color.court,
   },
-  sideLabel: { fontSize: size.label, color: color.ink3, letterSpacing: 2 },
+  sideLabel: { fontFamily: font.body, fontSize: size.label, color: color.ink3, letterSpacing: 2 },
   digits: {
+    fontFamily: font.mono,
     fontSize: size.digits,
     fontVariant: ["tabular-nums"],
     color: color.ink,
   },
   digitsPending: { color: color.ink3 },
-  games: { fontSize: size.body, color: color.ink2, textAlign: "center" },
-  quiet: { fontSize: size.label, color: color.ink3, textAlign: "center" },
-  title: { fontSize: size.display, color: color.ink },
-  gamesLine: { fontSize: size.lead, color: color.ink2, fontVariant: ["tabular-nums"] },
+  games: { fontFamily: font.body, fontSize: size.body, color: color.ink2, textAlign: "center" },
+  quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3, textAlign: "center" },
+  title: { fontFamily: font.display, fontSize: size.display, color: color.ink, letterSpacing: size.display * tracking.display },
+  gamesLine: { fontFamily: font.mono, fontSize: size.lead, color: color.ink2, fontVariant: ["tabular-nums"] },
   footer: {
     flexDirection: "row",
     alignItems: "center",
@@ -187,5 +188,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
   },
   undoOff: { opacity: 0.4 },
-  undoText: { fontSize: size.body, color: color.ink2 },
+  undoText: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
 });

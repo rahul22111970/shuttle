@@ -1,9 +1,9 @@
 // The shared primitives every screen was quietly duplicating (S0-10 review
 // note, consolidated at S1-10): centered fog screen, ring-shadow card,
 // court button, wordmark, error line. Tokens only, here and nowhere else.
-import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
-import { color, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
+import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 
 export function Screen({ children }: { children: ReactNode }) {
   return <View style={styles.screen}>{children}</View>;
@@ -39,10 +39,11 @@ export function Button({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: off }}
-      style={[
+      style={({ pressed }) => [
         variant === "primary" ? styles.button : styles.buttonQuiet,
         busy && variant === "primary" && styles.buttonBusy,
         disabled && styles.buttonDisabled,
+        pressed && styles.pressed,
       ]}
       onPress={onPress}
       disabled={off}
@@ -72,20 +73,24 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     gap: space.lg,
     padding: space.xl,
-    backgroundColor: color.fog0,
+    paddingTop: space.xxl + space.lg,
+    // web paints the fog gradient on <body> (root layout); a solid fill here
+    // would cover it
+    backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,
   },
   mark: {
+    fontFamily: font.display,
     fontSize: size.display,
     letterSpacing: size.display * tracking.label,
     color: color.ink,
+    textTransform: "uppercase",
   },
   card: {
-    alignSelf: "stretch",
+    width: "100%",
     maxWidth: layout.column,
-    marginHorizontal: "auto",
     boxShadow: [...shadow.ring],
     borderRadius: radius.card,
     padding: space.xl,
@@ -100,7 +105,7 @@ const styles = StyleSheet.create({
   },
   buttonBusy: { backgroundColor: color.courtDeep },
   buttonDisabled: { opacity: 0.4 },
-  buttonText: { color: color.chalk, fontSize: size.body },
+  buttonText: { fontFamily: font.medium, color: color.chalk, fontSize: size.body },
   buttonQuiet: {
     borderWidth: 1,
     borderColor: color.lineStrong,
@@ -108,8 +113,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingHorizontal: space.xl,
   },
-  buttonQuietText: { color: color.ink2, fontSize: size.body },
-  error: { fontSize: size.body, color: color.cork, textAlign: "center" },
+  buttonQuietText: { fontFamily: font.medium, color: color.ink2, fontSize: size.body },
+  error: { fontFamily: font.body, fontSize: size.body, color: color.cork, textAlign: "center" },
+  pressed: { transform: [{ scale: 0.97 }] },
   chipBase: {
     borderWidth: 1,
     borderColor: color.line,
@@ -119,6 +125,6 @@ const styles = StyleSheet.create({
     backgroundColor: color.card,
   },
   chipActive: { borderColor: color.court, backgroundColor: color.courtWash },
-  chipLabel: { fontSize: size.body, color: color.ink2 },
+  chipLabel: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   chipLabelActive: { color: color.courtDeep },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, Text } from "react-native";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
-import { color, size } from "../../theme/tokens";
+import { color, font, size } from "../../theme/tokens";
 import { Button, Card, Screen } from "../../components/ui";
 
 export default function Me() {
@@ -21,6 +21,6 @@ export default function Me() {
 }
 
 const styles = StyleSheet.create({
-  name: { fontSize: size.lead, color: color.ink },
-  detail: { fontSize: size.body, color: color.ink2 },
+  name: { fontFamily: font.body, fontSize: size.lead, color: color.ink },
+  detail: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
 });

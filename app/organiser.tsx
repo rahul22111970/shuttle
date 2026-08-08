@@ -2,7 +2,7 @@ import { StyleSheet, Text } from "react-native";
 import { Redirect } from "expo-router";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
-import { color, size } from "../theme/tokens";
+import { color, font, size, tracking } from "../theme/tokens";
 import { Button, Card, Screen, Wordmark } from "../components/ui";
 
 export default function Organiser() {
@@ -33,6 +33,6 @@ export default function Organiser() {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  copy: { fontSize: size.body, color: color.ink2 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
 });

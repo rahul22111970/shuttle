@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Member, Roster, Session } from "../lib/session";
-import { color, layout, radius, size, space } from "../theme/tokens";
+import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import { Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
 
 export type SessionViewProps =
@@ -200,9 +200,9 @@ export default function SessionView(props: SessionViewProps) {
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: size.lead, color: color.ink },
-  copy: { fontSize: size.body, color: color.ink2 },
-  quiet: { fontSize: size.label, color: color.ink3 },
+  title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
+  copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
+  quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   input: {
     borderWidth: 1,
     borderColor: color.lineStrong,
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
   },
   presetBusy: { opacity: 0.4 },
-  presetText: { fontSize: size.body, color: color.ink },
+  presetText: { fontFamily: font.body, fontSize: size.body, color: color.ink },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
