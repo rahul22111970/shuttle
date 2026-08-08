@@ -24,12 +24,11 @@ export type SessionViewProps =
       members: readonly Member[];
       roster: Roster;
       selfId: string;
-      busyAction: "in" | "out" | "start" | "score" | null;
+      busyAction: "in" | "out" | "start" | null;
       actionError: boolean;
       onRsvpIn: () => void;
       onRsvpOut: () => void;
       onStartNight: () => void;
-      onScoreGame: () => void;
     };
 
 // Planning presets instead of a date picker: four honest choices cover a
@@ -156,9 +155,6 @@ export default function SessionView(props: SessionViewProps) {
       <Card>
         <Text style={styles.title}>{props.groupName}</Text>
         <Text style={styles.copy}>{sessionDateLabel(session.starts_at)}</Text>
-        {session.status === "live" ? (
-          <Text style={styles.liveNote}>The night is on.</Text>
-        ) : null}
         <View style={styles.chipRow}>
           {members.map((m) => (
             <View
@@ -177,15 +173,6 @@ export default function SessionView(props: SessionViewProps) {
       </Card>
       {props.actionError ? (
         <ErrorNote>That did not go through. Try again.</ErrorNote>
-      ) : null}
-      {session.status === "live" ? (
-        <Button
-          label="Score a game"
-          busy={busyAction === "score"}
-          busyLabel="Setting up…"
-          disabled={busyAction !== null && busyAction !== "score"}
-          onPress={props.onScoreGame}
-        />
       ) : null}
       {session.status === "planned" ? (
         selfIn ? (
@@ -223,7 +210,6 @@ const styles = StyleSheet.create({
   title: { fontSize: size.lead, color: color.ink },
   copy: { fontSize: size.body, color: color.ink2 },
   quiet: { fontSize: size.label, color: color.ink3 },
-  liveNote: { fontSize: size.body, color: color.court },
   input: {
     borderWidth: 1,
     borderColor: color.lineStrong,
