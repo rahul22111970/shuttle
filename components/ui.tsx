@@ -79,6 +79,7 @@ export function Button({
   busyLabel,
   disabled = false,
   variant = "primary",
+  tone,
 }: {
   label: string;
   onPress: () => void;
@@ -88,6 +89,8 @@ export function Button({
   disabled?: boolean;
   // quiet = the bordered secondary; one focal point per view
   variant?: "primary" | "quiet";
+  // cork = destructive; only meaningful on the quiet variant
+  tone?: "cork";
 }) {
   const off = busy || disabled;
   return (
@@ -97,13 +100,19 @@ export function Button({
       style={({ pressed }) => [
         variant === "primary" ? styles.button : styles.buttonQuiet,
         busy && variant === "primary" && styles.buttonBusy,
+        variant === "quiet" && tone === "cork" && styles.buttonQuietCork,
         disabled && styles.buttonDisabled,
         pressed && styles.pressed,
       ]}
       onPress={onPress}
       disabled={off}
     >
-      <Text style={variant === "primary" ? styles.buttonText : styles.buttonQuietText}>
+      <Text
+        style={[
+          variant === "primary" ? styles.buttonText : styles.buttonQuietText,
+          variant === "quiet" && tone === "cork" && styles.buttonQuietCorkText,
+        ]}
+      >
         {busy ? busyLabel ?? label : label}
       </Text>
     </Pressable>
@@ -197,6 +206,8 @@ const styles = StyleSheet.create({
     alignSelf: "stretch",
   },
   buttonQuietText: { fontFamily: font.bold, color: color.ink, fontSize: 14 },
+  buttonQuietCork: { backgroundColor: color.corkWash, borderColor: color.corkWash },
+  buttonQuietCorkText: { color: color.cork },
   error: { fontFamily: font.body, fontSize: size.body, color: color.cork, textAlign: "center" },
   pressed: { transform: [{ scale: 0.97 }] },
   chipBase: {

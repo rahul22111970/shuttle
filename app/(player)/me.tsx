@@ -61,9 +61,11 @@ export default function Me() {
         chemistry: ChemistryRow[];
         recent: MeFeedRow[];
         rating: RatingLine;
+        captainGroup: { id: string; name: string } | null;
       }
   >({ kind: "loading" });
   const loadSeq = useRef(0);
+  const [wipe, setWipe] = useState<"idle" | "wiping" | "done" | "error">("idle");
 
   const load = useCallback(async () => {
     const seq = ++loadSeq.current;
@@ -71,7 +73,7 @@ export default function Me() {
       if (seq === loadSeq.current) setState(next);
     };
     try {
-      const [played, ratingRes] = await Promise.all([
+      const [played, ratingRes, captainRes] = await Promise.all([
         fetchPlayedMatches(selfId),
         supabase
           .from("rating_history")
@@ -79,8 +81,10 @@ export default function Me() {
           .eq("player_id", selfId)
           .order("created_at", { ascending: true })
           .order("id", { ascending: true }),
+        supabase.from("groups").select("id, name").eq("captain_id", selfId).maybeSingle(),
       ]);
       if (ratingRes.error) throw ratingRes.error;
+      if (captainRes.error) throw captainRes.error;
       const series = ratingRes.data.map((r) => r.rating_after);
       const ids = [
         ...new Set(played.flatMap((m) => [...m.partnerIds, ...m.opponentIds])),
@@ -111,6 +115,7 @@ export default function Me() {
         recent: played
           .slice(0, 5)
           .map((m) => feedRow(m, name, profile?.display_name ?? "You")),
+        captainGroup: captainRes.data,
       });
     } catch {
       paint({ kind: "error" });
@@ -121,6 +126,29 @@ export default function Me() {
     useCallback(() => {
       load();
     }, [load])
+  );
+
+  // pilot-only: POST the captain's wipe to the server function, then reload
+  const wipeGroup = useCallback(
+    async (groupId: string) => {
+      setWipe("wiping");
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) throw new Error("no session");
+        const res = await fetch("/api/captain-reset", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ groupId }),
+        });
+        if (!res.ok) throw new Error(`wipe failed: ${res.status}`);
+        setWipe("done");
+        load();
+      } catch {
+        setWipe("error");
+      }
+    },
+    [load]
   );
 
   if (!profile) return null; // the layout guard has already redirected
@@ -143,6 +171,13 @@ export default function Me() {
       recent={state.recent}
       onSignOut={() => supabase.auth.signOut()}
       onOpenMath={() => router.push("/rating-math")}
+      captainGroup={state.captainGroup}
+      wiping={wipe === "wiping"}
+      wipeDone={wipe === "done"}
+      wipeError={wipe === "error"}
+      onWipe={() => {
+        if (state.captainGroup) wipeGroup(state.captainGroup.id);
+      }}
     />
   );
 }

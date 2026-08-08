@@ -1,6 +1,7 @@
 // The Me tab, presentational and pure. The player's name up top, the
 // form card (win % hero, streak, last-10 dots), partner chemistry bars,
 // recent games in the feed idiom, sign out at the bottom.
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { INITIAL_RATING } from "@shuttle/rating";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
@@ -44,6 +45,12 @@ export type MeViewProps =
       recent: readonly MeFeedRow[];
       onSignOut: () => void;
       onOpenMath: () => void;
+      // pilot-only captain tools; null hides the card entirely
+      captainGroup: { id: string; name: string } | null;
+      wiping: boolean;
+      wipeDone: boolean;
+      wipeError: boolean;
+      onWipe: () => void;
     };
 
 // the sparkline as pure Views: one thin bar per rated game, height
@@ -73,6 +80,9 @@ const streakLabel = (streak: number) =>
   streak === 0 ? null : streak > 0 ? `W${streak}` : `L${-streak}`;
 
 export default function MeView(props: MeViewProps) {
+  // two-tap confirm for the captain wipe; the second label restates the destruction
+  const [wipeArmed, setWipeArmed] = useState(false);
+
   if (props.kind === "loading") {
     return (
       <Screen>
@@ -204,6 +214,35 @@ export default function MeView(props: MeViewProps) {
           ))
         )}
       </Card>
+      {props.captainGroup ? (
+        <Card testID="captain-tools">
+          <Text style={styles.title}>Captain tools</Text>
+          <Text style={styles.quiet}>Pilot-only. This tool leaves before the app store.</Text>
+          <Button
+            label={
+              wipeArmed
+                ? `Wipe ${props.captainGroup.name}'s games and money · tap again`
+                : `Wipe ${props.captainGroup.name}'s games and money`
+            }
+            variant="quiet"
+            tone="cork"
+            busy={props.wiping}
+            busyLabel="Wiping…"
+            onPress={() => {
+              if (wipeArmed) {
+                setWipeArmed(false);
+                props.onWipe();
+              } else {
+                setWipeArmed(true);
+              }
+            }}
+          />
+          {props.wipeDone ? <Text style={styles.wipeDone}>Wiped. Fresh night.</Text> : null}
+          {props.wipeError ? (
+            <ErrorNote>The wipe failed partway. Tell the builder.</ErrorNote>
+          ) : null}
+        </Card>
+      ) : null}
       <Button label="Sign out" variant="quiet" onPress={props.onSignOut} />
     </Screen>
   );
@@ -213,6 +252,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  wipeDone: { fontFamily: font.body, fontSize: size.body, color: color.court, textAlign: "center" },
   formRow: { flexDirection: "row", gap: space.xl },
   stat: { gap: 2 },
   statNumber: {
