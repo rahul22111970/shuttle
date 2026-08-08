@@ -4,8 +4,10 @@
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
+import { PRESETS } from "@shuttle/score";
 import { foley } from "../lib/foley";
-import { generateRound, talliesForSession, type RoundGeneratedPayload } from "../lib/rounds";
+import { generateRound, nextGame, talliesForSession, type RoundGeneratedPayload } from "../lib/rounds";
+import { startMatch, type Participant } from "../lib/scoring";
 import {
   checkIn,
   rsvpOut,
@@ -46,9 +48,10 @@ export default function LiveNight({
   const [checkedIn, setCheckedIn] = useState<readonly string[]>([]);
   const [matches, setMatches] = useState<Map<string, MatchLite>>(new Map());
   const [standings, setStandings] = useState<StandingRow[]>([]);
-  const [busy, setBusy] = useState<"round" | "checkin" | "score" | "mark" | null>(null);
+  const [busy, setBusy] = useState<"round" | "checkin" | "score" | "mark" | "deal" | null>(null);
   const [roundError, setRoundError] = useState(false);
   const [nightError, setNightError] = useState(false);
+  const [dealError, setDealError] = useState(false);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -95,15 +98,17 @@ export default function LiveNight({
 
   // round failures draw inside the rounds card; check-in and score-a-game
   // failures draw under the night card, so no state can fail silently
-  const act = (which: "round" | "checkin" | "score" | "mark", fn: () => Promise<unknown>) => async () => {
+  const act = (which: "round" | "checkin" | "score" | "mark" | "deal", fn: () => Promise<unknown>) => async () => {
     setBusy(which);
     setRoundError(false);
     setNightError(false);
+    setDealError(false);
     try {
       await fn();
       await load();
     } catch {
       if (which === "round") setRoundError(true);
+      else if (which === "deal") setDealError(true);
       else setNightError(true);
     } finally {
       setBusy(null);
@@ -170,6 +175,16 @@ export default function LiveNight({
   };
 
   const checkedInSet = new Set(checkedIn);
+
+  // games played tonight: every match a player was seated in, live or complete
+  const gamesPlayed = new Map<string, number>();
+  for (const m of matches.values())
+    for (const p of m.match_participants ?? [])
+      gamesPlayed.set(p.player_id, (gamesPlayed.get(p.player_id) ?? 0) + 1);
+  const deal = nextGame(checkedIn, gamesPlayed);
+  const pairingLine = deal
+    ? `${deal.a.map(name).join(" & ")} v ${deal.b.map(name).join(" & ")}`
+    : null;
 
   if (!loaded && !failed) {
     return (
@@ -261,6 +276,40 @@ export default function LiveNight({
               </Card>
             );
           })()}
+          {checkedIn.length === 3 ? (
+            <Card>
+              <Text style={styles.title}>Next game</Text>
+              <Text style={styles.quiet}>One more for a game.</Text>
+            </Card>
+          ) : deal ? (
+            <Card>
+              <Text style={styles.title}>Next game</Text>
+              <Text style={styles.dealNames}>{pairingLine}</Text>
+              <Text style={styles.quiet}>Fewest games first, by arrival.</Text>
+              <Button
+                label="Start this game"
+                busy={busy === "deal"}
+                busyLabel="Setting up…"
+                onPress={act("deal", async () => {
+                  const participants: Participant[] = [
+                    ...deal.a.map((player_id) => ({ player_id, side: "a" as const })),
+                    ...deal.b.map((player_id) => ({ player_id, side: "b" as const })),
+                  ];
+                  const live = await startMatch(
+                    groupId,
+                    PRESETS.casual1x21,
+                    participants,
+                    session.id
+                  );
+                  foley.serve();
+                  router.push(`/match/${live.matchId}`);
+                })}
+              />
+              {dealError ? (
+                <ErrorNote>That did not go through. Try again.</ErrorNote>
+              ) : null}
+            </Card>
+          ) : null}
           <RoundsView {...roundsProps()} />
           <LedgerPanel
             groupId={groupId}
@@ -289,6 +338,7 @@ const styles = StyleSheet.create({
   liveRow: { gap: space.sm, paddingVertical: space.xs },
   liveRowBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   liveRowNames: { flex: 1, fontFamily: font.semibold, fontSize: 14, color: color.ink },
+  dealNames: { fontFamily: font.semibold, fontSize: 14, color: color.ink },
   liveRowScore: {
     fontFamily: font.monoBold,
     fontSize: 15,

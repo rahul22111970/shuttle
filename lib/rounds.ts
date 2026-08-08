@@ -30,6 +30,31 @@ import { supabase } from "./supabase";
 
 export const ROUND_POINTS = 24;
 
+// Deal the next game to whoever is standing around now. Rules:
+// - fewer than 2 checked in: null.
+// - exactly 2: singles, first arrival vs second.
+// - exactly 3: null — a doubles court needs 4, and singles among 3 would
+//   bench one arbitrarily; the UI says so instead.
+// - 4+: the FOUR with the fewest games played tonight (default 0), ties
+//   broken by arrival order (earlier in checkedInOrder first). The sorted
+//   picks split 1st+4th vs 2nd+3rd so the two least-played land on
+//   opposite sides. Deterministic on purpose: no randomness, so the same
+//   roster always deals the same game — testable and argues less at the
+//   court.
+export function nextGame(
+  checkedInOrder: readonly string[],
+  gamesPlayed: ReadonlyMap<string, number>
+): { a: string[]; b: string[] } | null {
+  if (checkedInOrder.length < 2 || checkedInOrder.length === 3) return null;
+  if (checkedInOrder.length === 2)
+    return { a: [checkedInOrder[0]], b: [checkedInOrder[1]] };
+  const picks = checkedInOrder
+    .map((id, arrived) => ({ id, games: gamesPlayed.get(id) ?? 0, arrived }))
+    .sort((x, y) => x.games - y.games || x.arrived - y.arrived)
+    .slice(0, 4);
+  return { a: [picks[0].id, picks[3].id], b: [picks[1].id, picks[2].id] };
+}
+
 export type RoundFormat = "americano" | "mexicano";
 
 export type RoundGeneratedPayload = {
