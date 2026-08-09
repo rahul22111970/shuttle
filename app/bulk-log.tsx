@@ -9,7 +9,7 @@ import { parseBulk } from "../lib/bulk";
 import { foley } from "../lib/foley";
 import { quickLog, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
-import { listGroupMembers, listGroups, type Member } from "../lib/session";
+import { listGroupMembers, listGroups, nextSession, type Member } from "../lib/session";
 
 const back = () => (router.canGoBack() ? router.back() : router.replace("/session"));
 
@@ -19,7 +19,7 @@ export default function BulkLog() {
     | { kind: "loading" }
     | { kind: "error" }
     | { kind: "no-group" }
-    | { kind: "ready"; groupId: string; members: Member[] }
+    | { kind: "ready"; groupId: string; liveSessionId: string | null; members: Member[] }
   >({ kind: "loading" });
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,16 @@ export default function BulkLog() {
         setState({ kind: "no-group" });
         return;
       }
-      setState({ kind: "ready", groupId, members: await listGroupMembers(groupId) });
+      const [members, sess] = await Promise.all([
+        listGroupMembers(groupId),
+        session ? Promise.resolve(null) : nextSession(groupId),
+      ]);
+      setState({
+        kind: "ready",
+        groupId,
+        liveSessionId: sess && sess.status === "live" ? sess.id : null,
+        members,
+      });
     } catch {
       setState({ kind: "error" });
     }
@@ -80,7 +89,7 @@ export default function BulkLog() {
               PRESETS.casual1x21,
               participants,
               g.score,
-              session || undefined
+              session || state.liveSessionId || undefined
             );
           } catch {
             setPartial(`Added ${i} of ${n}. Line ${g.line} failed — the rest are untouched.`);

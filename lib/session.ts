@@ -184,6 +184,9 @@ export async function nextSession(groupId: string): Promise<Session | null> {
     .select("*")
     .eq("group_id", groupId)
     .in("status", ["planned", "live"])
+    // "live" sorts before "planned": a running night always wins over a
+    // future plan, whatever its starts_at
+    .order("status", { ascending: true })
     .order("starts_at", { ascending: true })
     .limit(1)
     .maybeSingle<Session>();

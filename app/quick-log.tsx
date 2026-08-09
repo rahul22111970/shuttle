@@ -9,7 +9,7 @@ import { foley } from "../lib/foley";
 import { useAuth } from "../lib/auth";
 import { quickLog, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
-import { listGroupMembers, listGroups, type Member } from "../lib/session";
+import { listGroupMembers, listGroups, nextSession, type Member } from "../lib/session";
 import { supabase } from "../lib/supabase";
 
 const backToToday = () =>
@@ -26,7 +26,7 @@ export default function QuickLog() {
     | { kind: "loading" }
     | { kind: "error" }
     | { kind: "no-group" }
-    | { kind: "ready"; groupId: string; players: PickRow[] }
+    | { kind: "ready"; groupId: string; liveSessionId: string | null; players: PickRow[] }
   >({ kind: "loading" });
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
@@ -42,7 +42,7 @@ export default function QuickLog() {
         setState({ kind: "no-group" });
         return;
       }
-      const [members, recent] = await Promise.all([
+      const [members, recent, sess] = await Promise.all([
         listGroupMembers(group.id),
         supabase
           .from("matches")
@@ -51,6 +51,7 @@ export default function QuickLog() {
           .eq("status", "complete")
           .order("created_at", { ascending: false })
           .limit(10),
+        sessionParam ? Promise.resolve(null) : nextSession(group.id),
       ]);
       if (recent.error) throw recent.error;
       // recency rank: first appearance across the latest matches wins
@@ -69,7 +70,12 @@ export default function QuickLog() {
           name: m.name,
           side: m.id === selfId ? ("a" as const) : ("none" as const),
         }));
-      setState({ kind: "ready", groupId: group.id, players });
+      setState({
+        kind: "ready",
+        groupId: group.id,
+        liveSessionId: sess && sess.status === "live" ? sess.id : null,
+        players,
+      });
     } catch {
       setState({ kind: "error" });
     }
@@ -127,7 +133,7 @@ export default function QuickLog() {
             PRESETS.casual1x21,
             participants,
             { a: Number(scoreA), b: Number(scoreB) },
-            sessionParam || undefined
+            sessionParam || state.liveSessionId || undefined
           );
           foley.drive();
           // back to the Today scene we came from (its focus effect refetches);
