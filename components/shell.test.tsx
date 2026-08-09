@@ -1,11 +1,20 @@
 import { render, screen } from "@testing-library/react-native";
-import Compete from "../app/(player)/compete";
+import StatsView from "./stats-view";
 
-// The S0-10 placeholder tabs: Compete tells the P2 truth verbatim per the
-// spec. Session became real at S1-10, Today at S1-21; their states live in
-// session-view.test.tsx and today-view.test.tsx.
+// The tab shell's screens are real now: Session at S1-10, Today at S1-21,
+// Stats here. Their states live in their own *-view.test.tsx files; this
+// smoke keeps the last tab honest — a fresh user's Stats teaches, never 404s.
 
-it("Compete states the P2 truth", async () => {
-  await render(<Compete />);
-  expect(screen.getByText("Friendly tournaments arrive later.")).toBeTruthy();
+it("Stats greets a fresh user with the teaching empty state", async () => {
+  await render(
+    <StatsView
+      kind="ready"
+      groupName={null}
+      board={[]}
+      duos={[]}
+      highlights={{ mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null }}
+    />
+  );
+  expect(screen.getByText("Stats")).toBeTruthy();
+  expect(screen.getByText("Play a night and this page writes itself.")).toBeTruthy();
 });

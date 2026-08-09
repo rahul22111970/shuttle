@@ -73,8 +73,8 @@ try {
   await player.getByText("Session", { exact: true }).click();
   // S1-10 made Session real: a fresh user sees the no-group empty state
   await player.getByText("No group yet").waitFor({ timeout: 15000 });
-  await player.getByText("Compete", { exact: true }).click();
-  await player.getByText("Friendly tournaments arrive later.").waitFor({ timeout: 15000 });
+  await player.getByRole("tab", { name: "Stats" }).click();
+  await player.getByText("Play a night and this page writes itself.").waitFor({ timeout: 15000 });
   await player.getByText("Me", { exact: true }).click();
   await player.getByText("Shell Player").waitFor({ timeout: 15000 });
   console.log("PASS tabs navigate and carry their copy");

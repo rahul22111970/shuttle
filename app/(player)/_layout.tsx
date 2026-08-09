@@ -44,8 +44,8 @@ export default function PlayerLayout() {
       <Tabs.Screen
         name="compete"
         options={{
-          title: "Compete",
-          tabBarIcon: ({ color: c }) => <Feather name="award" size={20} color={c} />,
+          title: "Stats",
+          tabBarIcon: ({ color: c }) => <Feather name="bar-chart-2" size={20} color={c} />,
         }}
       />
       <Tabs.Screen
