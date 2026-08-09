@@ -86,10 +86,11 @@ export async function appendSessionEvent(
   return data;
 }
 
-export const rsvpIn = (sessionId: string) => appendSessionEvent(sessionId, "rsvp_in");
 // forPlayer marks SOMEONE ELSE (stub players cannot sign in; whoever holds
-// a phone marks arrivals). The actor stays honest — actor_id is the writer,
-// the subject rides in the payload and replay reads it there.
+// a phone marks arrivals and RSVPs). The actor stays honest — actor_id is
+// the writer, the subject rides in the payload and replay reads it there.
+export const rsvpIn = (sessionId: string, forPlayer?: string) =>
+  appendSessionEvent(sessionId, "rsvp_in", forPlayer ? { player_id: forPlayer } : {});
 export const rsvpOut = (sessionId: string, forPlayer?: string) =>
   appendSessionEvent(sessionId, "rsvp_out", forPlayer ? { player_id: forPlayer } : {});
 export const checkIn = (sessionId: string, forPlayer?: string) =>

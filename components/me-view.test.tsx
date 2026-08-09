@@ -19,6 +19,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     onSignOut: noop,
     onOpenMath: noop,
     captainGroup: null,
+    adminGroups: null,
     wiping: false,
     wipeDone: false,
     wipeError: false,
@@ -164,4 +165,24 @@ it("the appearance chips render and the active one matches the choice", async ()
 it("labels are actions, never Submit or OK", async () => {
   await render(<MeView {...ready()} />);
   expect(screen.queryByText(/^(Submit|OK)$/i)).toBeNull();
+});
+
+it("the admin card lists every group only when adminGroups is set", async () => {
+  const r = await render(<MeView {...ready()} />);
+  expect(screen.queryByText("Every group · admin")).toBeNull();
+  r.unmount();
+  await render(
+    <MeView
+      {...ready({
+        adminGroups: [
+          { id: "g1", name: "Bad-minton", captain: "Rahul Pareek", players: 8, roster: "Baibhab, Gautam", games: 13, lastGame: "2026-08-09T04:00:00Z" },
+          { id: "g2", name: "Week Day Group", captain: "Rahul Pareek", players: 3, roster: "Sai Kiran", games: 0, lastGame: null },
+        ],
+      })}
+    />
+  );
+  expect(screen.getByText("Every group · admin")).toBeTruthy();
+  expect(screen.getByText("Bad-minton")).toBeTruthy();
+  expect(screen.getByText("8 players · 13 games")).toBeTruthy();
+  expect(screen.getByText("3 players · 0 games")).toBeTruthy();
 });

@@ -23,11 +23,15 @@ export type SessionViewProps =
       members: readonly Member[];
       roster: Roster;
       selfId: string;
-      busyAction: "in" | "out" | "start" | null;
+      // the captain marks anyone in or out and can cancel the night
+      captain: boolean;
+      busyAction: "in" | "out" | "start" | "mark" | "cancel" | null;
       actionError: boolean;
       onRsvpIn: () => void;
       onRsvpOut: () => void;
+      onToggleMember: (playerId: string, currentlyIn: boolean) => void;
       onStartNight: () => void;
+      onCancelNight: () => void;
     };
 
 // Suggestions fill the picker; the picker is the truth; one button plans.
@@ -63,6 +67,7 @@ function sessionDateLabel(iso: string): string {
 
 export default function SessionView(props: SessionViewProps) {
   const [when, setWhen] = useState<string>(() => suggestions()[0]?.local ?? toLocalInput(new Date(Date.now() + 3600000)));
+  const [cancelArmed, setCancelArmed] = useState(false);
 
   if (props.kind === "loading") {
     return <Text style={styles.quiet}>Loading the night…</Text>;
@@ -115,7 +120,7 @@ export default function SessionView(props: SessionViewProps) {
     );
   }
 
-  const { session, members, roster, selfId, busyAction } = props;
+  const { session, members, roster, selfId, busyAction, captain } = props;
   const attending = new Set(roster.attending);
   const selfIn = attending.has(selfId);
 
@@ -125,10 +130,25 @@ export default function SessionView(props: SessionViewProps) {
         <Text style={styles.title}>Next night</Text>
         <Text style={styles.sessionWhen}>{sessionDateLabel(session.starts_at)}</Text>
         <View style={styles.chipRow}>
-          {members.map((m) => (
-            <Chip key={m.id} label={m.name} active={attending.has(m.id)} />
-          ))}
+          {members.map((m) =>
+            captain ? (
+              <Pressable
+                key={m.id}
+                accessibilityRole="button"
+                accessibilityLabel={`Mark ${m.name} ${attending.has(m.id) ? "out" : "in"}`}
+                disabled={busyAction === "mark"}
+                onPress={() => props.onToggleMember(m.id, attending.has(m.id))}
+              >
+                <Chip label={m.name} active={attending.has(m.id)} />
+              </Pressable>
+            ) : (
+              <Chip key={m.id} label={m.name} active={attending.has(m.id)} />
+            )
+          )}
         </View>
+        {captain ? (
+          <Text style={styles.quiet}>Tap a name to mark them in.</Text>
+        ) : null}
         <Text style={styles.quiet}>
           {roster.attending.length} in · {members.length} in the group
         </Text>
@@ -137,32 +157,55 @@ export default function SessionView(props: SessionViewProps) {
         <ErrorNote>That did not go through. Try again.</ErrorNote>
       ) : null}
       {session.status === "planned" ? (
-        selfIn ? (
-          <>
+        <>
+          {selfIn ? (
+            <>
+              <Button
+                label="Start the night"
+                busy={busyAction === "start"}
+                busyLabel="Starting…"
+                disabled={busyAction !== null && busyAction !== "start"}
+                onPress={props.onStartNight}
+              />
+              <Button
+                label="Can't make it"
+                variant="quiet"
+                busy={busyAction === "out"}
+                busyLabel="Dropping out…"
+                disabled={busyAction !== null && busyAction !== "out"}
+                onPress={props.onRsvpOut}
+              />
+            </>
+          ) : (
             <Button
-              label="Start the night"
-              busy={busyAction === "start"}
-              busyLabel="Starting…"
-              disabled={busyAction !== null && busyAction !== "start"}
-              onPress={props.onStartNight}
+              label="I'm in"
+              busy={busyAction === "in"}
+              busyLabel="Joining…"
+              onPress={props.onRsvpIn}
             />
+          )}
+          {captain ? (
             <Button
-              label="Can't make it"
+              label={
+                cancelArmed
+                  ? "Cancel this night · it disappears for everyone · tap again"
+                  : "Cancel this night"
+              }
               variant="quiet"
-              busy={busyAction === "out"}
-              busyLabel="Dropping out…"
-              disabled={busyAction !== null && busyAction !== "out"}
-              onPress={props.onRsvpOut}
+              tone="cork"
+              busy={busyAction === "cancel"}
+              busyLabel="Cancelling…"
+              onPress={() => {
+                if (!cancelArmed) {
+                  setCancelArmed(true);
+                  return;
+                }
+                setCancelArmed(false);
+                props.onCancelNight();
+              }}
             />
-          </>
-        ) : (
-          <Button
-            label="I'm in"
-            busy={busyAction === "in"}
-            busyLabel="Joining…"
-            onPress={props.onRsvpIn}
-          />
-        )
+          ) : null}
+        </>
       ) : null}
     </>
   );

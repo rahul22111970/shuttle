@@ -58,11 +58,14 @@ it("renders the roster with attending chips and the right call to action", async
       ]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u2"
+      captain={false}
       busyAction={null}
       actionError={false}
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onToggleMember={noop}
+      onCancelNight={noop}
     />
   );
   expect(screen.getByText("Asha")).toBeTruthy();
@@ -79,11 +82,14 @@ it("offers the out and start-night actions once you are in", async () => {
       members={[{ id: "u1", name: "Asha" }]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u1"
+      captain={false}
       busyAction={null}
       actionError={false}
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onToggleMember={noop}
+      onCancelNight={noop}
     />
   );
   expect(screen.getByText("Can't make it")).toBeTruthy();
@@ -98,15 +104,74 @@ it("draws the inline action error without losing the roster", async () => {
       members={[{ id: "u1", name: "Asha" }]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u1"
+      captain={false}
       busyAction={null}
       actionError={true}
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onToggleMember={noop}
+      onCancelNight={noop}
     />
   );
   expect(screen.getByText("That did not go through. Try again.")).toBeTruthy();
   expect(screen.getByText("Asha")).toBeTruthy();
+});
+
+it("the captain taps names to mark them in or out; members cannot", async () => {
+  const onToggleMember = jest.fn();
+  await render(
+    <SessionView
+      kind="session"
+      session={session}
+      members={[
+        { id: "u1", name: "Asha" },
+        { id: "u2", name: "Bela" },
+      ]}
+      roster={{ attending: ["u1"], checkedIn: [] }}
+      selfId="u1"
+      captain={true}
+      busyAction={null}
+      actionError={false}
+      onRsvpIn={noop}
+      onRsvpOut={noop}
+      onStartNight={noop}
+      onToggleMember={onToggleMember}
+      onCancelNight={noop}
+    />
+  );
+  expect(screen.getByText("Tap a name to mark them in.")).toBeTruthy();
+  const user = userEvent.setup();
+  await user.press(screen.getByLabelText("Mark Bela in"));
+  expect(onToggleMember).toHaveBeenCalledWith("u2", false);
+  await user.press(screen.getByLabelText("Mark Asha out"));
+  expect(onToggleMember).toHaveBeenCalledWith("u1", true);
+});
+
+it("cancelling the night arms first and fires only on the second tap", async () => {
+  const onCancelNight = jest.fn();
+  await render(
+    <SessionView
+      kind="session"
+      session={session}
+      members={[{ id: "u1", name: "Asha" }]}
+      roster={{ attending: [], checkedIn: [] }}
+      selfId="u1"
+      captain={true}
+      busyAction={null}
+      actionError={false}
+      onRsvpIn={noop}
+      onRsvpOut={noop}
+      onStartNight={noop}
+      onToggleMember={noop}
+      onCancelNight={onCancelNight}
+    />
+  );
+  const user = userEvent.setup();
+  await user.press(screen.getByText("Cancel this night"));
+  expect(onCancelNight).not.toHaveBeenCalled();
+  await user.press(screen.getByText(/it disappears for everyone/));
+  expect(onCancelNight).toHaveBeenCalledTimes(1);
 });
 
 it("labels are actions, never Submit or OK, in any state", async () => {
@@ -118,11 +183,14 @@ it("labels are actions, never Submit or OK, in any state", async () => {
       members={[{ id: "u1", name: "A" }]}
       roster={{ attending: selfIn ? ["u1"] : [], checkedIn: [] }}
       selfId="u1"
+      captain={false}
       busyAction={null}
       actionError={false}
       onRsvpIn={noop}
       onRsvpOut={noop}
       onStartNight={noop}
+      onToggleMember={noop}
+      onCancelNight={noop}
     />
   );
   const states = [

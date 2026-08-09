@@ -6,6 +6,7 @@ import { useLive } from "../lib/use-live";
 import SessionView from "./session-view";
 import LiveNight from "./live-night";
 import {
+  closeSession,
   createSession,
   getRoster,
   listGroupMembers,
@@ -28,7 +29,9 @@ type Data = {
 export default function NightSection({ group, selfId }: { group: Group; selfId: string }) {
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
-  const [busyAction, setBusyAction] = useState<"in" | "out" | "start" | "plan" | null>(null);
+  const [busyAction, setBusyAction] = useState<
+    "in" | "out" | "start" | "plan" | "mark" | "cancel" | null
+  >(null);
   const [actionError, setActionError] = useState(false);
 
   const load = useCallback(async () => {
@@ -51,7 +54,10 @@ export default function NightSection({ group, selfId }: { group: Group; selfId: 
 
   // action failures stay inline: the screen keeps its data and says what
   // failed; the full error state is reserved for load() failures
-  const act = (which: "in" | "out" | "start" | "plan", fn: () => Promise<unknown>) => async () => {
+  const act = (
+    which: "in" | "out" | "start" | "plan" | "mark" | "cancel",
+    fn: () => Promise<unknown>
+  ) => async () => {
     setBusyAction(which);
     setActionError(false);
     try {
@@ -96,11 +102,20 @@ export default function NightSection({ group, selfId }: { group: Group; selfId: 
       members={data.members}
       roster={data.roster}
       selfId={selfId}
+      captain={group.captain_id === selfId}
       busyAction={busyAction === "plan" ? null : busyAction}
       actionError={actionError}
       onRsvpIn={act("in", () => rsvpIn(data.session!.id))}
       onRsvpOut={act("out", () => rsvpOut(data.session!.id))}
+      onToggleMember={(playerId, currentlyIn) =>
+        act("mark", () =>
+          currentlyIn
+            ? rsvpOut(data.session!.id, playerId)
+            : rsvpIn(data.session!.id, playerId)
+        )()
+      }
       onStartNight={act("start", () => startNight(data.session!.id))}
+      onCancelNight={act("cancel", () => closeSession(data.session!.id))}
     />
   );
 }

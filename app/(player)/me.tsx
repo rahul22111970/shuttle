@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { router } from "expo-router";
 import { useFocusEffect } from "expo-router";
 import MeView, {
+  type AdminGroupRow,
   type ChemistryRow,
   type MeFeedRow,
   type RatingLine,
@@ -65,6 +66,7 @@ export default function Me() {
         recent: MeFeedRow[];
         rating: RatingLine;
         captainGroup: { id: string; name: string } | null;
+        adminGroups: AdminGroupRow[] | null;
       }
   >({ kind: "loading" });
   const [themeChoice, setTheme] = useState<ThemeChoice>(getThemeChoice);
@@ -109,6 +111,18 @@ export default function Me() {
         names = new Map(res.data.map((r) => [r.id, r.display_name]));
       }
       const name = (id: string) => names.get(id) ?? "Player";
+      // pilot-only oversight: the server says 403 to everyone but the
+      // admin account, and the card simply never renders for them
+      let adminGroups: AdminGroupRow[] | null = null;
+      try {
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const r = await fetch("/api/admin-overview", {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        if (r.ok) adminGroups = (await r.json()).groups;
+      } catch {
+        adminGroups = null;
+      }
       paint({
         kind: "ready",
         rating: {
@@ -130,6 +144,7 @@ export default function Me() {
           .slice(0, 5)
           .map((m) => feedRow(m, name, profile?.display_name ?? "You")),
         captainGroup: captainRes.data,
+        adminGroups,
       });
     } catch {
       paint({ kind: "error" });
@@ -191,6 +206,7 @@ export default function Me() {
       onSignOut={() => supabase.auth.signOut()}
       onOpenMath={() => router.push("/rating-math")}
       captainGroup={state.captainGroup}
+      adminGroups={state.adminGroups}
       wiping={wipe === "wiping"}
       wipeDone={wipe === "done"}
       wipeError={wipe === "error"}

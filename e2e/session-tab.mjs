@@ -23,7 +23,7 @@ const admin = createClient(pub.EXPO_PUBLIC_SUPABASE_URL, sec.SUPABASE_ADMIN_KEY,
 
 const stamp = Date.now();
 const email = `e2e-session-${stamp}@shuttle-e2e.test`;
-let userId, server, browser, failed, groupId;
+let userId, fixtureId, server, browser, failed, groupId;
 
 try {
   server = spawn("node", ["e2e/serve.mjs"], { stdio: "ignore" });
@@ -58,6 +58,19 @@ try {
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
   console.log("PASS group created from the empty state, room opens on Night");
 
+  // a second member so the captain has someone to mark in
+  const g0 = await admin.from("groups").select("id").eq("name", `E2E Gang ${stamp}`).single();
+  if (g0.error) throw g0.error;
+  groupId = g0.data.id;
+  const fx = await admin.auth.admin.createUser({
+    email: `e2e-session-f-${stamp}@shuttle-e2e.test`,
+    email_confirm: true,
+  });
+  if (fx.error) throw fx.error;
+  fixtureId = fx.data.user.id;
+  await admin.from("profiles").insert({ id: fixtureId, display_name: "Bela", account_type: "player" });
+  await admin.from("group_members").insert({ group_id: groupId, player_id: fixtureId });
+
   // plan via preset: Tomorrow always exists; Today filters out after 7 pm
   // and this project builds at 21:30 IST
   await page.getByText("Tomorrow 7 pm").click();
@@ -65,9 +78,26 @@ try {
   await page.getByText(/in the group/).waitFor({ timeout: 15000 });
   console.log("PASS session planned via preset");
 
+  // the captain marks someone ELSE in with a tap on their name
+  await page.getByLabel("Mark Bela in").click();
+  await page.getByText("1 in · 2 in the group").waitFor({ timeout: 15000 });
+  await page.getByLabel("Mark Bela out").waitFor({ timeout: 15000 });
+  console.log("PASS the captain marks another player in by tapping the chip");
+
+  // cancel takes two taps and returns the section to planning
+  await page.getByText("Cancel this night", { exact: true }).click();
+  await page.getByText(/it disappears for everyone/).click();
+  await page.getByText("Plan a night").waitFor({ timeout: 15000 });
+  console.log("PASS the captain cancelled the night with a confirming tap");
+
+  // plan again for the rest of the flow
+  await page.getByText("Tomorrow 7 pm").click();
+  await page.getByText(/^Plan .*\d/).click();
+  await page.getByText(/in the group/).waitFor({ timeout: 15000 });
+
   // RSVP and see the chip flip
   await page.getByText("I'm in").click();
-  await page.getByText("1 in · 1 in the group").waitFor({ timeout: 15000 });
+  await page.getByText("1 in · 2 in the group").waitFor({ timeout: 15000 });
   console.log("PASS RSVP lands and the roster shows the member");
 
   const width = await page.evaluate(() => document.body.scrollWidth);
@@ -82,10 +112,6 @@ try {
   await page.getByText("Plan a night").waitFor({ timeout: 15000 });
   console.log("PASS closing the night returns the tab to planning");
 
-  // capture group id for cleanup
-  const g = await admin.from("groups").select("id").eq("name", `E2E Gang ${stamp}`).single();
-  if (g.error) throw g.error;
-  groupId = g.data.id;
 } catch (e) {
   failed = e;
 } finally {
@@ -102,8 +128,9 @@ try {
     const { error } = await admin.from("groups").delete().eq("id", groupId);
     if (error) console.error("cleanup group:", error.message);
   }
-  if (userId) {
-    const { error } = await admin.auth.admin.deleteUser(userId);
+  for (const id of [userId, fixtureId]) {
+    if (!id) continue;
+    const { error } = await admin.auth.admin.deleteUser(id);
     if (error) console.error("cleanup user:", error.message);
   }
 }

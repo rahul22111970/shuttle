@@ -33,6 +33,16 @@ export type RatingLine = {
   groupName: string | null;
 };
 
+export type AdminGroupRow = {
+  id: string;
+  name: string;
+  captain: string;
+  players: number;
+  roster: string;
+  games: number;
+  lastGame: string | null;
+};
+
 export type MeViewProps =
   | { kind: "loading"; name: string }
   | { kind: "error"; name: string; onRetry: () => void }
@@ -53,6 +63,8 @@ export type MeViewProps =
       onOpenMath: () => void;
       // pilot-only captain tools; null hides the card entirely
       captainGroup: { id: string; name: string } | null;
+      // pilot-only app-wide oversight; null hides the card entirely
+      adminGroups: readonly AdminGroupRow[] | null;
       wiping: boolean;
       wipeDone: boolean;
       wipeError: boolean;
@@ -249,6 +261,36 @@ export default function MeView(props: MeViewProps) {
           ) : null}
         </Card>
       ) : null}
+      {props.adminGroups ? (
+        <Card testID="admin-overview">
+          <Text style={styles.title}>Every group · admin</Text>
+          <Text style={styles.quiet}>Pilot-only. Only you see this.</Text>
+          {props.adminGroups.map((g) => (
+            <View key={g.id} style={styles.adminRow}>
+              <View style={styles.adminHead}>
+                <Text style={styles.adminName} numberOfLines={1}>
+                  {g.name}
+                </Text>
+                <Text style={styles.adminFigure}>
+                  {g.players} {g.players === 1 ? "player" : "players"} · {g.games}{" "}
+                  {g.games === 1 ? "game" : "games"}
+                </Text>
+              </View>
+              <Text style={styles.quiet} numberOfLines={2}>
+                {`${g.captain} runs it · ${g.roster}`}
+              </Text>
+              {g.lastGame ? (
+                <Text style={styles.quiet}>
+                  {`Last game ${new Date(g.lastGame).toLocaleDateString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                  })}`}
+                </Text>
+              ) : null}
+            </View>
+          ))}
+        </Card>
+      ) : null}
       <Card>
         <Text style={styles.title}>Appearance</Text>
         <View style={styles.themeRow}>
@@ -277,6 +319,15 @@ const styles = StyleSheet.create({
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   wipeDone: { fontFamily: font.body, fontSize: size.body, color: color.court, textAlign: "center" },
+  adminRow: { gap: 2, borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.sm },
+  adminHead: { flexDirection: "row", justifyContent: "space-between", gap: space.sm },
+  adminName: { flex: 1, fontFamily: font.bold, fontSize: 13.5, color: color.ink },
+  adminFigure: {
+    fontFamily: font.mono,
+    fontSize: 12.5,
+    color: color.ink2,
+    fontVariant: ["tabular-nums"],
+  },
   formRow: { flexDirection: "row", gap: space.xl },
   stat: { gap: 2 },
   statNumber: {
