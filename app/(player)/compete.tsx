@@ -3,6 +3,7 @@
 // in one load; lib/analytics turns them into the season, stats-view draws it.
 import { useCallback, useRef, useState } from "react";
 import type { MatchState } from "@shuttle/score";
+import { router } from "expo-router";
 import StatsView, {
   type BoardRow,
   type DuoRow,
@@ -118,6 +119,7 @@ export default function Stats() {
       board={state.board}
       duos={state.duos}
       highlights={state.highlights}
+      onOpenLog={() => router.push("/games")}
     />
   );
 }

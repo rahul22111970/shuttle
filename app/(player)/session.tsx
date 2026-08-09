@@ -110,6 +110,7 @@ export default function SessionTab() {
         captainId={data.group.captain_id}
         members={data.members}
         selfId={selfId}
+        onClosed={load}
       />
     );
   }

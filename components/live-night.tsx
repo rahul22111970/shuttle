@@ -12,6 +12,7 @@ import { generateRound, nextGame, talliesForSession, type RoundGeneratedPayload 
 import { startMatch, type Participant } from "../lib/scoring";
 import {
   checkIn,
+  closeSession,
   rsvpOut,
   fetchSessionEvents,
   rosterFromEvents,
@@ -43,6 +44,7 @@ export default function LiveNight({
   captainId,
   members,
   selfId,
+  onClosed,
 }: {
   session: Session;
   groupId: string;
@@ -50,6 +52,7 @@ export default function LiveNight({
   captainId: string;
   members: readonly Member[];
   selfId: string;
+  onClosed: () => void;
 }) {
   const [rounds, setRounds] = useState<RoundGeneratedPayload[]>([]);
   const [checkedIn, setCheckedIn] = useState<readonly string[]>([]);
@@ -65,6 +68,8 @@ export default function LiveNight({
   const [addPhone, setAddPhone] = useState("");
   const [addBusy, setAddBusy] = useState(false);
   const [addNote, setAddNote] = useState<string | null>(null);
+  const [closeArmed, setCloseArmed] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const name = useCallback(
@@ -437,6 +442,34 @@ export default function LiveNight({
             checkedIn={checkedIn}
             selfId={selfId}
           />
+          {selfId === captainId ? (
+            <Button
+              label={
+                closeArmed
+                  ? "Close the night · no more games join it · tap again"
+                  : "Close the night"
+              }
+              variant="quiet"
+              busy={closing}
+              busyLabel="Closing…"
+              onPress={async () => {
+                if (!closeArmed) {
+                  setCloseArmed(true);
+                  return;
+                }
+                setClosing(true);
+                try {
+                  await closeSession(session.id);
+                  onClosed();
+                } catch {
+                  setNightError(true);
+                } finally {
+                  setClosing(false);
+                  setCloseArmed(false);
+                }
+              }}
+            />
+          ) : null}
         </>
       )}
     </Screen>

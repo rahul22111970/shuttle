@@ -20,6 +20,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     groupName: "Tuesday Gang",
     board: [],
     duos: [],
+    onOpenLog: () => {},
     highlights: NO_HIGHLIGHTS,
     ...over,
   }) as StatsViewProps;
@@ -36,6 +37,7 @@ const season = () =>
       { key: "p1|p2", names: "Rahul P & Gautam", winPct: 71, games: 7 },
       { key: "p3|p4", names: "Sai Kiran & Mitrajit", winPct: 40, games: 5 },
     ],
+    onOpenLog: () => {},
     highlights: {
       mostGames: { name: "Sai Kiran", n: 14 },
       bestDuo: { names: "Rahul P & Gautam", winPct: 71, games: 7 },

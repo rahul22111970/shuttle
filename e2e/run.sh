@@ -17,4 +17,5 @@ node e2e/quick-log.mjs
 node e2e/bulk-log.mjs
 node e2e/me.mjs
 node e2e/stats.mjs
+node e2e/games.mjs
 node e2e/groups.mjs

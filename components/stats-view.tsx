@@ -36,6 +36,7 @@ export type StatsViewProps =
       board: readonly BoardRow[];
       duos: readonly DuoRow[];
       highlights: Highlights;
+      onOpenLog: () => void;
     };
 
 // one sentence per superlative, in the app's voice
@@ -187,6 +188,7 @@ export default function StatsView(props: StatsViewProps) {
           ))}
         </Card>
       ) : null}
+      <Button label="Open the game log" variant="quiet" onPress={props.onOpenLog} />
     </Screen>
   );
 }

@@ -13,6 +13,7 @@ it("Stats greets a fresh user with the teaching empty state", async () => {
       board={[]}
       duos={[]}
       highlights={{ mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null }}
+      onOpenLog={() => {}}
     />
   );
   expect(screen.getByText("Stats")).toBeTruthy();

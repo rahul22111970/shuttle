@@ -77,6 +77,14 @@ try {
   if (width > 390) throw new Error(`scrollWidth ${width} > 390`);
   console.log("PASS 390px holds on the session tab");
 
+  // the captain closes the night: two taps, back to planning, frozen data
+  await page.getByText("Start the night").click();
+  await page.getByText("The night is on.").waitFor({ timeout: 15000 });
+  await page.getByText("Close the night", { exact: true }).click();
+  await page.getByText(/no more games join it/).click();
+  await page.getByText("Plan a night").waitFor({ timeout: 15000 });
+  console.log("PASS closing the night returns the tab to planning");
+
   // capture group id for cleanup
   const g = await admin.from("groups").select("id").eq("name", `E2E Gang ${stamp}`).single();
   if (g.error) throw g.error;
