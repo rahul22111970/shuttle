@@ -12,12 +12,12 @@ export default async function handler(req, res) {
     const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
     if (!token) return res.status(401).json({ error: "Sign in first." });
 
-    const { groupId, name, phone } = req.body ?? {};
-    if (!groupId || !name || !phone) {
+    const { groupId, name, phone, playerId: knownId } = req.body ?? {};
+    if (!groupId || (!knownId && (!name || !phone))) {
       return res.status(400).json({ error: "Name, number and group are all needed." });
     }
-    const digits = String(phone).replace(/\D/g, "").slice(-10);
-    if (digits.length !== 10) {
+    const digits = knownId ? "" : String(phone).replace(/\D/g, "").slice(-10);
+    if (!knownId && digits.length !== 10) {
       return res.status(400).json({ error: "That is not a 10-digit number." });
     }
     const e164 = `+91${digits}`;
@@ -41,12 +41,14 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "Only the captain can add players." });
     }
 
-    // existing number -> existing person joins; no second account
-    const existing = await admin
-      .from("profiles")
-      .select("id, display_name")
-      .eq("phone", e164)
-      .maybeSingle();
+    // existing person joins; no second account — by id (tap-to-add from
+    // another group) or by a number that already belongs to someone
+    const existing = knownId
+      ? await admin.from("profiles").select("id, display_name").eq("id", knownId).maybeSingle()
+      : await admin.from("profiles").select("id, display_name").eq("phone", e164).maybeSingle();
+    if (knownId && !existing.data) {
+      return res.status(404).json({ error: "No such player." });
+    }
 
     let playerId;
     let finalName;

@@ -18,11 +18,20 @@ export default function Groups() {
   const { session } = useAuth();
   const selfId = session?.user.id ?? "";
   const [state, setState] = useState<
-    { kind: "loading" } | { kind: "error" } | { kind: "ready"; rows: Row[]; active: string | null }
+    | { kind: "loading" }
+    | { kind: "error" }
+    | {
+        kind: "ready";
+        rows: Row[];
+        membership: { group_id: string; player_id: string; name: string }[];
+        active: string | null;
+      }
   >({ kind: "loading" });
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
+  const [quickBusy, setQuickBusy] = useState<string | null>(null);
+  const [quickError, setQuickError] = useState(false);
 
   const back = () => (router.canGoBack() ? router.back() : router.replace("/session"));
 
@@ -30,13 +39,19 @@ export default function Groups() {
     try {
       const groups = await listGroups();
       let counts = new Map<string, number>();
+      let membership: { group_id: string; player_id: string; name: string }[] = [];
       if (groups.length > 0) {
         const res = await supabase
           .from("group_members")
-          .select("group_id")
+          .select("group_id, player_id, profiles!inner(display_name)")
           .in("group_id", groups.map((g) => g.id));
         if (res.error) throw res.error;
-        counts = res.data.reduce(
+        membership = res.data.map((r) => ({
+          group_id: r.group_id,
+          player_id: r.player_id,
+          name: (r.profiles as unknown as { display_name: string }).display_name,
+        }));
+        counts = membership.reduce(
           (m, r) => m.set(r.group_id, (m.get(r.group_id) ?? 0) + 1),
           new Map<string, number>()
         );
@@ -44,6 +59,7 @@ export default function Groups() {
       setState({
         kind: "ready",
         rows: groups.map((g) => ({ ...g, members: counts.get(g.id) ?? 0 })),
+        membership,
         active: getActiveGroupId() ?? groups[0]?.id ?? null,
       });
     } catch {
@@ -121,6 +137,62 @@ export default function Groups() {
               Their account exists the moment you add them. Share the group code and they
               are in.
             </Text>
+            {(() => {
+              const inGroup = new Set(
+                state.membership.filter((m) => m.group_id === active.id).map((m) => m.player_id)
+              );
+              const seen = new Set<string>();
+              const candidates = state.membership.filter((m) => {
+                if (m.group_id === active.id || inGroup.has(m.player_id) || seen.has(m.player_id))
+                  return false;
+                seen.add(m.player_id);
+                return true;
+              });
+              if (candidates.length === 0) return null;
+              return (
+                <>
+                  <Text style={styles.quiet}>From your other groups, one tap:</Text>
+                  <View style={styles.pickWrap}>
+                    {candidates.map((c) => (
+                      <Pressable
+                        key={c.player_id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add ${c.name}`}
+                        disabled={quickBusy !== null}
+                        style={[styles.pick, quickBusy === c.player_id && { opacity: 0.5 }]}
+                        onPress={async () => {
+                          setQuickBusy(c.player_id);
+                          setQuickError(false);
+                          try {
+                            const token = (await supabase.auth.getSession()).data.session
+                              ?.access_token;
+                            const r = await fetch("/api/add-player", {
+                              method: "POST",
+                              headers: {
+                                "content-type": "application/json",
+                                authorization: `Bearer ${token}`,
+                              },
+                              body: JSON.stringify({ groupId: active.id, playerId: c.player_id }),
+                            });
+                            if (!r.ok) throw new Error("failed");
+                            await load();
+                          } catch {
+                            setQuickError(true);
+                          } finally {
+                            setQuickBusy(null);
+                          }
+                        }}
+                      >
+                        <Text style={styles.pickName}>{`${c.name} +`}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {quickError ? (
+                    <ErrorNote>That did not go through. Try again.</ErrorNote>
+                  ) : null}
+                </>
+              );
+            })()}
             <AddPlayer groupId={active.id} onAdded={load} />
           </Card>
         );
@@ -176,6 +248,14 @@ const styles = StyleSheet.create({
   rowActive: { backgroundColor: color.courtWash },
   rowBody: { flex: 1, gap: 2 },
   rowName: { fontFamily: font.bold, fontSize: 14.5, color: color.ink },
+  pickWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  pick: {
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    backgroundColor: color.inkWash,
+  },
+  pickName: { fontFamily: font.bold, fontSize: 13, color: color.ink2 },
   input: {
     borderWidth: 1,
     borderColor: color.lineStrong,

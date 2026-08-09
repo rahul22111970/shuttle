@@ -105,6 +105,17 @@ try {
   fixturePlayer = prof.data.id;
   console.log("PASS the captain minted a real account from the Groups screen");
 
+  // existing players from other groups join with one tap
+  await page.getByLabel("Add Cap B").click();
+  // the chip only leaves after the insert lands and the screen reloads
+  await page.getByLabel("Add Cap B").waitFor({ state: "detached", timeout: 15000 });
+  const joined = await admin
+    .from("group_members")
+    .select("player_id", { count: "exact", head: true })
+    .eq("group_id", groupA);
+  if ((joined.count ?? 0) < 3) throw new Error(`Alpha has ${joined.count} members, expected 3`);
+  console.log("PASS an existing player joined Alpha with one tap");
+
   const width = await page.evaluate(() => document.body.scrollWidth);
   if (width > 390) throw new Error(`scrollWidth ${width} > 390`);
   console.log("PASS 390px holds on Groups");
