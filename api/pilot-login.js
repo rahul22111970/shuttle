@@ -31,6 +31,12 @@ export default async function handler(req, res) {
     if (!profile) {
       return res.status(404).json({ error: "No player has that number. Ask your captain." });
     }
+    // the admin account never enters through the shared code: its number is
+    // known to the whole group, and this account carries wipe and oversight
+    // powers. It signs in by email link only.
+    if (process.env.ADMIN_USER_ID && profile.id === process.env.ADMIN_USER_ID) {
+      return res.status(403).json({ error: "This account signs in by email link only." });
+    }
 
     const { data: userData, error: userError } = await admin.auth.admin.getUserById(profile.id);
     const email = userData?.user?.email;

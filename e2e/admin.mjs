@@ -102,6 +102,19 @@ try {
   });
   if (res.status !== 403) throw new Error(`stranger got ${res.status}, expected 403`);
   console.log("PASS every other account is refused with 403");
+
+  // the shared code can never open the admin account: even the right
+  // number + the right code is refused, email link is the only door
+  const pilot = await fetch(`${APP}/api/pilot-login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ phone: `9${String(stamp).slice(-9)}`, code: "smash21" }),
+  });
+  if (pilot.status !== 403) throw new Error(`admin pilot-login got ${pilot.status}, expected 403`);
+  const pilotBody = await pilot.json();
+  if (pilotBody.error !== "This account signs in by email link only.")
+    throw new Error(`wrong refusal copy: ${pilotBody.error}`);
+  console.log("PASS the shared code cannot open the admin account");
 } catch (e) {
   failed = e;
 } finally {
