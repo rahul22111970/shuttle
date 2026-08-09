@@ -16,7 +16,7 @@ export default function Organiser() {
     );
   }
   if (!session || !profile || profileError) return <Redirect href="/" />;
-  if (profile.account_type === "player") return <Redirect href="/today" />;
+  if (profile.account_type === "player") return <Redirect href="/groups" />;
 
   return (
     <Screen>

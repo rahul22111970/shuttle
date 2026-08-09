@@ -1,9 +1,10 @@
 // The game log, presentational and pure: window chips up top, then every
 // game in the window grouped by day, written the way players say them.
+// Chrome belongs to the group room that mounts this.
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { LogWindow } from "../lib/gamelog";
-import { BackBar, Card, ErrorNote, Screen, Button } from "./ui";
+import { Card, ErrorNote, Button } from "./ui";
 
 export type GameRow = {
   id: string;
@@ -24,7 +25,6 @@ export type GamesViewProps =
       total: number;
       // true when the fetch cap was hit: the log admits what it dropped
       capped: boolean;
-      onBack: () => void;
     };
 
 const WINDOWS: { key: LogWindow; label: string }[] = [
@@ -36,25 +36,20 @@ const WINDOWS: { key: LogWindow; label: string }[] = [
 
 export default function GamesView(props: GamesViewProps) {
   if (props.kind === "loading") {
-    return (
-      <Screen>
-        <Text style={styles.quiet}>Fetching the log…</Text>
-      </Screen>
-    );
+    return <Text style={styles.quiet}>Fetching the log…</Text>;
   }
 
   if (props.kind === "error") {
     return (
-      <Screen>
+      <>
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
         <Button label="Try again" onPress={props.onRetry} />
-      </Screen>
+      </>
     );
   }
 
   return (
-    <Screen testID="games-screen">
-      <BackBar title="Game log" onBack={props.onBack} />
+    <>
       <Card>
         <View style={styles.chipRow}>
           {WINDOWS.map((w) => (
@@ -103,7 +98,7 @@ export default function GamesView(props: GamesViewProps) {
       {props.capped ? (
         <Text style={styles.quiet}>Showing the latest 300. Narrow the window for the rest.</Text>
       ) : null}
-    </Screen>
+    </>
   );
 }
 

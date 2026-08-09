@@ -94,10 +94,9 @@ try {
   await page.getByPlaceholder("Your name").fill("Stats Runner");
   await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
   await page.getByText("Start playing").click();
-  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
+  await page.getByText("No group yet").waitFor({ timeout: 15000 });
 
-  // group + members + the hand-computed season
-  await page.getByRole("tab", { name: "Session" }).click();
+  // group + members + the hand-computed season; creating opens the room
   await page.getByPlaceholder("Group name").fill(`Stats Gang ${stamp}`);
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
@@ -158,9 +157,9 @@ try {
     }
   }
 
-  // the tab is named Stats now; every assert scoped to the stats screen
-  await page.getByRole("tab", { name: "Stats" }).click();
-  const stats = page.getByTestId("stats-screen");
+  // Stats is a room section now; every assert scoped to the room
+  await page.getByRole("button", { name: "Stats", exact: true }).click();
+  const stats = page.getByTestId("group-room");
 
   const podium = stats.getByTestId("podium-card");
   await podium.getByText("Stats Runner").waitFor({ timeout: 15000 });

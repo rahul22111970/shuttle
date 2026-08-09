@@ -13,7 +13,7 @@ import { listGroupMembers, listGroups, nextSession, type Member } from "../lib/s
 import { supabase } from "../lib/supabase";
 
 const backToToday = () =>
-  router.canGoBack() ? router.back() : router.replace("/today");
+  router.canGoBack() ? router.back() : router.replace("/groups");
 
 export default function QuickLog() {
   const { group: groupParam, session: sessionParam } = useLocalSearchParams<{

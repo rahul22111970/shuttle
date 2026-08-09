@@ -59,7 +59,7 @@ export default function NewMatch() {
   return (
     <NewMatchView
       kind="ready"
-      onBack={() => (router.canGoBack() ? router.back() : router.replace("/session"))}
+      onBack={() => (router.canGoBack() ? router.back() : router.replace("/groups"))}
       players={state.players}
       busy={busy}
       actionError={actionError}

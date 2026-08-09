@@ -1,6 +1,6 @@
-// e2e for S1-22: log a finished game in one screen from Today, then prove
-// the write: match row complete, result event, snapshot games, and the
-// Today feed showing the game immediately.
+// e2e for S1-22: log a finished game in one screen from the group room's
+// Games section, then prove the write: match row complete, result event,
+// snapshot games, and the Games log showing the game immediately.
 import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
@@ -53,8 +53,7 @@ try {
   await page.getByPlaceholder("Your name").fill("Qlog Runner");
   await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
   await page.getByText("Start playing").click();
-  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
-  await page.getByText("Session", { exact: true }).click();
+  await page.getByText("No group yet").waitFor({ timeout: 15000 });
   await page.getByPlaceholder("Group name").fill(`Qlog Gang ${stamp}`);
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
@@ -78,9 +77,9 @@ try {
   }
   const fixtureId = fixtureIds[0];
 
-  // ONE screen: Today -> Log a game -> tap Bela onto B -> score -> log
-  await page.getByRole("tab", { name: "Today" }).click();
-  await page.getByText("Log a game").click();
+  // ONE screen: room Games -> Enter a result -> tap Bela onto B -> score -> log
+  await page.getByRole("button", { name: "Games", exact: true }).click();
+  await page.getByText("Enter a result").click();
   await page.getByText("Who played").waitFor({ timeout: 15000 });
   await page.getByText("Qlog Runner · A").waitFor({ timeout: 15000 });
   console.log("PASS self arrives pre-picked on side A");
@@ -102,10 +101,10 @@ try {
 
   await page.getByText("Log 21–15").click();
 
-  // the feed shows it immediately, names first
+  // back on the Games section, the log shows it immediately, names first
   await page.getByText("Qlog Runner d. Bela").waitFor({ timeout: 15000 });
   await page.getByText("21–15").waitFor({ timeout: 15000 });
-  console.log("PASS the Today feed shows the logged game immediately");
+  console.log("PASS the Games log shows the logged game immediately");
 
   // the write, checked in the database
   const m = await admin

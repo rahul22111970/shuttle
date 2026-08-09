@@ -1,15 +1,14 @@
-import { pickActive } from "../../lib/groups";
+// The Night section: the group's next night. Plans one when nothing is
+// planned, runs RSVPs while it is planned, hands over to LiveNight once it
+// starts. The group arrives as a prop from the room; no hidden state.
 import { useCallback, useState } from "react";
-import { router } from "expo-router";
-import { useLive } from "../../lib/use-live";
-import SessionView from "../../components/session-view";
-import { useAuth } from "../../lib/auth";
+import { useLive } from "../lib/use-live";
+import SessionView from "./session-view";
+import LiveNight from "./live-night";
 import {
-  createGroup,
   createSession,
   getRoster,
   listGroupMembers,
-  listGroups,
   nextSession,
   rsvpIn,
   rsvpOut,
@@ -18,52 +17,41 @@ import {
   type Member,
   type Roster,
   type Session,
-} from "../../lib/session";
-import LiveNight from "../../components/live-night";
+} from "../lib/session";
 
 type Data = {
-  group: Group | null;
   session: Session | null;
   members: Member[];
   roster: Roster;
 };
 
-export default function SessionTab() {
-  const { session: authSession } = useAuth();
-  const selfId = authSession?.user.id ?? "";
+export default function NightSection({ group, selfId }: { group: Group; selfId: string }) {
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
-  const [busyAction, setBusyAction] = useState<
-    "in" | "out" | "start" | "create" | "plan" | null
-  >(null);
+  const [busyAction, setBusyAction] = useState<"in" | "out" | "start" | "plan" | null>(null);
   const [actionError, setActionError] = useState(false);
 
   const load = useCallback(async () => {
     setFailed(false);
     try {
-      const group = pickActive(await listGroups());
-      if (!group) {
-        setData({ group: null, session: null, members: [], roster: { attending: [], checkedIn: [] } });
-        return;
-      }
       const session = await nextSession(group.id);
       const members = await listGroupMembers(group.id);
       const roster = session
         ? await getRoster(session.id)
         : { attending: [], checkedIn: [] };
-      setData({ group, session, members, roster });
+      setData({ session, members, roster });
     } catch {
       setFailed(true);
     }
-  }, []);
+  }, [group.id]);
 
   // focus, not mount: rounds, arrivals and roster changes land while this
-  // tab is away (the members list went stale until a hard reload before)
+  // section is away (the members list went stale until a hard reload before)
   useLive(load);
 
   // action failures stay inline: the screen keeps its data and says what
-  // failed; the full error screen is reserved for load() failures
-  const act = (which: "in" | "out" | "start" | "create" | "plan", fn: () => Promise<unknown>) => async () => {
+  // failed; the full error state is reserved for load() failures
+  const act = (which: "in" | "out" | "start" | "plan", fn: () => Promise<unknown>) => async () => {
     setBusyAction(which);
     setActionError(false);
     try {
@@ -78,26 +66,13 @@ export default function SessionTab() {
 
   if (failed) return <SessionView kind="error" onRetry={load} />;
   if (!data) return <SessionView kind="loading" />;
-  if (!data.group) {
-    return (
-      <SessionView
-        kind="no-group"
-        busy={busyAction === "create"}
-        actionError={actionError}
-        onCreateGroup={(name) => act("create", () => createGroup(name))()}
-        onOpenGroups={() => router.push("/groups")}
-      />
-    );
-  }
   if (!data.session) {
     return (
       <SessionView
         kind="no-session"
-        groupName={data.group.name}
         busy={busyAction === "plan"}
         actionError={actionError}
-        onPlanSession={(iso) => act("plan", () => createSession(data.group!.id, iso))()}
-        onOpenGroups={() => router.push("/groups")}
+        onPlanSession={(iso) => act("plan", () => createSession(group.id, iso))()}
       />
     );
   }
@@ -105,9 +80,9 @@ export default function SessionTab() {
     return (
       <LiveNight
         session={data.session}
-        groupId={data.group.id}
-        groupName={data.group.name}
-        captainId={data.group.captain_id}
+        groupId={group.id}
+        groupName={group.name}
+        captainId={group.captain_id}
         members={data.members}
         selfId={selfId}
         onClosed={load}
@@ -117,17 +92,15 @@ export default function SessionTab() {
   return (
     <SessionView
       kind="session"
-      groupName={data.group.name}
       session={data.session}
       members={data.members}
       roster={data.roster}
       selfId={selfId}
-      busyAction={busyAction === "create" || busyAction === "plan" ? null : busyAction}
+      busyAction={busyAction === "plan" ? null : busyAction}
       actionError={actionError}
       onRsvpIn={act("in", () => rsvpIn(data.session!.id))}
       onRsvpOut={act("out", () => rsvpOut(data.session!.id))}
       onStartNight={act("start", () => startNight(data.session!.id))}
-      onOpenGroups={() => router.push("/groups")}
     />
   );
 }

@@ -17,10 +17,8 @@ const row = (playerId: string, name: string, rating: number, over: Record<string
 const ready = (over: Record<string, unknown> = {}) =>
   ({
     kind: "ready",
-    groupName: "Tuesday Gang",
     board: [],
     duos: [],
-    onOpenLog: () => {},
     highlights: NO_HIGHLIGHTS,
     ...over,
   }) as StatsViewProps;
@@ -37,7 +35,6 @@ const season = () =>
       { key: "p1|p2", names: "Rahul P & Gautam", winPct: 71, games: 7 },
       { key: "p3|p4", names: "Sai Kiran & Mitrajit", winPct: 40, games: 5 },
     ],
-    onOpenLog: () => {},
     highlights: {
       mostGames: { name: "Sai Kiran", n: 14 },
       bestDuo: { names: "Rahul P & Gautam", winPct: 71, games: 7 },
@@ -49,7 +46,6 @@ const season = () =>
 it("no games yet: the page teaches instead of showing zeros", async () => {
   await render(<StatsView {...ready()} />);
   expect(screen.getByText("Play a night and this page writes itself.")).toBeTruthy();
-  expect(screen.getByText("Tuesday Gang")).toBeTruthy();
   expect(screen.queryByText("Leaderboard")).toBeNull();
 });
 

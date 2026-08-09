@@ -1,14 +1,15 @@
-// The game-log controller: the active group's completed games in a chosen
-// window, grouped by day, newest first. Reached from Stats.
-import { useCallback, useEffect, useState } from "react";
+// The Games section controller: log a result any time, then the group's
+// completed games in a chosen window, grouped by day, newest first. The
+// group arrives as a prop.
+import { useCallback, useState } from "react";
 import { router } from "expo-router";
 import type { MatchState } from "@shuttle/score";
-import GamesView, { type GameRow } from "../components/games-view";
-import { useAuth } from "../lib/auth";
+import GamesView, { type GameRow } from "./games-view";
 import { cutoffFor, groupByDay, type LogWindow } from "../lib/gamelog";
-import { pickActive } from "../lib/groups";
-import { listGroupMembers, listGroups, type Member } from "../lib/session";
+import { listGroupMembers, type Member } from "../lib/session";
 import { supabase } from "../lib/supabase";
+import { useLive } from "../lib/use-live";
+import { Button } from "./ui";
 
 const CAP = 300;
 
@@ -19,9 +20,7 @@ type Fetched = {
   match_participants: { player_id: string; side: "a" | "b" }[];
 };
 
-export default function Games() {
-  const { session } = useAuth();
-  const selfId = session?.user.id ?? "";
+export default function GamesSection({ groupId, selfId }: { groupId: string; selfId: string }) {
   const [window, setWindow] = useState<LogWindow>("week");
   const [state, setState] = useState<
     | { kind: "loading" }
@@ -29,21 +28,14 @@ export default function Games() {
     | { kind: "ready"; days: { label: string; rows: GameRow[] }[]; total: number; capped: boolean }
   >({ kind: "loading" });
 
-  const back = () => (router.canGoBack() ? router.back() : router.replace("/compete"));
-
   const load = useCallback(async () => {
     try {
-      const group = pickActive(await listGroups());
-      if (!group) {
-        setState({ kind: "ready", days: [], total: 0, capped: false });
-        return;
-      }
-      const members = await listGroupMembers(group.id);
+      const members = await listGroupMembers(groupId);
       const name = (id: string) => members.find((m: Member) => m.id === id)?.name ?? "Player";
       let query = supabase
         .from("matches")
         .select("id, created_at, snapshot, match_participants(player_id, side)")
-        .eq("group_id", group.id)
+        .eq("group_id", groupId)
         .eq("status", "complete")
         .order("created_at", { ascending: false })
         .limit(CAP);
@@ -88,24 +80,54 @@ export default function Games() {
     } catch {
       setState({ kind: "error" });
     }
-  }, [selfId, window]);
+  }, [groupId, selfId, window]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // focus, not mount: a result logged through the pushed quick-log screen
+  // must appear the moment the section regains focus
+  useLive(load);
 
-  if (state.kind === "loading") return <GamesView kind="loading" />;
-  if (state.kind === "error") return <GamesView kind="error" onRetry={load} />;
+  // the doors stay above every state: a finished game gets logged even
+  // while the list is still fetching
+  const doors = (
+    <>
+      <Button
+        label="Enter a result"
+        onPress={() => router.push(`/quick-log?group=${groupId}`)}
+      />
+      <Button
+        label="Paste a whole night"
+        variant="quiet"
+        onPress={() => router.push(`/bulk-log?group=${groupId}`)}
+      />
+    </>
+  );
+
+  if (state.kind === "loading")
+    return (
+      <>
+        {doors}
+        <GamesView kind="loading" />
+      </>
+    );
+  if (state.kind === "error")
+    return (
+      <>
+        {doors}
+        <GamesView kind="error" onRetry={load} />
+      </>
+    );
 
   return (
-    <GamesView
-      kind="ready"
-      window={window}
-      onWindow={setWindow}
-      days={state.days}
-      total={state.total}
-      capped={state.capped}
-      onBack={back}
-    />
+    <>
+      {doors}
+      <GamesView
+        kind="ready"
+        window={window}
+        onWindow={setWindow}
+        days={state.days}
+        total={state.total}
+        capped={state.capped}
+      />
+    </>
   );
 }

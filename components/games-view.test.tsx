@@ -11,13 +11,11 @@ const ready = (over: Record<string, unknown> = {}) =>
     days: [],
     total: 0,
     capped: false,
-    onBack: noop,
     ...over,
   }) as Parameters<typeof GamesView>[0];
 
 it("an empty window says so, with all four window chips", async () => {
   await render(<GamesView {...ready()} />);
-  expect(screen.getByText("Game log")).toBeTruthy();
   expect(screen.getByText("No games in this window.")).toBeTruthy();
   for (const w of ["Today", "Week", "Month", "All"]) {
     expect(screen.getByText(w)).toBeTruthy();

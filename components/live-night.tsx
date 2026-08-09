@@ -25,7 +25,7 @@ import { color, font, layout, radius, size, space, tracking } from "../theme/tok
 import AddPlayer from "./add-player";
 import LedgerPanel from "./ledger-panel";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
-import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
+import { Button, Card, Chip, ErrorNote } from "./ui";
 
 type MatchLite = {
   id: string;
@@ -198,19 +198,16 @@ export default function LiveNight({
 
   if (!loaded && !failed) {
     return (
-      <Screen>
-        <Card>
-          <Text style={styles.title}>{groupName}</Text>
-          <Text style={styles.liveNote}>The night is on.</Text>
-          <Text style={styles.quiet}>Fetching the night…</Text>
-        </Card>
-      </Screen>
+      <Card>
+        <Text style={styles.title}>{groupName}</Text>
+        <Text style={styles.liveNote}>The night is on.</Text>
+        <Text style={styles.quiet}>Fetching the night…</Text>
+      </Card>
     );
   }
 
   return (
-    <Screen>
-      <AppBar title="Session" sub={groupName} onAction={() => router.push("/groups")} actionLabel="Groups" />
+    <>
       <Card>
         <Text style={styles.title}>Who's here</Text>
         <Text style={styles.liveNote}>The night is on.</Text>
@@ -423,7 +420,7 @@ export default function LiveNight({
           ) : null}
         </>
       )}
-    </Screen>
+    </>
   );
 }
 

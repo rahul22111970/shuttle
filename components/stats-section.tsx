@@ -1,27 +1,25 @@
-// The Stats controller (the file keeps the compete route name so the tab
-// survives): the active group's completed matches, members and rating rows
-// in one load; lib/analytics turns them into the season, stats-view draws it.
+// The Stats section controller: the group's completed matches, members and
+// rating rows in one load; lib/analytics turns them into the season,
+// stats-view draws it. The group arrives as a prop from the room.
 import { useCallback, useRef, useState } from "react";
 import type { MatchState } from "@shuttle/score";
-import { router } from "expo-router";
 import StatsView, {
   type BoardRow,
   type DuoRow,
   type Highlights,
-} from "../../components/stats-view";
-import { groupAnalytics, type StatsMatch } from "../../lib/analytics";
-import { pickActive } from "../../lib/groups";
-import { listGroupMembers, listGroups, type Member } from "../../lib/session";
-import { supabase } from "../../lib/supabase";
-import { useLive } from "../../lib/use-live";
+} from "./stats-view";
+import { groupAnalytics, type StatsMatch } from "../lib/analytics";
+import { listGroupMembers, type Member } from "../lib/session";
+import { supabase } from "../lib/supabase";
+import { useLive } from "../lib/use-live";
 
 const NO_HIGHLIGHTS: Highlights = { mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null };
 
-export default function Stats() {
+export default function StatsSection({ groupId }: { groupId: string }) {
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "error" }
-    | { kind: "ready"; groupName: string | null; board: BoardRow[]; duos: DuoRow[]; highlights: Highlights }
+    | { kind: "ready"; board: BoardRow[]; duos: DuoRow[]; highlights: Highlights }
   >({ kind: "loading" });
   const loadSeq = useRef(0);
 
@@ -31,17 +29,12 @@ export default function Stats() {
       if (seq === loadSeq.current) setState(next);
     };
     try {
-      const group = pickActive(await listGroups());
-      if (!group) {
-        paint({ kind: "ready", groupName: null, board: [], duos: [], highlights: NO_HIGHLIGHTS });
-        return;
-      }
       const [members, matchRes] = await Promise.all([
-        listGroupMembers(group.id),
+        listGroupMembers(groupId),
         supabase
           .from("matches")
           .select("created_at, snapshot, match_participants(player_id, side)")
-          .eq("group_id", group.id)
+          .eq("group_id", groupId)
           .eq("status", "complete")
           .order("created_at", { ascending: false }),
       ]);
@@ -49,7 +42,7 @@ export default function Stats() {
       const ratingRes = await supabase
         .from("rating_history")
         .select("player_id, rating_after, created_at")
-        .eq("group_id", group.id)
+        .eq("group_id", groupId)
         .in("player_id", members.map((m: Member) => m.id));
       if (ratingRes.error) throw ratingRes.error;
 
@@ -69,7 +62,6 @@ export default function Stats() {
 
       paint({
         kind: "ready",
-        groupName: group.name,
         board: leaderboard.map((r) => ({
           playerId: r.playerId,
           name: name(r.playerId),
@@ -107,7 +99,7 @@ export default function Stats() {
     } catch {
       paint({ kind: "error" });
     }
-  }, []);
+  }, [groupId]);
 
   useLive(load);
 
@@ -116,11 +108,9 @@ export default function Stats() {
   return (
     <StatsView
       kind="ready"
-      groupName={state.groupName}
       board={state.board}
       duos={state.duos}
       highlights={state.highlights}
-      onOpenLog={() => router.push("/games")}
     />
   );
 }

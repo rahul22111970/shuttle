@@ -72,7 +72,7 @@ export default function Index() {
         />
       );
     }
-    return <Redirect href={profile?.account_type === "organiser" ? "/organiser" : "/today"} />;
+    return <Redirect href={profile?.account_type === "organiser" ? "/organiser" : "/groups"} />;
   }
 
   const stepOnCourt = async () => {

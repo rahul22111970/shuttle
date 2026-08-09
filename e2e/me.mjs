@@ -94,7 +94,7 @@ try {
   await page.getByPlaceholder("Your name").fill("Me Runner");
   await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
   await page.getByText("Start playing").click();
-  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
+  await page.getByText("No group yet").waitFor({ timeout: 15000 });
 
   // empty state first
   await page.getByRole("tab", { name: "Me" }).click();
@@ -105,8 +105,9 @@ try {
   await meEmpty.getByText("Every player starts at 1200. Your line begins with your first game.").waitFor({ timeout: 15000 });
   console.log("PASS a new player's Me is fully drawn empty, rating included");
 
-  // group + fixtures + the hand-computed season
-  await page.getByRole("tab", { name: "Session" }).click();
+  // group + fixtures + the hand-computed season; creating drops into the
+  // room, which also marks Me Gang as the last-opened group Me reads
+  await page.getByRole("tab", { name: "Groups" }).click();
   await page.getByPlaceholder("Group name").fill(`Me Gang ${stamp}`);
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
@@ -177,9 +178,9 @@ try {
   }
 
   // the figures, hand-computed: 3 of 4 = 75%, streak L1, Bela 100% of 3.
-  // Every assertion scoped to the Me screen: blurred tabs can stay in the
-  // DOM and Today renders the same strings through different code.
-  await page.getByRole("tab", { name: "Today" }).click();
+  // Every assertion scoped to the Me screen: blurred screens can stay in
+  // the DOM and other surfaces render the same strings.
+  await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("tab", { name: "Me" }).click();
   const me = page.getByTestId("me-screen");
   await me.getByText("75%").waitFor({ timeout: 15000 });

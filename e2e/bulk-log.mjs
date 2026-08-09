@@ -53,9 +53,7 @@ try {
   await page.getByPlaceholder("Your name").fill("Rahul Pareek");
   await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
   await page.getByText("Start playing").click();
-  await page
-    .getByText("No sessions yet. Your group's nights will land here.")
-    .waitFor({ timeout: 15000 });
+  await page.getByText("No group yet").waitFor({ timeout: 15000 });
 
   // the group and its roster, seeded by admin: a second Rahul to force the
   // clash, Sai Kiran for the two-word first name, Gautam as the plain case

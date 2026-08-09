@@ -51,15 +51,12 @@ try {
   await page.getByPlaceholder("Your name").fill("Session Runner");
   await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
   await page.getByText("Start playing").click();
-  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
-
-  // Session tab: no group yet → create one
-  await page.getByText("Session", { exact: true }).click();
+  // lands on the Groups home: no group yet → create one, straight into the room
   await page.getByText("No group yet").waitFor({ timeout: 15000 });
   await page.getByPlaceholder("Group name").fill(`E2E Gang ${stamp}`);
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
-  console.log("PASS group created from the empty state");
+  console.log("PASS group created from the empty state, room opens on Night");
 
   // plan via preset: Tomorrow always exists; Today filters out after 7 pm
   // and this project builds at 21:30 IST

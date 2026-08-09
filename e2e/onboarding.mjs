@@ -63,8 +63,8 @@ try {
   await page.getByPlaceholder("Your name").fill("E2E Runner");
   await page.getByPlaceholder("Phone (+91)").fill(phoneDigits);
   await page.getByText("Start playing").click();
-  // S0-10 routes a completed player onto the Today tab
-  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
+  // a completed player lands on the Groups home
+  await page.getByText("No group yet").waitFor({ timeout: 15000 });
   console.log("PASS onboarding completes into the player surface");
 
   // the row is real, with phone and account_type

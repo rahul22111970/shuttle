@@ -63,8 +63,7 @@ try {
   await page.getByPlaceholder("Your name").fill("Log Runner");
   await page.getByPlaceholder("Phone (+91)").fill(`9${String(stamp).slice(-9)}`);
   await page.getByText("Start playing").click();
-  await page.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
-  await page.getByRole("tab", { name: "Session" }).click();
+  await page.getByText("No group yet").waitFor({ timeout: 15000 });
   await page.getByPlaceholder("Group name").fill(`Log Gang ${stamp}`);
   await page.getByText("Start the group").click();
   await page.getByText("Nothing planned. Pick a night.").waitFor({ timeout: 15000 });
@@ -79,9 +78,8 @@ try {
   await seedMatch({ a: 12, b: 21 }, 4);
   await seedMatch({ a: 21, b: 9 }, 20);
 
-  await page.getByRole("tab", { name: "Stats" }).click();
-  await page.getByText("Open the game log").click();
-  const log = page.getByTestId("games-screen");
+  await page.getByRole("button", { name: "Games", exact: true }).click();
+  const log = page.getByTestId("group-room");
   await log.getByText("2 games.").waitFor({ timeout: 15000 });
   await log.getByText("Log Runner d. Bela").waitFor({ timeout: 15000 });
   console.log("PASS the week window holds two games incl. today's");

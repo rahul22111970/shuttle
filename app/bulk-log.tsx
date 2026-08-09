@@ -11,7 +11,7 @@ import { quickLog, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
 import { listGroupMembers, listGroups, nextSession, type Member } from "../lib/session";
 
-const back = () => (router.canGoBack() ? router.back() : router.replace("/session"));
+const back = () => (router.canGoBack() ? router.back() : router.replace("/groups"));
 
 export default function BulkLog() {
   const { group, session } = useLocalSearchParams<{ group?: string; session?: string }>();

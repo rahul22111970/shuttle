@@ -28,24 +28,10 @@ export default function PlayerLayout() {
       }}
     >
       <Tabs.Screen
-        name="today"
+        name="groups"
         options={{
-          title: "Today",
-          tabBarIcon: ({ color: c }) => <Feather name="home" size={20} color={c} />,
-        }}
-      />
-      <Tabs.Screen
-        name="session"
-        options={{
-          title: "Session",
-          tabBarIcon: ({ color: c }) => <Feather name="calendar" size={20} color={c} />,
-        }}
-      />
-      <Tabs.Screen
-        name="compete"
-        options={{
-          title: "Stats",
-          tabBarIcon: ({ color: c }) => <Feather name="bar-chart-2" size={20} color={c} />,
+          title: "Groups",
+          tabBarIcon: ({ color: c }) => <Feather name="users" size={20} color={c} />,
         }}
       />
       <Tabs.Screen

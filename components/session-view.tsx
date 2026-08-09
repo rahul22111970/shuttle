@@ -1,33 +1,24 @@
-// The Session tab, presentational and pure: every state the screen can be
-// in arrives as a prop, so tests can render each by name.
+// The planned-night body, presentational and pure: every state arrives as
+// a prop, so tests can render each by name. Chrome (back, group name,
+// section chips) belongs to the group room that mounts this.
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Member, Roster, Session } from "../lib/session";
-import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
+import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import DateTimeInput from "./datetime-input";
-import { AppBar, Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
+import { Button, Card, Chip, ErrorNote } from "./ui";
 
 export type SessionViewProps =
   | { kind: "loading" }
   | { kind: "error"; onRetry: () => void }
   | {
-      kind: "no-group";
-      busy: boolean;
-      actionError: boolean;
-      onCreateGroup: (name: string) => void;
-      onOpenGroups: () => void;
-    }
-  | {
       kind: "no-session";
-      groupName: string;
       busy: boolean;
       actionError: boolean;
       onPlanSession: (startsAtISO: string) => void;
-      onOpenGroups: () => void;
     }
   | {
       kind: "session";
-      groupName: string;
       session: Session;
       members: readonly Member[];
       roster: Roster;
@@ -37,7 +28,6 @@ export type SessionViewProps =
       onRsvpIn: () => void;
       onRsvpOut: () => void;
       onStartNight: () => void;
-      onOpenGroups: () => void;
     };
 
 // Suggestions fill the picker; the picker is the truth; one button plans.
@@ -72,60 +62,18 @@ function sessionDateLabel(iso: string): string {
 }
 
 export default function SessionView(props: SessionViewProps) {
-  const [groupName, setGroupName] = useState("");
   const [when, setWhen] = useState<string>(() => suggestions()[0]?.local ?? toLocalInput(new Date(Date.now() + 3600000)));
 
   if (props.kind === "loading") {
-    return (
-      <Screen>
-        <Wordmark />
-        <Text style={styles.quiet}>Loading your group…</Text>
-      </Screen>
-    );
+    return <Text style={styles.quiet}>Loading the night…</Text>;
   }
 
   if (props.kind === "error") {
     return (
-      <Screen>
-        <Wordmark />
+      <>
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
         <Button label="Try again" onPress={props.onRetry} />
-      </Screen>
-    );
-  }
-
-  if (props.kind === "no-group") {
-    return (
-      <Screen>
-        <AppBar title="Session" sub="Your regular crew's nights" onAction={props.onOpenGroups} actionLabel="Groups" />
-        <Card>
-          <Text style={styles.title}>No group yet</Text>
-          <Text style={styles.copy}>
-            A group is your regular crew. Sessions, scores and money all live in it.
-          </Text>
-          <Text style={styles.quiet}>
-            Your friends sign in with their number and the group code.
-          </Text>
-          <TextInput
-            style={styles.input}
-            value={groupName}
-            onChangeText={setGroupName}
-            placeholder="Group name"
-            accessibilityLabel="Group name"
-            placeholderTextColor={color.ink3}
-          />
-          <Button
-            label="Start the group"
-            busy={props.busy}
-            busyLabel="Starting…"
-            disabled={!groupName.trim()}
-            onPress={() => props.onCreateGroup(groupName.trim())}
-          />
-          {props.actionError ? (
-            <ErrorNote>That did not go through. Try again.</ErrorNote>
-          ) : null}
-        </Card>
-      </Screen>
+      </>
     );
   }
 
@@ -133,40 +81,37 @@ export default function SessionView(props: SessionViewProps) {
     const chosen = new Date(when);
     const valid = !Number.isNaN(chosen.getTime()) && chosen > new Date();
     return (
-      <Screen>
-        <AppBar title="Session" sub={props.groupName} onAction={props.onOpenGroups} actionLabel="Groups" />
-        <Card>
-          <Text style={styles.title}>Plan a night</Text>
-          <Text style={styles.copy}>Nothing planned. Pick a night.</Text>
-          <View style={styles.presetRow}>
-            {suggestions().map((p) => (
-              <Pressable
-                key={p.label}
-                accessibilityRole="button"
-                accessibilityState={{ selected: when === p.local }}
-                style={[styles.preset, when === p.local && styles.presetOn]}
-                onPress={() => setWhen(p.local)}
-              >
-                <Text style={[styles.presetText, when === p.local && styles.presetTextOn]}>
-                  {p.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <DateTimeInput value={when} onChange={setWhen} label="Pick a date and time" />
-          <Button
-            label={valid ? `Plan ${sessionDateLabel(chosen.toISOString())}` : "Pick a time to come"}
-            busy={props.busy}
-            busyLabel="Planning…"
-            disabled={!valid}
-            onPress={() => props.onPlanSession(chosen.toISOString())}
-          />
-          <Text style={styles.quiet}>The group sees it on Today and taps I'm in.</Text>
-          {props.actionError ? (
-            <ErrorNote>That did not go through. Try again.</ErrorNote>
-          ) : null}
-        </Card>
-      </Screen>
+      <Card>
+        <Text style={styles.title}>Plan a night</Text>
+        <Text style={styles.copy}>Nothing planned. Pick a night.</Text>
+        <View style={styles.presetRow}>
+          {suggestions().map((p) => (
+            <Pressable
+              key={p.label}
+              accessibilityRole="button"
+              accessibilityState={{ selected: when === p.local }}
+              style={[styles.preset, when === p.local && styles.presetOn]}
+              onPress={() => setWhen(p.local)}
+            >
+              <Text style={[styles.presetText, when === p.local && styles.presetTextOn]}>
+                {p.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <DateTimeInput value={when} onChange={setWhen} label="Pick a date and time" />
+        <Button
+          label={valid ? `Plan ${sessionDateLabel(chosen.toISOString())}` : "Pick a time to come"}
+          busy={props.busy}
+          busyLabel="Planning…"
+          disabled={!valid}
+          onPress={() => props.onPlanSession(chosen.toISOString())}
+        />
+        <Text style={styles.quiet}>The group sees it and taps I'm in.</Text>
+        {props.actionError ? (
+          <ErrorNote>That did not go through. Try again.</ErrorNote>
+        ) : null}
+      </Card>
     );
   }
 
@@ -175,8 +120,7 @@ export default function SessionView(props: SessionViewProps) {
   const selfIn = attending.has(selfId);
 
   return (
-    <Screen>
-      <AppBar title="Session" sub={props.groupName} onAction={props.onOpenGroups} actionLabel="Groups" />
+    <>
       <Card>
         <Text style={styles.title}>Next night</Text>
         <Text style={styles.sessionWhen}>{sessionDateLabel(session.starts_at)}</Text>
@@ -220,7 +164,7 @@ export default function SessionView(props: SessionViewProps) {
           />
         )
       ) : null}
-    </Screen>
+    </>
   );
 }
 
@@ -229,15 +173,6 @@ const styles = StyleSheet.create({
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
-  input: {
-    borderWidth: 1,
-    borderColor: color.lineStrong,
-    borderRadius: radius.control,
-    padding: space.md,
-    fontSize: size.body,
-    color: color.ink,
-    backgroundColor: color.fog1,
-  },
   presetRow: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   preset: {
     borderRadius: 999,

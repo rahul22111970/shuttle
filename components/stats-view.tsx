@@ -1,10 +1,11 @@
-// The Stats tab, presentational and pure: the group's season on one page —
-// podium, leaderboard, best pairs, highlights. Built to be screenshot
-// straight into the group chat, so every row must read at a glance.
+// The Stats section, presentational and pure: the group's season on one
+// page — podium, leaderboard, best pairs, highlights. Built to be
+// screenshot straight into the group chat, so every row must read at a
+// glance. Chrome belongs to the group room that mounts this.
 import { StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
-import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
+import { Button, Card, Chip, ErrorNote } from "./ui";
 
 export type BoardRow = {
   playerId: string;
@@ -31,12 +32,9 @@ export type StatsViewProps =
   | { kind: "error"; onRetry: () => void }
   | {
       kind: "ready";
-      // null = no group yet; the empty state still teaches
-      groupName: string | null;
       board: readonly BoardRow[];
       duos: readonly DuoRow[];
       highlights: Highlights;
-      onOpenLog: () => void;
     };
 
 // one sentence per superlative, in the app's voice
@@ -85,21 +83,15 @@ function FormDots({ form }: { form: readonly Form[] }) {
 
 export default function StatsView(props: StatsViewProps) {
   if (props.kind === "loading") {
-    return (
-      <Screen testID="stats-screen">
-        <AppBar title="Stats" />
-        <Text style={styles.quiet}>Fetching the season…</Text>
-      </Screen>
-    );
+    return <Text style={styles.quiet}>Fetching the season…</Text>;
   }
 
   if (props.kind === "error") {
     return (
-      <Screen testID="stats-screen">
-        <AppBar title="Stats" />
+      <>
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
         <Button label="Try again" onPress={props.onRetry} />
-      </Screen>
+      </>
     );
   }
 
@@ -110,19 +102,15 @@ export default function StatsView(props: StatsViewProps) {
 
   if (board.length === 0) {
     return (
-      <Screen testID="stats-screen">
-        <AppBar title="Stats" sub={props.groupName ?? undefined} />
-        <Card>
-          <Text style={styles.title}>This season</Text>
-          <Text style={styles.copy}>Play a night and this page writes itself.</Text>
-        </Card>
-      </Screen>
+      <Card>
+        <Text style={styles.title}>This season</Text>
+        <Text style={styles.copy}>Play a night and this page writes itself.</Text>
+      </Card>
     );
   }
 
   return (
-    <Screen testID="stats-screen">
-      <AppBar title="Stats" sub={props.groupName ?? undefined} />
+    <>
       <Card testID="podium-card">
         <Text style={styles.title}>Podium</Text>
         <View style={styles.podium}>
@@ -188,8 +176,7 @@ export default function StatsView(props: StatsViewProps) {
           ))}
         </Card>
       ) : null}
-      <Button label="Open the game log" variant="quiet" onPress={props.onOpenLog} />
-    </Screen>
+    </>
   );
 }
 

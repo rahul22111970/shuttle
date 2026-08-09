@@ -60,29 +60,26 @@ try {
   }
   browser = await chromium.launch({ channel: "chrome" });
 
-  // player lands on Today, tabs navigate, 390 holds
+  // player lands on the Groups home, tabs navigate, 390 holds
   const player = await freshSignedInPage(`e2e-shell-p-${stamp}@shuttle-e2e.test`);
   await completeOnboarding(player, "Shell Player", `9${String(stamp).slice(-9)}`, false);
-  await player.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
-  console.log("PASS player lands on Today");
-
-  const widthToday = await player.evaluate(() => document.body.scrollWidth);
-  if (widthToday > 390) throw new Error(`today scrollWidth ${widthToday}`);
-  console.log("PASS 390px holds on Today");
-
-  await player.getByText("Session", { exact: true }).click();
-  // S1-10 made Session real: a fresh user sees the no-group empty state
   await player.getByText("No group yet").waitFor({ timeout: 15000 });
-  await player.getByRole("tab", { name: "Stats" }).click();
-  await player.getByText("Play a night and this page writes itself.").waitFor({ timeout: 15000 });
-  await player.getByText("Me", { exact: true }).click();
+  console.log("PASS player lands on Groups");
+
+  const widthGroups = await player.evaluate(() => document.body.scrollWidth);
+  if (widthGroups > 390) throw new Error(`groups scrollWidth ${widthGroups}`);
+  console.log("PASS 390px holds on Groups");
+
+  await player.getByRole("tab", { name: "Me" }).click();
   await player.getByText("Shell Player").waitFor({ timeout: 15000 });
+  await player.getByRole("tab", { name: "Groups" }).click();
+  await player.getByText("Start a new group").waitFor({ timeout: 15000 });
   console.log("PASS tabs navigate and carry their copy");
 
   // the mirror guard: a player opening the organiser stub is sent home
   await player.goto(`${APP}/organiser`);
-  await player.getByText("No sessions yet. Your group's nights will land here.").waitFor({ timeout: 15000 });
-  console.log("PASS player deep link to /organiser redirects to Today");
+  await player.getByText("No group yet").waitFor({ timeout: 15000 });
+  console.log("PASS player deep link to /organiser redirects to Groups");
 
   // organiser lands on the stub
   const organiser = await freshSignedInPage(`e2e-shell-o-${stamp}@shuttle-e2e.test`);
@@ -95,9 +92,9 @@ try {
   console.log("PASS 390px holds on the organiser stub");
 
   // organiser opening a player deep link is redirected to their surface
-  await organiser.goto(`${APP}/today`);
+  await organiser.goto(`${APP}/groups`);
   await organiser.getByText(/organiser console comes later/).waitFor({ timeout: 15000 });
-  console.log("PASS organiser deep link to /today redirects to the stub");
+  console.log("PASS organiser deep link to /groups redirects to the stub");
 } catch (e) {
   failed = e;
 } finally {
