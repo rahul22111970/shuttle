@@ -285,9 +285,11 @@ export default function LiveNight({
                 router.push(`/new-match?group=${groupId}&session=${session.id}`);
               })}
             />
-            <Text style={styles.quiet}>
-              Start this game deals the fairest four. Or pick any players yourself.
-            </Text>
+            {deal ? (
+              <Text style={styles.quiet}>
+                Start this game deals the fairest four. Or pick any players yourself.
+              </Text>
+            ) : null}
           </Card>
           {(() => {
             const currentIds = new Set(

@@ -23,7 +23,7 @@ export default function PlayerLayout() {
         headerShown: false,
         tabBarActiveTintColor: color.court,
         tabBarInactiveTintColor: color.ink3,
-        tabBarStyle: { backgroundColor: color.card, borderTopColor: color.line, height: 76, paddingBottom: 16, paddingTop: 8 },
+        tabBarStyle: { backgroundColor: color.card, borderTopColor: color.line, height: 82, paddingBottom: 22, paddingTop: 8 },
         tabBarLabelStyle: { fontFamily: font.bold, fontSize: 12, letterSpacing: 0.6 },
       }}
     >
