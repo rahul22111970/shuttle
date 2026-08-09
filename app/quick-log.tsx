@@ -89,6 +89,13 @@ export default function QuickLog() {
     <QuickLogView
       kind="ready"
       onBack={backToToday}
+      onBulk={() =>
+        router.push(
+          groupParam
+            ? `/bulk-log?group=${groupParam}${sessionParam ? `&session=${sessionParam}` : ""}`
+            : "/bulk-log"
+        )
+      }
       players={state.players}
       scoreA={scoreA}
       scoreB={scoreB}

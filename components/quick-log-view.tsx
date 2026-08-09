@@ -18,6 +18,7 @@ export type QuickLogViewProps =
   | {
       kind: "ready";
       onBack: () => void;
+      onBulk: () => void;
       players: readonly PickRow[];
       scoreA: string;
       scoreB: string;
@@ -136,6 +137,7 @@ export default function QuickLogView(props: QuickLogViewProps) {
           <ErrorNote>That did not save. Check your network and try again.</ErrorNote>
         ) : null}
       </Card>
+      <Button label="Paste a whole night" variant="quiet" onPress={props.onBulk} />
     </Screen>
   );
 }
