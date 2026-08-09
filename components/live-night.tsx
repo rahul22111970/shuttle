@@ -3,7 +3,8 @@
 // SessionView stays a planned-session concern.
 import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
+import { useLive } from "../lib/use-live";
 import { PRESETS } from "@shuttle/score";
 import { foley } from "../lib/foley";
 import { nightSummary } from "../lib/stats";
@@ -95,11 +96,7 @@ export default function LiveNight({
 
   // the tab stays mounted beneath a pushed scorer route; refetch whenever
   // the night regains focus so Done labels and standings are never stale
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useLive(load);
 
   // round failures draw inside the rounds card; check-in and score-a-game
   // failures draw under the night card, so no state can fail silently

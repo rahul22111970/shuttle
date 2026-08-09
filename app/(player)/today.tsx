@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
-import { router, useFocusEffect } from "expo-router";
+import { router } from "expo-router";
+import { useLive } from "../../lib/use-live";
 import type { MatchState } from "@shuttle/score";
 import TodayView, {
   type FeedRow,
@@ -181,11 +182,7 @@ export default function Today() {
     }
   }, [selfId]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useLive(load);
 
   if (state.kind === "loading") return <TodayView kind="loading" />;
   if (state.kind === "error") return <TodayView kind="error" onRetry={load} />;
