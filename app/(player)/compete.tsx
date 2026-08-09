@@ -49,6 +49,7 @@ export default function Stats() {
       const ratingRes = await supabase
         .from("rating_history")
         .select("player_id, rating_after, created_at")
+        .eq("group_id", group.id)
         .in("player_id", members.map((m: Member) => m.id));
       if (ratingRes.error) throw ratingRes.error;
 

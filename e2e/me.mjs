@@ -166,6 +166,7 @@ try {
     const r = await admin.from("rating_history").insert({
       player_id: userId,
       match_id: m.id,
+      group_id: groupId,
       rating_before: series[i].before,
       rating_after: series[i].after,
       k: 64,
@@ -205,7 +206,7 @@ try {
   // the published math carries the engine constants
   await me.getByText("How the rating works").click();
   const math = page.getByTestId("rating-math");
-  await math.getByText("Everyone starts at 1200. A win adds points to the winner and takes them from the loser. Nothing else moves your number.").waitFor({ timeout: 15000 });
+  await math.getByText("Everyone starts at 1200, in every group. Each group keeps its own ladder. Your number here is earned here. A win adds points to the winner and takes them from the loser. Nothing else moves your number.").waitFor({ timeout: 15000 });
   await math.getByText(/Yours is 32\./).waitFor({ timeout: 15000 });
   await math.getByText(/first 10 rated/).waitFor({ timeout: 15000 });
   await math.getByText(/use 64, so you find/).waitFor({ timeout: 15000 });

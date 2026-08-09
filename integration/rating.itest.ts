@@ -146,6 +146,7 @@ it("a fabricated pre-existing row is a loud RatingConflictError, never 'already 
   const planted = await admin.from("rating_history").insert({
     player_id: userId,
     match_id: row.id,
+    group_id: groupId,
     rating_before: 9999,
     rating_after: 9999,
     k: 64,
@@ -173,7 +174,7 @@ it("rating_replay_equality: rebuild from history equals stored rows", async () =
   );
   await recordRatings(row.id);
 
-  const rebuilt = await rebuildRatings(userId);
+  const rebuilt = await rebuildRatings(userId, groupId);
   const stored = await admin
     .from("rating_history")
     .select("player_id, match_id, rating_before, rating_after, k, created_at")

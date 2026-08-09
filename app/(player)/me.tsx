@@ -10,6 +10,8 @@ import MeView, {
 } from "../../components/me-view";
 import { INITIAL_RATING, PROVISIONAL_MATCHES } from "@shuttle/rating";
 import { useAuth } from "../../lib/auth";
+import { pickActive } from "../../lib/groups";
+import { listGroups } from "../../lib/session";
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from "../../lib/theme";
 import {
   chemistry,
@@ -75,14 +77,19 @@ export default function Me() {
       if (seq === loadSeq.current) setState(next);
     };
     try {
+      // ratings are per group: the card shows the ACTIVE group's ladder
+      const group = pickActive(await listGroups());
       const [played, ratingRes, captainRes] = await Promise.all([
         fetchPlayedMatches(selfId),
-        supabase
-          .from("rating_history")
-          .select("rating_after, created_at")
-          .eq("player_id", selfId)
-          .order("created_at", { ascending: true })
-          .order("id", { ascending: true }),
+        group
+          ? supabase
+              .from("rating_history")
+              .select("rating_after, created_at")
+              .eq("player_id", selfId)
+              .eq("group_id", group.id)
+              .order("created_at", { ascending: true })
+              .order("id", { ascending: true })
+          : Promise.resolve({ data: [] as { rating_after: number; created_at: string }[], error: null }),
         supabase.from("groups").select("id, name").eq("captain_id", selfId).maybeSingle(),
       ]);
       if (ratingRes.error) throw ratingRes.error;
@@ -104,6 +111,7 @@ export default function Me() {
           current: series.length > 0 ? series[series.length - 1] : INITIAL_RATING,
           provisional: series.length < PROVISIONAL_MATCHES,
           series,
+          groupName: group?.name ?? null,
         },
         winPct: winPct(played),
         streak: currentStreak(played),

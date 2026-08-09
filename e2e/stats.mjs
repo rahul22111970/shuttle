@@ -145,6 +145,7 @@ try {
       const after = series[pid][i];
       const before = i === 0 ? 1200 : series[pid][i - 1];
       const r = await admin.from("rating_history").insert({
+        group_id: groupId,
         player_id: pid,
         match_id: m.id,
         rating_before: before,

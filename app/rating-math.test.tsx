@@ -13,7 +13,7 @@ import RatingMath from "./rating-math";
 // the rendered page, so a tuning change that skips the page fails loudly
 it("displayed constants equal the engine's exports", async () => {
   await render(<RatingMath />);
-  expect(screen.getByText(new RegExp(`Everyone starts at ${INITIAL_RATING}\\.`))).toBeTruthy();
+  expect(screen.getByText(new RegExp(`Everyone starts at ${INITIAL_RATING}, in every group\\.`))).toBeTruthy();
   expect(screen.getByText(new RegExp(`Yours is ${BASE_K}\\.`))).toBeTruthy();
   expect(screen.getByText(new RegExp(`first ${PROVISIONAL_MATCHES} rated`))).toBeTruthy();
   expect(screen.getByText(new RegExp(`use ${PROVISIONAL_K}, so you find`))).toBeTruthy();

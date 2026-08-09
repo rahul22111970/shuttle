@@ -29,6 +29,8 @@ export type RatingLine = {
   provisional: boolean;
   // rating_after series, oldest first; empty until the first rated game
   series: readonly number[];
+  // ratings are per group: the ladder this number belongs to
+  groupName: string | null;
 };
 
 export type MeViewProps =
@@ -112,7 +114,7 @@ export default function MeView(props: MeViewProps) {
     <Screen testID="me-screen">
       <AppBar title={props.name} sub={props.detail} />
       <Card testID="rating-card">
-        <Text style={styles.title}>Rating</Text>
+        <Text style={styles.title}>{props.rating.groupName ? `Rating · ${props.rating.groupName}` : "Rating"}</Text>
         <View style={styles.formRow}>
           <View style={styles.stat}>
             <Text style={styles.ratingHero}>{props.rating.current}</Text>

@@ -8,7 +8,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     kind: "ready",
     name: "Rahul Pareek",
     detail: "Player · +917018654784",
-    rating: { current: 1200, provisional: true, series: [] },
+    rating: { current: 1200, provisional: true, series: [], groupName: 'Tuesday Gang' },
     winPct: null,
     streak: 0,
     lastTen: [],
@@ -38,7 +38,7 @@ it("a new player sees name, detail and every empty state", async () => {
 
 it("the rating hero shows the current number and its state", async () => {
   await render(
-    <MeView {...ready({ rating: { current: 1252, provisional: true, series: [1232, 1252] } })} />
+    <MeView {...ready({ rating: { current: 1252, provisional: true, series: [1232, 1252], groupName: 'Tuesday Gang' } })} />
   );
   expect(screen.getByText("1252")).toBeTruthy();
   expect(screen.getByText("Finding your level")).toBeTruthy();
@@ -59,7 +59,7 @@ it("an established player reads Established", async () => {
   await render(
     <MeView
       {...ready({
-        rating: { current: 1301, provisional: false, series: Array(12).fill(1300) },
+        rating: { current: 1301, provisional: false, series: Array(12).fill(1300), groupName: 'Tuesday Gang' },
       })}
     />
   );

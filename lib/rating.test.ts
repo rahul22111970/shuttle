@@ -26,7 +26,7 @@ const snapshot = (over: Partial<MatchState>): MatchState =>
 const matchOf = (
   snap: MatchState,
   participants: { player_id: string; side: "a" | "b" }[]
-) => ({ id: "m1", config: snap.config, snapshot: snap, participants });
+) => ({ id: "m1", group_id: "g1", config: snap.config, snapshot: snap, participants });
 
 const fresh = (): PlayerRating => ({ rating: INITIAL_RATING, matchesPlayed: 0 });
 

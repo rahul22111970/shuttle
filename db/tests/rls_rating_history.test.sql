@@ -46,17 +46,17 @@ insert into public.match_participants (match_id, player_id, side) values
   ('00000000-0000-4000-8000-00000000e004', '00000000-0000-4000-8000-00000000e0bb', 'b');
 
 -- a member records both players' lines for the match
-insert into public.rating_history (player_id, match_id, rating_before, rating_after, k, created_by) values
-  ('00000000-0000-4000-8000-00000000e0aa', '00000000-0000-4000-8000-00000000e002', 1200, 1232, 64,
+insert into public.rating_history (player_id, match_id, group_id, rating_before, rating_after, k, created_by) values
+  ('00000000-0000-4000-8000-00000000e0aa', '00000000-0000-4000-8000-00000000e002', '00000000-0000-4000-8000-00000000e001', 1200, 1232, 64,
    '00000000-0000-4000-8000-00000000e0aa'),
-  ('00000000-0000-4000-8000-00000000e0bb', '00000000-0000-4000-8000-00000000e002', 1200, 1168, 64,
+  ('00000000-0000-4000-8000-00000000e0bb', '00000000-0000-4000-8000-00000000e002', '00000000-0000-4000-8000-00000000e001', 1200, 1168, 64,
    '00000000-0000-4000-8000-00000000e0aa');
 
 -- rating_history_duplicate_player_match_denied
 do $$ begin
   begin
-    insert into public.rating_history (player_id, match_id, rating_before, rating_after, k, created_by) values
-      ('00000000-0000-4000-8000-00000000e0aa', '00000000-0000-4000-8000-00000000e002', 1232, 1260, 64,
+    insert into public.rating_history (player_id, match_id, group_id, rating_before, rating_after, k, created_by) values
+      ('00000000-0000-4000-8000-00000000e0aa', '00000000-0000-4000-8000-00000000e002', '00000000-0000-4000-8000-00000000e001', 1232, 1260, 64,
        '00000000-0000-4000-8000-00000000e0aa');
     raise exception 'TEST FAIL rating_history_duplicate_player_match_denied: insert succeeded';
   exception when unique_violation then null;
@@ -66,8 +66,8 @@ end $$;
 -- rating_history_subject_not_on_match_denied: C never played this match
 do $$ begin
   begin
-    insert into public.rating_history (player_id, match_id, rating_before, rating_after, k, created_by) values
-      ('00000000-0000-4000-8000-00000000e0cc', '00000000-0000-4000-8000-00000000e002', 1200, 1232, 64,
+    insert into public.rating_history (player_id, match_id, group_id, rating_before, rating_after, k, created_by) values
+      ('00000000-0000-4000-8000-00000000e0cc', '00000000-0000-4000-8000-00000000e002', '00000000-0000-4000-8000-00000000e001', 1200, 1232, 64,
        '00000000-0000-4000-8000-00000000e0aa');
     raise exception 'TEST FAIL rating_history_subject_not_on_match_denied: insert succeeded';
   exception when insufficient_privilege then null;
@@ -77,8 +77,8 @@ end $$;
 -- rating_history_created_by_forgery_denied
 do $$ begin
   begin
-    insert into public.rating_history (player_id, match_id, rating_before, rating_after, k, created_by) values
-      ('00000000-0000-4000-8000-00000000e0bb', '00000000-0000-4000-8000-00000000e004', 1200, 1100, 32,
+    insert into public.rating_history (player_id, match_id, group_id, rating_before, rating_after, k, created_by) values
+      ('00000000-0000-4000-8000-00000000e0bb', '00000000-0000-4000-8000-00000000e004', '00000000-0000-4000-8000-00000000e001', 1200, 1100, 32,
        '00000000-0000-4000-8000-00000000e0bb');
     raise exception 'TEST FAIL rating_history_created_by_forgery_denied: insert succeeded';
   exception when insufficient_privilege then null;
@@ -125,10 +125,23 @@ insert into public.group_members (group_id, player_id) values
 -- rating_history_insert_by_non_member_denied
 do $$ begin
   begin
-    insert into public.rating_history (player_id, match_id, rating_before, rating_after, k, created_by) values
-      ('00000000-0000-4000-8000-00000000e0aa', '00000000-0000-4000-8000-00000000e004', 1200, 1000, 32,
+    insert into public.rating_history (player_id, match_id, group_id, rating_before, rating_after, k, created_by) values
+      ('00000000-0000-4000-8000-00000000e0aa', '00000000-0000-4000-8000-00000000e004', '00000000-0000-4000-8000-00000000e001', 1200, 1000, 32,
        '00000000-0000-4000-8000-00000000e0cc');
     raise exception 'TEST FAIL rating_history_insert_by_non_member_denied: insert succeeded';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- rating_history_wrong_group_label_denied: the row must claim the match's
+-- own group, not someone else's ladder
+set local request.jwt.claims to '{"sub":"00000000-0000-4000-8000-00000000e0aa","role":"authenticated"}';
+do $$ begin
+  begin
+    insert into public.rating_history (player_id, match_id, group_id, rating_before, rating_after, k, created_by) values
+      ('00000000-0000-4000-8000-00000000e0bb', '00000000-0000-4000-8000-00000000e004', '00000000-0000-4000-8000-00000000e003', 1200, 1100, 32,
+       '00000000-0000-4000-8000-00000000e0aa');
+    raise exception 'TEST FAIL rating_history_wrong_group_label_denied: insert succeeded';
   exception when insufficient_privilege then null;
   end;
 end $$;

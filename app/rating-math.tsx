@@ -20,8 +20,9 @@ export default function RatingMath() {
       <Card>
         <Text style={styles.title}>How the rating works</Text>
         <Text style={styles.copy}>
-          Everyone starts at {INITIAL_RATING}. A win adds points to the winner and takes
-          them from the loser. Nothing else moves your number.
+          Everyone starts at {INITIAL_RATING}, in every group. Each group keeps its own
+          ladder. Your number here is earned here. A win adds points to the winner and
+          takes them from the loser. Nothing else moves your number.
         </Text>
       </Card>
       <Card>

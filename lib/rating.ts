@@ -15,6 +15,7 @@ import { supabase } from "./supabase";
 export type RatingRow = {
   player_id: string;
   match_id: string;
+  group_id: string;
   rating_before: number;
   rating_after: number;
   k: number;
@@ -58,6 +59,7 @@ export function pointMarginFor(snapshot: MatchState): number {
 // with a per-player advisory lock. rebuildRatings is the detector.
 export async function ratingStateFor(
   playerIds: readonly string[],
+  groupId: string,
   excludeMatchId?: string,
   beforeCutoff?: string
 ): Promise<Map<string, PlayerRating>> {
@@ -68,6 +70,7 @@ export async function ratingStateFor(
   let query = supabase
     .from("rating_history")
     .select("player_id, rating_after, created_at")
+    .eq("group_id", groupId)
     .in("player_id", playerIds as string[])
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
@@ -88,6 +91,7 @@ export async function ratingStateFor(
 
 type MatchForRating = {
   id: string;
+  group_id: string;
   config: MatchConfig;
   snapshot: MatchState;
   participants: readonly { player_id: string; side: "a" | "b" }[];
@@ -96,13 +100,14 @@ type MatchForRating = {
 async function fetchMatchForRating(matchId: string): Promise<MatchForRating | null> {
   const res = await supabase
     .from("matches")
-    .select("id, config, status, snapshot, match_participants(player_id, side)")
+    .select("id, group_id, config, status, snapshot, match_participants(player_id, side)")
     .eq("id", matchId)
     .maybeSingle();
   if (res.error) throw res.error;
   if (!res.data || res.data.status !== "complete" || !res.data.snapshot) return null;
   return {
     id: res.data.id,
+    group_id: res.data.group_id,
     config: res.data.config as MatchConfig,
     snapshot: res.data.snapshot as MatchState,
     participants: res.data.match_participants as MatchForRating["participants"],
@@ -133,6 +138,7 @@ export function ratingRowsFor(
     return {
       player_id: id,
       match_id: match.id,
+      group_id: match.group_id,
       rating_before: Math.round(before.rating),
       rating_after: Math.round(before.rating + delta),
       k: kFor(before.matchesPlayed),
@@ -174,7 +180,7 @@ export async function recordRatings(matchId: string): Promise<RatingRow[]> {
   if (!match) return [];
   const existing = await supabase
     .from("rating_history")
-    .select("player_id, match_id, rating_before, rating_after, k, created_at")
+    .select("player_id, match_id, group_id, rating_before, rating_after, k, created_at")
     .eq("match_id", matchId);
   if (existing.error) throw existing.error;
 
@@ -183,11 +189,11 @@ export async function recordRatings(matchId: string): Promise<RatingRow[]> {
     // recompute against prior state AS OF the first recording, or any
     // match rated since would turn an innocent retry into a false conflict
     const cutoff = existing.data.map((r) => r.created_at).sort()[0];
-    const asOf = await ratingStateFor(playerIds, matchId, cutoff);
+    const asOf = await ratingStateFor(playerIds, match.group_id, matchId, cutoff);
     if (rowsEqual(existing.data, ratingRowsFor(match, asOf))) return existing.data;
     throw new RatingConflictError(matchId);
   }
-  const state = await ratingStateFor(playerIds, matchId);
+  const state = await ratingStateFor(playerIds, match.group_id, matchId);
   const rows = ratingRowsFor(match, state);
   if (rows.length === 0) return [];
 
@@ -200,11 +206,11 @@ export async function recordRatings(matchId: string): Promise<RatingRow[]> {
     if (ins.error.code === "23505") {
       const again = await supabase
         .from("rating_history")
-        .select("player_id, match_id, rating_before, rating_after, k, created_at")
+        .select("player_id, match_id, group_id, rating_before, rating_after, k, created_at")
         .eq("match_id", matchId);
       if (again.error) throw again.error;
       const cutoff = again.data.map((r) => r.created_at).sort()[0];
-      const asOf = await ratingStateFor(playerIds, matchId, cutoff);
+      const asOf = await ratingStateFor(playerIds, match.group_id, matchId, cutoff);
       if (rowsEqual(again.data, ratingRowsFor(match, asOf))) return again.data;
       throw new RatingConflictError(matchId);
     }
@@ -216,11 +222,12 @@ export async function recordRatings(matchId: string): Promise<RatingRow[]> {
 // Replay the player's stored chain through the engine: own rating rebuilt
 // from INITIAL_RATING forward, opponents taken at their STORED
 // rating_before for each match. Proves the chain was engine-written.
-export async function rebuildRatings(playerId: string): Promise<RatingRow[]> {
+export async function rebuildRatings(playerId: string, groupId: string): Promise<RatingRow[]> {
   const own = await supabase
     .from("rating_history")
     .select("match_id, created_at")
     .eq("player_id", playerId)
+    .eq("group_id", groupId)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
   if (own.error) throw own.error;
@@ -232,7 +239,7 @@ export async function rebuildRatings(playerId: string): Promise<RatingRow[]> {
     if (!match) continue;
     const others = await supabase
       .from("rating_history")
-      .select("player_id, match_id, rating_before, rating_after, k")
+      .select("player_id, match_id, group_id, rating_before, rating_after, k")
       .eq("match_id", entry.match_id);
     if (others.error) throw others.error;
     const state = new Map<string, PlayerRating>();
