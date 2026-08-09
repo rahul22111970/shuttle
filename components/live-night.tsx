@@ -348,6 +348,11 @@ export default function LiveNight({
               onPress={() => router.push(`/quick-log?group=${groupId}&session=${session.id}`)}
             />
             <Button
+              label="Paste a whole night"
+              variant="quiet"
+              onPress={() => router.push(`/bulk-log?group=${groupId}&session=${session.id}`)}
+            />
+            <Button
               label="Score live"
               variant="quiet"
               busy={busy === "score"}
