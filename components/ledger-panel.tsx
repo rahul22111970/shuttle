@@ -28,6 +28,7 @@ export default function LedgerPanel({
 }) {
   const [vpa, setVpa] = useState<string | null>(null);
   const [debtors, setDebtors] = useState<DebtorRow[]>([]);
+  const [hasEvents, setHasEvents] = useState(false);
   const [settled, setSettled] = useState<ReadonlySet<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -50,7 +51,8 @@ export default function LedgerPanel({
       if (error) throw error;
       setVpa(data?.upi_vpa ?? null);
 
-      const { nets } = await groupBalances(groupId);
+      const { nets, events } = await groupBalances(groupId);
+      setHasEvents(events.length > 0);
       const rows: DebtorRow[] = [];
       for (const member of members) {
         if (member.id === captainId) continue;
@@ -87,6 +89,7 @@ export default function LedgerPanel({
     return (
       <LedgerView
         kind="missing-vpa"
+        compact={!hasEvents}
         isCaptain={isCaptain}
         busy={busyVpa}
         actionError={actionError}

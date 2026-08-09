@@ -20,6 +20,8 @@ export type LedgerViewProps =
   | { kind: "load-error"; onRetry: () => void }
   | {
       kind: "missing-vpa";
+      // true until the first expense: the prompt stays one quiet line
+      compact?: boolean;
       isCaptain: boolean;
       busy: boolean;
       actionError: boolean;
@@ -63,6 +65,7 @@ export const looksLikeVpa = (v: string) => /^[\w.\-]+@[\w\-]+$/.test(v);
 export default function LedgerView(props: LedgerViewProps) {
   const [vpaText, setVpaText] = useState("");
   const [amountText, setAmountText] = useState("");
+  const [vpaOpen, setVpaOpen] = useState(false);
   const [note, setNote] = useState<"Court" | "Shuttles">("Court");
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
 
@@ -77,6 +80,18 @@ export default function LedgerView(props: LedgerViewProps) {
   }
 
   if (props.kind === "missing-vpa") {
+    if (props.compact && !vpaOpen) {
+      return (
+        <Card>
+          <Text style={styles.title}>Money</Text>
+          {props.isCaptain ? (
+            <Button label="Add UPI ID to collect money" variant="quiet" onPress={() => setVpaOpen(true)} />
+          ) : (
+            <Text style={styles.quiet}>No money moved tonight.</Text>
+          )}
+        </Card>
+      );
+    }
     return (
       <Card>
         <Text style={styles.title}>Money</Text>

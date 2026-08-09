@@ -90,6 +90,7 @@ try {
   await page.reload();
 
   // missing-VPA prompt for the captain (named assertion)
+  await page.getByText("Add UPI ID to collect money").click();
   await page.getByText("Add your UPI ID so the group can pay you.").waitFor({ timeout: 15000 });
   console.log("PASS missing-VPA state renders");
 

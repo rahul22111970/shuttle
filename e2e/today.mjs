@@ -148,7 +148,7 @@ try {
 
   // actions navigate: ledger opens the session tab, log-a-game opens the door
   await page.getByText("Open the ledger").click();
-  await page.getByText("Add your UPI ID so the group can pay you.").waitFor({ timeout: 15000 });
+  await page.getByText("Add UPI ID to collect money").waitFor({ timeout: 15000 });
   console.log("PASS the money card action lands on the ledger");
   await page.getByRole("tab", { name: "Today" }).click();
   await page.getByText("Log a game").click();

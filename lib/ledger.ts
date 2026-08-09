@@ -131,9 +131,11 @@ export type GroupBalances = {
   nets: PairwiseNets;
   // positive = owes the group, negative = is owed
   perPlayer: Readonly<Record<string, number>>;
+  events: readonly LedgerEventRow[];
 };
 
 export async function groupBalances(groupId: string): Promise<GroupBalances> {
-  const nets = pairwiseNets(toSplitEvents(await fetchGroupLedger(groupId)));
-  return { nets, perPlayer: totals(nets) };
+  const events = await fetchGroupLedger(groupId);
+  const nets = pairwiseNets(toSplitEvents(events));
+  return { nets, perPlayer: totals(nets), events };
 }

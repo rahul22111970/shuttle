@@ -242,6 +242,53 @@ export default function LiveNight({
         <ErrorNote>Could not reach the hall. Check your network and try again.</ErrorNote>
       ) : (
         <>
+          <Card>
+            <Text style={styles.title}>Play</Text>
+            {checkedIn.length === 3 ? (
+              <Text style={styles.quiet}>One more for a game.</Text>
+            ) : checkedIn.length < 2 ? (
+              <Text style={styles.quiet}>Check two people in to start a game.</Text>
+            ) : deal ? (
+              <>
+                <Text style={styles.dealNames}>{pairingLine}</Text>
+                <Text style={styles.quiet}>Fewest games first, by arrival.</Text>
+                <Button
+                  label="Start this game"
+                  busy={busy === "deal"}
+                  busyLabel="Setting up…"
+                  onPress={act("deal", async () => {
+                    const participants: Participant[] = [
+                      ...deal.a.map((player_id) => ({ player_id, side: "a" as const })),
+                      ...deal.b.map((player_id) => ({ player_id, side: "b" as const })),
+                    ];
+                    const live = await startMatch(
+                      groupId,
+                      PRESETS.casual1x21,
+                      participants,
+                      session.id
+                    );
+                    foley.serve();
+                    router.push(`/match/${live.matchId}`);
+                  })}
+                />
+              </>
+            ) : null}
+            {dealError ? (
+              <ErrorNote>That did not go through. Try again.</ErrorNote>
+            ) : null}
+            <Button
+              label="Score a game"
+              variant="quiet"
+              busy={busy === "score"}
+              busyLabel="Setting up…"
+              onPress={act("score", async () => {
+                router.push(`/new-match?group=${groupId}&session=${session.id}`);
+              })}
+            />
+            <Text style={styles.quiet}>
+              Start this game deals the fairest four. Or pick any players yourself.
+            </Text>
+          </Card>
           {(() => {
             const currentIds = new Set(
               rounds.length > 0 ? rounds[rounds.length - 1].matchIds : []
@@ -282,40 +329,6 @@ export default function LiveNight({
               </Card>
             );
           })()}
-          {checkedIn.length === 3 ? (
-            <Card>
-              <Text style={styles.title}>Next game</Text>
-              <Text style={styles.quiet}>One more for a game.</Text>
-            </Card>
-          ) : deal ? (
-            <Card>
-              <Text style={styles.title}>Next game</Text>
-              <Text style={styles.dealNames}>{pairingLine}</Text>
-              <Text style={styles.quiet}>Fewest games first, by arrival.</Text>
-              <Button
-                label="Start this game"
-                busy={busy === "deal"}
-                busyLabel="Setting up…"
-                onPress={act("deal", async () => {
-                  const participants: Participant[] = [
-                    ...deal.a.map((player_id) => ({ player_id, side: "a" as const })),
-                    ...deal.b.map((player_id) => ({ player_id, side: "b" as const })),
-                  ];
-                  const live = await startMatch(
-                    groupId,
-                    PRESETS.casual1x21,
-                    participants,
-                    session.id
-                  );
-                  foley.serve();
-                  router.push(`/match/${live.matchId}`);
-                })}
-              />
-              {dealError ? (
-                <ErrorNote>That did not go through. Try again.</ErrorNote>
-              ) : null}
-            </Card>
-          ) : null}
           <RoundsView {...roundsProps()} />
           {(() => {
             const rows = nightSummary(
@@ -360,15 +373,6 @@ export default function LiveNight({
           />
         </>
       )}
-      <Button
-        label="Score a game"
-        variant="quiet"
-        busy={busy === "score"}
-        busyLabel="Setting up…"
-        onPress={act("score", async () => {
-          router.push(`/new-match?group=${groupId}&session=${session.id}`);
-        })}
-      />
     </Screen>
   );
 }
