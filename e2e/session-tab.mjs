@@ -13,8 +13,8 @@ const parseEnv = (path) =>
       .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)])
   );
 
-const pub = parseEnv(".env.local");
-const sec = parseEnv(".secrets.env");
+const pub = parseEnv(process.env.SHUTTLE_ENV_FILE ?? ".env.local");
+const sec = parseEnv(process.env.SHUTTLE_SECRETS_FILE ?? ".secrets.env");
 const APP = "http://localhost:3000";
 
 const admin = createClient(pub.EXPO_PUBLIC_SUPABASE_URL, sec.SUPABASE_ADMIN_KEY, {

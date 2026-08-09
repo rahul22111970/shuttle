@@ -63,6 +63,26 @@ jobs:
             exit 1
           fi
 
+  # Deploys develop to the shuttle-staging Vercel project (its env points at
+  # the staging Supabase). Same gates, different target: risky work bakes
+  # here before it may merge to main.
+  deploy-staging:
+    if: github.ref == 'refs/heads/develop'
+    needs: [typecheck, test, export, secret-scan]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      # the canonical domain, not the per-deployment URL: unique deployment
+      # URLs sit behind Vercel's deployment protection and would 401 here
+      - run: |
+          npx vercel@54.13.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+          test "$(curl -s -o /dev/null -w '%{http_code}' https://shuttle-staging.vercel.app)" = 200
+          curl -s https://shuttle-staging.vercel.app | grep -q 'id="root"'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_STAGING_PROJECT_ID }}
+
   # Deploys only from main, only after every gate is green. The token enters
   # the shell as env and reaches the CLI via expansion, so the workflow-rendered
   # command never contains it and GitHub masks it in logs. Actions are

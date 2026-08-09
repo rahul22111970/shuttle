@@ -17,8 +17,12 @@ const MIME = {
   ".ttf": "font/ttf",
 };
 
-// the api handlers read Vercel env; feed them the local files once
-for (const envFile of [".env.local", ".secrets.env"]) {
+// the api handlers read Vercel env; feed them the local files once. The
+// battery points these at staging via SHUTTLE_ENV_FILE/SHUTTLE_SECRETS_FILE.
+for (const envFile of [
+  process.env.SHUTTLE_ENV_FILE ?? ".env.local",
+  process.env.SHUTTLE_SECRETS_FILE ?? ".secrets.env",
+]) {
   if (!existsSync(envFile)) continue;
   for (const line of readFileSync(envFile, "utf8").split("\n")) {
     const i = line.indexOf("=");
