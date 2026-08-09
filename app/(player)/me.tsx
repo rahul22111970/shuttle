@@ -79,7 +79,7 @@ export default function Me() {
     try {
       // ratings are per group: the card shows the ACTIVE group's ladder
       const group = pickActive(await listGroups());
-      const [played, ratingRes, captainRes] = await Promise.all([
+      const [played, ratingRes] = await Promise.all([
         fetchPlayedMatches(selfId),
         group
           ? supabase
@@ -90,10 +90,14 @@ export default function Me() {
               .order("created_at", { ascending: true })
               .order("id", { ascending: true })
           : Promise.resolve({ data: [] as { rating_after: number; created_at: string }[], error: null }),
-        supabase.from("groups").select("id, name").eq("captain_id", selfId).maybeSingle(),
       ]);
       if (ratingRes.error) throw ratingRes.error;
-      if (captainRes.error) throw captainRes.error;
+      // captaining the ACTIVE group is what unlocks captain tools; a
+      // maybeSingle over all captaincies crashed the screen the moment
+      // one person captained two groups
+      const captainRes = {
+        data: group && group.captain_id === selfId ? { id: group.id, name: group.name } : null,
+      };
       const series = ratingRes.data.map((r) => r.rating_after);
       const ids = [
         ...new Set(played.flatMap((m) => [...m.partnerIds, ...m.opponentIds])),

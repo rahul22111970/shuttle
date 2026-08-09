@@ -22,6 +22,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { TextInput } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
+import AddPlayer from "./add-player";
 import LedgerPanel from "./ledger-panel";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
 import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
@@ -64,10 +65,6 @@ export default function LiveNight({
   const [dealError, setDealError] = useState(false);
   const [failed, setFailed] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
-  const [addName, setAddName] = useState("");
-  const [addPhone, setAddPhone] = useState("");
-  const [addBusy, setAddBusy] = useState(false);
-  const [addNote, setAddNote] = useState<string | null>(null);
   const [closeArmed, setCloseArmed] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -244,62 +241,11 @@ export default function LiveNight({
         ) : null}
         {selfId === captainId ? (
           addOpen ? (
-            <>
-              <TextInput
-                style={styles.addInput}
-                value={addName}
-                onChangeText={setAddName}
-                placeholder="Their name"
-                accessibilityLabel="New player name"
-                placeholderTextColor={color.ink3}
-              />
-              <TextInput
-                style={styles.addInput}
-                value={addPhone}
-                onChangeText={setAddPhone}
-                placeholder="Their number"
-                accessibilityLabel="New player number"
-                inputMode="tel"
-                placeholderTextColor={color.ink3}
-              />
-              <Button
-                label="Add to the group"
-                busy={addBusy}
-                busyLabel="Adding…"
-                disabled={!addName.trim() || addPhone.replace(/\D/g, "").length < 10}
-                onPress={async () => {
-                  setAddBusy(true);
-                  setAddNote(null);
-                  try {
-                    const token = (await supabase.auth.getSession()).data.session?.access_token;
-                    const r = await fetch("/api/add-player", {
-                      method: "POST",
-                      headers: {
-                        "content-type": "application/json",
-                        authorization: `Bearer ${token}`,
-                      },
-                      body: JSON.stringify({ groupId, name: addName, phone: addPhone }),
-                    });
-                    const body = await r.json();
-                    if (!r.ok) throw new Error(body.error ?? "failed");
-                    setAddNote(`${body.name} is in. They sign in with their number and the group code.`);
-                    setAddName("");
-                    setAddPhone("");
-                    setAddOpen(false);
-                    await load();
-                  } catch (e) {
-                    setAddNote(e instanceof Error && e.message !== "failed" ? e.message : "Could not add them. Try again.");
-                  } finally {
-                    setAddBusy(false);
-                  }
-                }}
-              />
-            </>
+            <AddPlayer groupId={groupId} onAdded={load} />
           ) : (
             <Button label="Add a player" variant="quiet" onPress={() => setAddOpen(true)} />
           )
         ) : null}
-        {addNote ? <Text style={styles.quiet}>{addNote}</Text> : null}
         {nightError ? (
           <ErrorNote>That did not go through. Try again.</ErrorNote>
         ) : null}

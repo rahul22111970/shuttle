@@ -9,6 +9,7 @@ import { createGroup, listGroups, type Group } from "../lib/session";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { color, font, radius, size, space, tracking } from "../theme/tokens";
+import AddPlayer from "../components/add-player";
 import { BackBar, Button, Card, Chip, ErrorNote, Screen } from "../components/ui";
 
 type Row = Group & { members: number };
@@ -110,6 +111,20 @@ export default function Groups() {
         )}
         <Text style={styles.quiet}>The active group is what Today and Session show.</Text>
       </Card>
+      {(() => {
+        const active = state.rows.find((r) => r.id === state.active);
+        if (!active || active.captain_id !== selfId) return null;
+        return (
+          <Card testID="add-player-card">
+            <Text style={styles.title}>{`Add a player to ${active.name}`}</Text>
+            <Text style={styles.quiet}>
+              Their account exists the moment you add them. Share the group code and they
+              are in.
+            </Text>
+            <AddPlayer groupId={active.id} onAdded={load} />
+          </Card>
+        );
+      })()}
       <Card>
         <Text style={styles.title}>Start a new group</Text>
         <TextInput

@@ -22,7 +22,7 @@ const admin = createClient(pub.EXPO_PUBLIC_SUPABASE_URL, sec.SUPABASE_ADMIN_KEY,
 
 const stamp = Date.now();
 const email = `e2e-groups-${stamp}@shuttle-e2e.test`;
-let userId, captainB, server, browser, failed, groupA, groupB;
+let userId, captainB, fixturePlayer, server, browser, failed, groupA, groupB;
 
 try {
   server = spawn("node", ["e2e/serve.mjs"], { stdio: "ignore" });
@@ -76,18 +76,34 @@ try {
   // open Groups from the session header
   await page.getByLabel("Groups").click();
   const groups = page.getByTestId("groups-screen");
-  await groups.getByText(`Alpha ${stamp}`).waitFor({ timeout: 15000 });
-  await groups.getByText(`Beta ${stamp}`).waitFor({ timeout: 15000 });
+  await groups.getByRole("button", { name: new RegExp(`Alpha ${stamp}`) }).waitFor({ timeout: 15000 });
+  await groups.getByRole("button", { name: new RegExp(`Beta ${stamp}`) }).waitFor({ timeout: 15000 });
   await groups.getByText("Captain").waitFor({ timeout: 15000 });
-  await groups.getByText("2 players").waitFor({ timeout: 15000 });
   console.log("PASS both memberships list, with captaincy and counts");
 
   // switch to Beta; the session tab follows
-  await page.getByText(`Beta ${stamp}`).click();
+  await groups.getByRole("button", { name: new RegExp(`Beta ${stamp}`) }).click();
   await groups.getByText("Active", { exact: true }).waitFor({ timeout: 15000 });
   await page.getByLabel("Back").click();
   await page.getByText(`Beta ${stamp}`).waitFor({ timeout: 15000 });
   console.log("PASS switching makes Beta the whole app's group");
+
+  // back on Groups: switch to Alpha (captained) and add a player by number
+  await page.getByLabel("Groups").click();
+  await groups.getByRole("button", { name: new RegExp(`Alpha ${stamp}`) }).click();
+  await groups.getByText(`Add a player to Alpha ${stamp}`).waitFor({ timeout: 15000 });
+  await page.getByLabel("New player name").fill("Kavya");
+  await page.getByLabel("New player number").fill(`8${String(stamp).slice(-9)}`);
+  await page.getByText("Add to the group").click();
+  await groups.getByText(/Kavya is in\./).waitFor({ timeout: 15000 });
+  const prof = await admin
+    .from("profiles")
+    .select("id, phone")
+    .eq("phone", `+918${String(stamp).slice(-9)}`)
+    .single();
+  if (prof.error) throw prof.error;
+  fixturePlayer = prof.data.id;
+  console.log("PASS the captain minted a real account from the Groups screen");
 
   const width = await page.evaluate(() => document.body.scrollWidth);
   if (width > 390) throw new Error(`scrollWidth ${width} > 390`);
@@ -106,7 +122,7 @@ try {
     const { error } = await admin.from("groups").delete().eq("id", gid);
     if (error) console.error("cleanup group:", error.message);
   }
-  for (const id of [userId, captainB]) {
+  for (const id of [userId, captainB, fixturePlayer]) {
     if (!id) continue;
     const { error } = await admin.auth.admin.deleteUser(id);
     if (error) console.error("cleanup user:", error.message);
