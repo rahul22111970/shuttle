@@ -8,6 +8,7 @@ import TodayView, {
 } from "../../components/today-view";
 import { useAuth } from "../../lib/auth";
 import { groupBalances } from "../../lib/ledger";
+import { pickActive } from "../../lib/groups";
 import {
   getRoster,
   listGroupMembers,
@@ -91,8 +92,7 @@ export default function Today() {
     };
     const emptyWeek: WeekStrip = { sessions: 0, games: 0, winsPct: null };
     try {
-      const groups = await listGroups();
-      const group = groups[0] ?? null;
+      const group = pickActive(await listGroups());
       if (!group) {
         paint({
           kind: "ready",

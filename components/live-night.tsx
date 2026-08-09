@@ -205,7 +205,7 @@ export default function LiveNight({
 
   return (
     <Screen>
-      <AppBar title="Session" sub={groupName} />
+      <AppBar title="Session" sub={groupName} onAction={() => router.push("/groups")} actionLabel="Groups" />
       <Card>
         <Text style={styles.title}>Who's here</Text>
         <Text style={styles.liveNote}>The night is on.</Text>

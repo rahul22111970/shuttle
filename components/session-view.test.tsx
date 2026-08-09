@@ -24,14 +24,14 @@ it("renders the error state by name, with a retry action", async () => {
 });
 
 it("renders the empty (no-group) state by name", async () => {
-  await render(<SessionView kind="no-group" busy={false} actionError={false} onCreateGroup={noop} />);
+  await render(<SessionView kind="no-group" busy={false} actionError={false} onCreateGroup={noop} onOpenGroups={noop} />);
   expect(screen.getByText("No group yet")).toBeTruthy();
   expect(screen.getByText("Start the group")).toBeTruthy();
 });
 
 it("renders the no-session state with the planning presets", async () => {
   await render(
-    <SessionView kind="no-session" groupName="Tuesday Gang" busy={false} actionError={false} onPlanSession={noop} />
+    <SessionView kind="no-session" groupName="Tuesday Gang" busy={false} actionError={false} onPlanSession={noop} onOpenGroups={noop} />
   );
   expect(screen.getByText("Nothing planned. Pick a night.")).toBeTruthy();
   expect(screen.getByText("Tomorrow 7 pm")).toBeTruthy(); // always exists; Tonight filters after 7 pm
@@ -42,7 +42,7 @@ it("renders the no-session state with the planning presets", async () => {
 it("tapping a suggestion selects it; only the Plan button plans", async () => {
   const onPlanSession = jest.fn();
   await render(
-    <SessionView kind="no-session" groupName="Tuesday Gang" busy={false} actionError={false} onPlanSession={onPlanSession} />
+    <SessionView kind="no-session" groupName="Tuesday Gang" busy={false} actionError={false} onPlanSession={onPlanSession} onOpenGroups={noop} />
   );
   const user = userEvent.setup();
   await user.press(screen.getByText("Tomorrow 7 am"));
@@ -69,7 +69,7 @@ it("renders the roster with attending chips and the right call to action", async
       actionError={false}
       onRsvpIn={noop}
       onRsvpOut={noop}
-      onStartNight={noop}
+      onStartNight={noop} onOpenGroups={noop}
     />
   );
   expect(screen.getByText("Asha")).toBeTruthy();
@@ -91,7 +91,7 @@ it("offers the out and start-night actions once you are in", async () => {
       actionError={false}
       onRsvpIn={noop}
       onRsvpOut={noop}
-      onStartNight={noop}
+      onStartNight={noop} onOpenGroups={noop}
     />
   );
   expect(screen.getByText("Can't make it")).toBeTruthy();
@@ -100,7 +100,7 @@ it("offers the out and start-night actions once you are in", async () => {
 
 it("draws the create-group failure inline", async () => {
   await render(
-    <SessionView kind="no-group" busy={false} actionError={true} onCreateGroup={noop} />
+    <SessionView kind="no-group" busy={false} actionError={true} onCreateGroup={noop} onOpenGroups={noop} />
   );
   expect(screen.getByText("That did not go through. Try again.")).toBeTruthy();
   expect(screen.getByText("No group yet")).toBeTruthy();
@@ -119,7 +119,7 @@ it("draws the inline action error without losing the roster", async () => {
       actionError={true}
       onRsvpIn={noop}
       onRsvpOut={noop}
-      onStartNight={noop}
+      onStartNight={noop} onOpenGroups={noop}
     />
   );
   expect(screen.getByText("That did not go through. Try again.")).toBeTruthy();
@@ -140,13 +140,13 @@ it("labels are actions, never Submit or OK, in any state", async () => {
       actionError={false}
       onRsvpIn={noop}
       onRsvpOut={noop}
-      onStartNight={noop}
+      onStartNight={noop} onOpenGroups={noop}
     />
   );
   const states = [
     <SessionView key="1" kind="error" onRetry={noop} />,
-    <SessionView key="2" kind="no-group" busy={false} actionError={false} onCreateGroup={noop} />,
-    <SessionView key="3" kind="no-session" groupName="G" busy={false} actionError={false} onPlanSession={noop} />,
+    <SessionView key="2" kind="no-group" busy={false} actionError={false} onCreateGroup={noop} onOpenGroups={noop} />,
+    <SessionView key="3" kind="no-session" groupName="G" busy={false} actionError={false} onPlanSession={noop} onOpenGroups={noop} />,
     sessionState(true),
     sessionState(false),
   ];

@@ -10,13 +10,20 @@ import { AppBar, Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
 export type SessionViewProps =
   | { kind: "loading" }
   | { kind: "error"; onRetry: () => void }
-  | { kind: "no-group"; busy: boolean; actionError: boolean; onCreateGroup: (name: string) => void }
+  | {
+      kind: "no-group";
+      busy: boolean;
+      actionError: boolean;
+      onCreateGroup: (name: string) => void;
+      onOpenGroups: () => void;
+    }
   | {
       kind: "no-session";
       groupName: string;
       busy: boolean;
       actionError: boolean;
       onPlanSession: (startsAtISO: string) => void;
+      onOpenGroups: () => void;
     }
   | {
       kind: "session";
@@ -30,6 +37,7 @@ export type SessionViewProps =
       onRsvpIn: () => void;
       onRsvpOut: () => void;
       onStartNight: () => void;
+      onOpenGroups: () => void;
     };
 
 // Suggestions fill the picker; the picker is the truth; one button plans.
@@ -89,7 +97,7 @@ export default function SessionView(props: SessionViewProps) {
   if (props.kind === "no-group") {
     return (
       <Screen>
-        <AppBar title="Session" sub="Your regular crew's nights" />
+        <AppBar title="Session" sub="Your regular crew's nights" onAction={props.onOpenGroups} actionLabel="Groups" />
         <Card>
           <Text style={styles.title}>No group yet</Text>
           <Text style={styles.copy}>
@@ -123,7 +131,7 @@ export default function SessionView(props: SessionViewProps) {
     const valid = !Number.isNaN(chosen.getTime()) && chosen > new Date();
     return (
       <Screen>
-        <AppBar title="Session" sub={props.groupName} />
+        <AppBar title="Session" sub={props.groupName} onAction={props.onOpenGroups} actionLabel="Groups" />
         <Card>
           <Text style={styles.title}>Plan a night</Text>
           <Text style={styles.copy}>Nothing planned. Pick a night.</Text>
@@ -165,7 +173,7 @@ export default function SessionView(props: SessionViewProps) {
 
   return (
     <Screen>
-      <AppBar title="Session" sub={props.groupName} />
+      <AppBar title="Session" sub={props.groupName} onAction={props.onOpenGroups} actionLabel="Groups" />
       <Card>
         <Text style={styles.title}>Next night</Text>
         <Text style={styles.sessionWhen}>{sessionDateLabel(session.starts_at)}</Text>

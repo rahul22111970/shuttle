@@ -1,5 +1,6 @@
+import { pickActive } from "../../lib/groups";
 import { useCallback, useState } from "react";
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import SessionView from "../../components/session-view";
 import { useAuth } from "../../lib/auth";
 import {
@@ -39,8 +40,7 @@ export default function SessionTab() {
   const load = useCallback(async () => {
     setFailed(false);
     try {
-      const groups = await listGroups();
-      const group = groups[0] ?? null;
+      const group = pickActive(await listGroups());
       if (!group) {
         setData({ group: null, session: null, members: [], roster: { attending: [], checkedIn: [] } });
         return;
@@ -88,6 +88,7 @@ export default function SessionTab() {
         busy={busyAction === "create"}
         actionError={actionError}
         onCreateGroup={(name) => act("create", () => createGroup(name))()}
+        onOpenGroups={() => router.push("/groups")}
       />
     );
   }
@@ -99,6 +100,7 @@ export default function SessionTab() {
         busy={busyAction === "plan"}
         actionError={actionError}
         onPlanSession={(iso) => act("plan", () => createSession(data.group!.id, iso))()}
+        onOpenGroups={() => router.push("/groups")}
       />
     );
   }
@@ -127,6 +129,7 @@ export default function SessionTab() {
       onRsvpIn={act("in", () => rsvpIn(data.session!.id))}
       onRsvpOut={act("out", () => rsvpOut(data.session!.id))}
       onStartNight={act("start", () => startNight(data.session!.id))}
+      onOpenGroups={() => router.push("/groups")}
     />
   );
 }

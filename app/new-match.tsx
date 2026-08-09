@@ -8,6 +8,7 @@ import NewMatchView, { sidesReady } from "../components/new-match-view";
 import type { PickRow } from "../components/quick-log-view";
 import { useAuth } from "../lib/auth";
 import { startMatch, type Participant } from "../lib/scoring";
+import { pickActive } from "../lib/groups";
 import { getRoster, listGroupMembers, listGroups } from "../lib/session";
 
 export default function NewMatch() {
@@ -24,7 +25,7 @@ export default function NewMatch() {
 
   const load = useCallback(async () => {
     try {
-      const groupId = group ?? (await listGroups())[0]?.id;
+      const groupId = group ?? pickActive(await listGroups())?.id;
       if (!groupId) {
         setState({ kind: "error" });
         return;

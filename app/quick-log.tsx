@@ -8,6 +8,7 @@ import QuickLogView, { logLabelFor, type PickRow } from "../components/quick-log
 import { foley } from "../lib/foley";
 import { useAuth } from "../lib/auth";
 import { quickLog, type Participant } from "../lib/scoring";
+import { pickActive } from "../lib/groups";
 import { listGroupMembers, listGroups, type Member } from "../lib/session";
 import { supabase } from "../lib/supabase";
 
@@ -30,8 +31,7 @@ export default function QuickLog() {
 
   const load = useCallback(async () => {
     try {
-      const groups = await listGroups();
-      const group = groups[0] ?? null;
+      const group = pickActive(await listGroups());
       if (!group) {
         setState({ kind: "no-group" });
         return;
