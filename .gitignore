@@ -48,3 +48,5 @@ yarn-error.*
 
 # server-only secrets, never loaded by Expo
 .secrets.env
+.secrets.staging.env
+.env.staging
