@@ -28,7 +28,15 @@ export default function DateTimeInput({
         fontSize: size.body,
         color: color.ink,
         background: color.fog1,
+        // mobile Safari gives datetime-local an intrinsic width that beats
+        // width:100% until the native appearance is reset; the min/max pair
+        // stops the field pushing its card sideways on small phones
+        WebkitAppearance: "none",
+        appearance: "none",
+        display: "block",
         width: "100%",
+        minWidth: 0,
+        maxWidth: "100%",
         boxSizing: "border-box",
         colorScheme: "light dark",
       }}
