@@ -5,7 +5,7 @@ const noop = () => {};
 
 it("renders the no-checkins state by name, with the count", async () => {
   await render(<RoundsView kind="no-checkins" checkedInCount={3} />);
-  expect(screen.getByText("Four make a round. 3 checked in.")).toBeTruthy();
+  expect(screen.getByText("Check people in, then deal fair games. 3 checked in.")).toBeTruthy();
 });
 
 it("empty state before round 1 has copy and both formats", async () => {

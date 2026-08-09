@@ -25,7 +25,6 @@ const ready = (over: Record<string, unknown> = {}) =>
 it("empty states carry the DESIGN copy", async () => {
   await render(<TodayView {...ready({ hasGroup: false })} />);
   expect(screen.getByText("No sessions yet. Your group's nights will land here.")).toBeTruthy();
-  expect(screen.getByText("Settled up.")).toBeTruthy();
   expect(screen.getByText("No games yet. Score one tonight.")).toBeTruthy();
   expect(screen.getByText("Start a group")).toBeTruthy();
 });
@@ -39,7 +38,7 @@ it("the heading names the day", async () => {
 it("nothing-planned state has its copy and the session action", async () => {
   await render(<TodayView {...ready()} />);
   expect(screen.getByText("Nothing planned. Pick a night.")).toBeTruthy();
-  expect(screen.getByText("Open the session")).toBeTruthy();
+  expect(screen.getByText("Plan a night")).toBeTruthy();
 });
 
 it("a planned session shows RSVP chips and ends in I'm in", async () => {
@@ -86,6 +85,11 @@ it("a live night never offers RSVP, even to someone not in", async () => {
 it("without a live night the ledger stays unoffered", async () => {
   await render(<TodayView {...ready({ balancePaise: 25000 })} />);
   expect(screen.queryByText("Open the ledger")).toBeNull();
+});
+
+it("a settled group reads Settled up.", async () => {
+  await render(<TodayView {...ready({ balancePaise: 0 })} />);
+  expect(screen.getByText("Settled up.")).toBeTruthy();
 });
 
 it("the money card names a debt", async () => {
@@ -143,4 +147,19 @@ it("the feed writes games winners-first with a W badge for the viewer", async ()
 it("labels are actions, never Submit or OK", async () => {
   await render(<TodayView {...ready()} />);
   expect(screen.queryByText(/^(Submit|OK)$/i)).toBeNull();
+});
+
+it("a live night's session action is the one primary: Go to the night", async () => {
+  await render(
+    <TodayView
+      {...ready({ sessionLine: { dateLabel: "x", live: true, selfIn: true } })}
+    />
+  );
+  expect(screen.getByText("Go to the night")).toBeTruthy();
+});
+
+it("without a group the money card does not render", async () => {
+  await render(<TodayView {...ready({ hasGroup: false })} />);
+  expect(screen.queryByText("Money")).toBeNull();
+  expect(screen.getByText("Start a group, plan a night, and this page fills itself.")).toBeTruthy();
 });

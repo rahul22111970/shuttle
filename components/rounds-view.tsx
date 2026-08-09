@@ -47,7 +47,7 @@ export default function RoundsView(props: RoundsViewProps) {
       <Card>
         <Text style={styles.title}>Rounds</Text>
         <Text style={styles.copy}>
-          Four make a round. {props.checkedInCount} checked in.
+          Check people in, then deal fair games. {props.checkedInCount} checked in.
         </Text>
       </Card>
     );

@@ -71,7 +71,10 @@ export default function TodayView(props: TodayViewProps) {
       <Card>
         <Text style={styles.title}>Next session</Text>
         {!props.hasGroup ? (
-          <Text style={styles.copy}>No sessions yet. Your group's nights will land here.</Text>
+          <>
+            <Text style={styles.copy}>No sessions yet. Your group's nights will land here.</Text>
+            <Text style={styles.quiet}>Start a group, plan a night, and this page fills itself.</Text>
+          </>
         ) : sessionLine ? (
           <Text style={styles.sessionWhen}>
             {sessionLine.live ? "The night is on." : sessionLine.dateLabel}
@@ -99,12 +102,21 @@ export default function TodayView(props: TodayViewProps) {
           />
         ) : (
           <Button
-            label={props.hasGroup ? "Open the session" : "Start a group"}
-            variant="quiet"
+            label={
+              !props.hasGroup
+                ? "Start a group"
+                : sessionLine?.live
+                  ? "Go to the night"
+                  : sessionLine
+                    ? "Open the session"
+                    : "Plan a night"
+            }
+            variant={sessionLine?.live ? undefined : "quiet"}
             onPress={props.onOpenSession}
           />
         )}
       </Card>
+      {props.hasGroup ? (
       <Card>
         <Text style={styles.title}>Money</Text>
         {balancePaise === null || balancePaise === 0 ? (
@@ -118,6 +130,7 @@ export default function TodayView(props: TodayViewProps) {
           <Button label="Open the ledger" variant="quiet" onPress={props.onOpenSession} />
         ) : null}
       </Card>
+      ) : null}
       <Card>
         <Text style={styles.title}>This week</Text>
         <View style={styles.statRow}>
@@ -160,7 +173,7 @@ export default function TodayView(props: TodayViewProps) {
         )}
         <Button
           label="Log a game"
-          variant={rsvpOpen ? "quiet" : undefined}
+          variant={rsvpOpen || sessionLine?.live ? "quiet" : undefined}
           onPress={props.onLogGame}
         />
       </Card>

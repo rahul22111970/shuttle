@@ -103,6 +103,9 @@ export default function SessionView(props: SessionViewProps) {
           <Text style={styles.copy}>
             A group is your regular crew. Sessions, scores and money all live in it.
           </Text>
+          <Text style={styles.quiet}>
+            Your friends sign in with their number and the group code.
+          </Text>
           <TextInput
             style={styles.input}
             value={groupName}

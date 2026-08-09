@@ -90,7 +90,7 @@ try {
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
 
   // not enough check-ins yet: the no-checkins copy shows
-  await page.getByText(/Four make a round/).waitFor({ timeout: 15000 });
+  await page.getByText(/Check people in, then deal fair games/).waitFor({ timeout: 15000 });
   console.log("PASS no-checkins state has copy");
 
   // self checks in through the UI; fixtures check in via admin
