@@ -88,7 +88,7 @@ try {
 
   // LIVE-SCORE a casual game: the S1-15 condition's subject, seated 1v1
   // through the who-plays picker
-  await page.getByText("Score a game").click();
+  await page.getByText("Score live").click();
   await page.getByText("Who plays").waitFor({ timeout: 15000 });
   await page.getByRole("button", { name: "Bela" }).click();
   await page.getByRole("button", { name: "Bela · A" }).click();

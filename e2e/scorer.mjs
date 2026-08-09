@@ -80,7 +80,7 @@ try {
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
 
   // open the scorer through the who-plays picker (S1-28): seat 1v1
-  await page.getByText("Score a game").click();
+  await page.getByText("Score live").click();
   await page.getByText("Who plays").waitFor({ timeout: 15000 });
   await page.getByRole("button", { name: "Bela" }).click();
   await page.getByRole("button", { name: "Bela · A" }).click();

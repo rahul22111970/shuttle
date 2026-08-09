@@ -2,7 +2,7 @@
 // final score, one write via lib/scoring.quickLog, then back to Today where
 // the feed shows the game.
 import { useCallback, useEffect, useState } from "react";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { PRESETS } from "@shuttle/score";
 import QuickLogView, { logLabelFor, type PickRow } from "../components/quick-log-view";
 import { foley } from "../lib/foley";
@@ -16,6 +16,10 @@ const backToToday = () =>
   router.canGoBack() ? router.back() : router.replace("/today");
 
 export default function QuickLog() {
+  const { group: groupParam, session: sessionParam } = useLocalSearchParams<{
+    group?: string;
+    session?: string;
+  }>();
   const { session: authSession } = useAuth();
   const selfId = authSession?.user.id ?? "";
   const [state, setState] = useState<
@@ -31,7 +35,9 @@ export default function QuickLog() {
 
   const load = useCallback(async () => {
     try {
-      const group = pickActive(await listGroups());
+      const group = groupParam
+        ? { id: groupParam }
+        : pickActive(await listGroups());
       if (!group) {
         setState({ kind: "no-group" });
         return;
@@ -67,7 +73,7 @@ export default function QuickLog() {
     } catch {
       setState({ kind: "error" });
     }
-  }, [selfId]);
+  }, [selfId, groupParam]);
 
   useEffect(() => {
     load();
@@ -109,10 +115,13 @@ export default function QuickLog() {
           const participants: Participant[] = state.players
             .filter((p) => p.side !== "none")
             .map((p) => ({ player_id: p.id, side: p.side as "a" | "b" }));
-          await quickLog(state.groupId, PRESETS.casual1x21, participants, {
-            a: Number(scoreA),
-            b: Number(scoreB),
-          });
+          await quickLog(
+            state.groupId,
+            PRESETS.casual1x21,
+            participants,
+            { a: Number(scoreA), b: Number(scoreB) },
+            sessionParam || undefined
+          );
           foley.drive();
           // back to the Today scene we came from (its focus effect refetches);
           // replacing minted an orphan scene over the tab navigator
