@@ -88,6 +88,65 @@ export function chemistry(matches: readonly PlayedMatch[]): Chemistry[] {
 
 type ParticipantRow = { player_id: string; side: "a" | "b" };
 
+// Tonight's table: per player over a set of COMPLETED matches — wins,
+// losses, win % over decided games, and points their side scored. Pure,
+// so the live night can feed it straight from its matches map.
+export type NightRow = {
+  playerId: string;
+  wins: number;
+  losses: number;
+  winPct: number | null;
+  points: number;
+};
+
+export function nightSummary(
+  matches: readonly {
+    status: "live" | "complete";
+    snapshot: {
+      winner?: "a" | "b" | null;
+      games?: readonly { a: number; b: number }[];
+      score?: { a: number; b: number };
+    } | null;
+    participants: readonly ParticipantRow[];
+  }[]
+): NightRow[] {
+  const per = new Map<string, { wins: number; losses: number; decided: number; points: number }>();
+  for (const m of matches) {
+    if (m.status !== "complete" || !m.snapshot) continue;
+    const games =
+      m.snapshot.games && m.snapshot.games.length > 0
+        ? m.snapshot.games
+        : m.snapshot.score
+          ? [m.snapshot.score]
+          : [];
+    const total = { a: 0, b: 0 };
+    for (const g of games) {
+      total.a += g.a;
+      total.b += g.b;
+    }
+    const winner = m.snapshot.winner ?? null;
+    for (const p of m.participants) {
+      const row = per.get(p.player_id) ?? { wins: 0, losses: 0, decided: 0, points: 0 };
+      row.points += total[p.side];
+      if (winner !== null) {
+        row.decided++;
+        if (winner === p.side) row.wins++;
+        else row.losses++;
+      }
+      per.set(p.player_id, row);
+    }
+  }
+  return [...per.entries()]
+    .map(([playerId, r]) => ({
+      playerId,
+      wins: r.wins,
+      losses: r.losses,
+      winPct: r.decided === 0 ? null : Math.round((r.wins / r.decided) * 100),
+      points: r.points,
+    }))
+    .sort((x, y) => y.wins - x.wins || y.points - x.points || x.playerId.localeCompare(y.playerId));
+}
+
 // every complete match the player took part in, across all their groups,
 // most recent first (RLS scopes this to groups they belong to)
 export async function fetchPlayedMatches(playerId: string): Promise<PlayedMatch[]> {

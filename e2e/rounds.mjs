@@ -129,7 +129,7 @@ try {
     return names[idx];
   };
   const aNames = await Promise.all(payload.round.courts[0].pairs[0].map(nameOf));
-  await page.getByText(aNames.join(" & ")).waitFor({ timeout: 15000 });
+  await page.getByText(aNames.join(" & "), { exact: true }).waitFor({ timeout: 15000 });
   console.log("PASS court card shows the engine pairing");
 
   const width = await page.evaluate(() => document.body.scrollWidth);

@@ -157,6 +157,12 @@ try {
   await page.getByText("Back to the night").click();
   await page.getByText("The night is on.").waitFor({ timeout: 15000 });
   console.log("PASS back lands on the live session");
+
+  // the Tonight table shows the finished game: 1 win, 21 points
+  const tonight = page.getByTestId("tonight-summary");
+  await tonight.getByText("Scorer Runner").waitFor({ timeout: 15000 });
+  await tonight.getByText("100%").waitFor({ timeout: 15000 });
+  console.log("PASS the Tonight table carries the winner's line");
 } catch (e) {
   failed = e;
 } finally {

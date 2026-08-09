@@ -1,4 +1,5 @@
 import {
+  nightSummary,
   CHEMISTRY_FLOOR,
   chemistry,
   currentStreak,
@@ -133,4 +134,52 @@ it("a hand-checked season: 6 wins 3 losses 1 draw reads 67%, streak +2", () => {
   expect(winPct(ms)).toBe(67); // 6 of 9 decided
   expect(currentStreak(ms)).toBe(2);
   expect(lastTen(ms)).toEqual(["w", "w", "l", "w", "d", "w", "l", "w", "w", "l"]);
+});
+
+// tonight's table: hand-computed over three completed games
+it("nightSummary tallies wins, losses, points and pct per player", () => {
+  const m = (
+    winner: "a" | "b" | null,
+    aIds: string[],
+    bIds: string[],
+    score: { a: number; b: number },
+    status: "live" | "complete" = "complete"
+  ) => ({
+    status,
+    snapshot: { winner, games: [score] },
+    participants: [
+      ...aIds.map((id) => ({ player_id: id, side: "a" as const })),
+      ...bIds.map((id) => ({ player_id: id, side: "b" as const })),
+    ],
+  });
+  const rows = nightSummary([
+    m("a", ["ra", "sk"], ["ga", "mi"], { a: 21, b: 15 }),
+    m("b", ["ra", "ga"], ["sk", "mi"], { a: 12, b: 21 }),
+    m("a", ["ra"], ["sk"], { a: 21, b: 19 }),
+    m("a", ["ra"], ["sk"], { a: 9, b: 2 }, "live"), // live games do not count
+  ]);
+  const ra = rows.find((r) => r.playerId === "ra");
+  expect(ra).toEqual({ playerId: "ra", wins: 2, losses: 1, winPct: 67, points: 54 });
+  const sk = rows.find((r) => r.playerId === "sk");
+  expect(sk).toEqual({ playerId: "sk", wins: 2, losses: 1, winPct: 67, points: 61 });
+  // sorted by wins, then points: sk (61) ahead of ra (54)
+  expect(rows[0].playerId).toBe("sk");
+  const mi = rows.find((r) => r.playerId === "mi");
+  expect(mi).toEqual({ playerId: "mi", wins: 1, losses: 1, winPct: 50, points: 36 });
+});
+
+it("nightSummary: a drawn americano counts points but decides nothing", () => {
+  const rows = nightSummary([
+    {
+      status: "complete",
+      snapshot: { winner: null, games: [], score: { a: 12, b: 12 } },
+      participants: [
+        { player_id: "x", side: "a" },
+        { player_id: "y", side: "b" },
+      ],
+    },
+  ]);
+  expect(rows.find((r) => r.playerId === "x")).toEqual({
+    playerId: "x", wins: 0, losses: 0, winPct: null, points: 12,
+  });
 });

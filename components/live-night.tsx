@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { PRESETS } from "@shuttle/score";
 import { foley } from "../lib/foley";
+import { nightSummary } from "../lib/stats";
 import { generateRound, nextGame, talliesForSession, type RoundGeneratedPayload } from "../lib/rounds";
 import { startMatch, type Participant } from "../lib/scoring";
 import {
@@ -25,7 +26,11 @@ import { Button, Card, Chip, ErrorNote, Screen } from "./ui";
 type MatchLite = {
   id: string;
   status: "live" | "complete";
-  snapshot: { score?: { a: number; b: number } } | null;
+  snapshot: {
+    score?: { a: number; b: number };
+    games?: { a: number; b: number }[];
+    winner?: "a" | "b" | null;
+  } | null;
   match_participants?: { player_id: string; side: "a" | "b" }[];
 };
 
@@ -311,6 +316,39 @@ export default function LiveNight({
             </Card>
           ) : null}
           <RoundsView {...roundsProps()} />
+          {(() => {
+            const rows = nightSummary(
+              [...matches.values()].map((m) => ({
+                status: m.status,
+                snapshot: m.snapshot,
+                participants: m.match_participants ?? [],
+              }))
+            );
+            if (rows.length === 0) return null;
+            return (
+              <Card testID="tonight-summary">
+                <Text style={styles.title}>Tonight</Text>
+                <View style={styles.sumHead}>
+                  <Text style={[styles.sumCell, styles.sumName]}> </Text>
+                  <Text style={styles.sumCell}>W</Text>
+                  <Text style={styles.sumCell}>L</Text>
+                  <Text style={styles.sumCell}>Win %</Text>
+                  <Text style={styles.sumCell}>Pts</Text>
+                </View>
+                {rows.map((r) => (
+                  <View key={r.playerId} style={styles.sumRow}>
+                    <Text style={[styles.sumCellText, styles.sumName]} numberOfLines={1}>
+                      {name(r.playerId)}
+                    </Text>
+                    <Text style={styles.sumFig}>{r.wins}</Text>
+                    <Text style={styles.sumFig}>{r.losses}</Text>
+                    <Text style={styles.sumFig}>{r.winPct === null ? "–" : `${r.winPct}%`}</Text>
+                    <Text style={styles.sumFig}>{r.points}</Text>
+                  </View>
+                ))}
+              </Card>
+            );
+          })()}
           <LedgerPanel
             groupId={groupId}
             sessionId={session.id}
@@ -335,6 +373,33 @@ export default function LiveNight({
 }
 
 const styles = StyleSheet.create({
+  sumHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+    paddingBottom: space.xs,
+  },
+  sumRow: { flexDirection: "row", alignItems: "center", paddingVertical: 5 },
+  sumName: { flex: 1, textAlign: "left" },
+  sumCell: {
+    width: 44,
+    textAlign: "right",
+    fontFamily: font.medium,
+    fontSize: size.label,
+    color: color.ink3,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  sumCellText: { fontFamily: font.semibold, fontSize: 14, color: color.ink },
+  sumFig: {
+    width: 44,
+    textAlign: "right",
+    fontFamily: font.mono,
+    fontSize: 13,
+    color: color.ink2,
+    fontVariant: ["tabular-nums"],
+  },
   liveRow: { gap: space.sm, paddingVertical: space.xs },
   liveRowBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   liveRowNames: { flex: 1, fontFamily: font.semibold, fontSize: 14, color: color.ink },
