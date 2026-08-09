@@ -75,3 +75,17 @@ it("match-complete reads games, not the zeroed score", async () => {
   expect(screen.getByText("Side A takes it.")).toBeTruthy();
   expect(screen.getByText("21–15 · 18–21 · 21–19")).toBeTruthy();
 });
+
+it("a finished game inside a session offers the next game first", async () => {
+  await render(
+    <ScorerView
+      kind="complete"
+      games={[{ a: 21, b: 15 }]}
+      winner="a"
+      onDone={noop}
+      onNextGame={noop}
+    />
+  );
+  expect(screen.getByText("Score the next game")).toBeTruthy();
+  expect(screen.getByText("Back to the night")).toBeTruthy();
+});

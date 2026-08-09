@@ -101,6 +101,11 @@ export default function MatchScorer() {
         games={snapshot?.games ?? []}
         winner={snapshot?.winner ?? null}
         onDone={() => router.back()}
+        onNextGame={
+          row.session_id
+            ? () => router.replace(`/new-match?group=${row.group_id}&session=${row.session_id}`)
+            : undefined
+        }
       />
     );
   }

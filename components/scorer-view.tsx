@@ -29,6 +29,7 @@ export type ScorerViewProps =
       games: readonly { readonly a: number; readonly b: number }[];
       winner: Side | null;
       onDone: () => void;
+      onNextGame?: () => void;
     };
 
 // rally scoring: whoever won the last point serves; side a opens by convention
@@ -75,7 +76,14 @@ export default function ScorerView(props: ScorerViewProps) {
           </Text>
           <Text style={styles.gamesLine}>{gamesLine}</Text>
         </Card>
-        <Button label="Back to the night" onPress={props.onDone} />
+        {props.onNextGame ? (
+          <Button label="Score the next game" onPress={props.onNextGame} />
+        ) : null}
+        <Button
+          label="Back to the night"
+          variant={props.onNextGame ? "quiet" : "primary"}
+          onPress={props.onDone}
+        />
       </Screen>
     );
   }
