@@ -82,6 +82,7 @@ export default function QuickLog() {
   return (
     <QuickLogView
       kind="ready"
+      onBack={backToToday}
       players={state.players}
       scoreA={scoreA}
       scoreB={scoreB}

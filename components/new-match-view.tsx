@@ -5,13 +5,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, radius, size, space, tracking } from "../theme/tokens";
 import type { PickRow } from "./quick-log-view";
-import { Button, Card, ErrorNote, Screen } from "./ui";
+import { BackBar, Button, Card, ErrorNote, Screen } from "./ui";
 
 export type NewMatchViewProps =
   | { kind: "loading" }
   | { kind: "error"; onRetry: () => void }
   | {
       kind: "ready";
+      onBack: () => void;
       players: readonly PickRow[];
       busy: boolean;
       actionError: boolean;
@@ -50,6 +51,7 @@ export default function NewMatchView(props: NewMatchViewProps) {
 
   return (
     <Screen testID="new-match">
+      <BackBar title="New game" onBack={props.onBack} />
       <Card>
         <Text style={styles.title}>Who plays</Text>
         <Text style={styles.quiet}>Tap a name for side A, again for side B.</Text>

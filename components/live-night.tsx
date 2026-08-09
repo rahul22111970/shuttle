@@ -21,7 +21,7 @@ import { supabase } from "../lib/supabase";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import LedgerPanel from "./ledger-panel";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
-import { Button, Card, Chip, ErrorNote, Screen } from "./ui";
+import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
 
 type MatchLite = {
   id: string;
@@ -205,8 +205,9 @@ export default function LiveNight({
 
   return (
     <Screen>
+      <AppBar title="Session" sub={groupName} />
       <Card>
-        <Text style={styles.title}>{groupName}</Text>
+        <Text style={styles.title}>Who's here</Text>
         <Text style={styles.liveNote}>The night is on.</Text>
         <Text style={styles.quiet}>Tap a name when they arrive.</Text>
         <View style={styles.chipRow}>

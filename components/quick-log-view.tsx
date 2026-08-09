@@ -2,7 +2,7 @@
 // sides, type the final score, one button that says what it will do.
 import { StyleSheet, Text, TextInput, View, Pressable } from "react-native";
 import { color, font, radius, size, space, tracking } from "../theme/tokens";
-import { Button, Card, ErrorNote, Screen } from "./ui";
+import { BackBar, Button, Card, ErrorNote, Screen } from "./ui";
 
 export type PickRow = {
   id: string;
@@ -17,6 +17,7 @@ export type QuickLogViewProps =
   | { kind: "no-group"; onBack: () => void }
   | {
       kind: "ready";
+      onBack: () => void;
       players: readonly PickRow[];
       scoreA: string;
       scoreB: string;
@@ -80,6 +81,7 @@ export default function QuickLogView(props: QuickLogViewProps) {
 
   return (
     <Screen>
+      <BackBar title="Log a game" onBack={props.onBack} />
       <Card>
         <Text style={styles.title}>Who played</Text>
         <Text style={styles.quiet}>Tap a name for side A, again for side B.</Text>

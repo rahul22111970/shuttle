@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import type { Member, Roster, Session } from "../lib/session";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import DateTimeInput from "./datetime-input";
-import { Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
+import { AppBar, Button, Card, Chip, ErrorNote, Screen, Wordmark } from "./ui";
 
 export type SessionViewProps =
   | { kind: "loading" }
@@ -89,6 +89,7 @@ export default function SessionView(props: SessionViewProps) {
   if (props.kind === "no-group") {
     return (
       <Screen>
+        <AppBar title="Session" sub="Your regular crew's nights" />
         <Card>
           <Text style={styles.title}>No group yet</Text>
           <Text style={styles.copy}>
@@ -122,6 +123,7 @@ export default function SessionView(props: SessionViewProps) {
     const valid = !Number.isNaN(chosen.getTime()) && chosen > new Date();
     return (
       <Screen>
+        <AppBar title="Session" sub={props.groupName} />
         <Card>
           <Text style={styles.title}>Plan a night</Text>
           <Text style={styles.copy}>Nothing planned. Pick a night.</Text>
@@ -163,9 +165,10 @@ export default function SessionView(props: SessionViewProps) {
 
   return (
     <Screen>
+      <AppBar title="Session" sub={props.groupName} />
       <Card>
-        <Text style={styles.title}>{props.groupName}</Text>
-        <Text style={styles.copy}>{sessionDateLabel(session.starts_at)}</Text>
+        <Text style={styles.title}>Next night</Text>
+        <Text style={styles.sessionWhen}>{sessionDateLabel(session.starts_at)}</Text>
         <View style={styles.chipRow}>
           {members.map((m) => (
             <Chip key={m.id} label={m.name} active={attending.has(m.id)} />
@@ -211,6 +214,7 @@ export default function SessionView(props: SessionViewProps) {
 }
 
 const styles = StyleSheet.create({
+  sessionWhen: { fontFamily: font.bold, fontSize: 15.5, color: color.ink },
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },

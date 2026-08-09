@@ -52,6 +52,22 @@ export function AppBar({
   );
 }
 
+export function BackBar({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <View style={styles.appbar}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        style={({ pressed }) => [styles.backb, pressed && styles.pressed]}
+        onPress={onBack}
+      >
+        <Text style={styles.backbText}>‹</Text>
+      </Pressable>
+      <Text style={styles.backTitle}>{title}</Text>
+    </View>
+  );
+}
+
 export function Wordmark() {
   return <Text style={styles.mark}>SHUTTLE</Text>;
 }
@@ -167,6 +183,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   abtnText: { fontFamily: font.medium, fontSize: 20, lineHeight: 22, color: color.fog0 },
+  backb: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    backgroundColor: color.inkWash,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backbText: { fontFamily: font.bold, fontSize: 22, lineHeight: 24, color: color.ink },
+  backTitle: {
+    fontFamily: font.heavy,
+    fontSize: 20,
+    color: color.ink,
+    letterSpacing: -0.2,
+    marginLeft: space.md,
+  },
   mark: {
     fontFamily: font.display,
     fontSize: size.display,

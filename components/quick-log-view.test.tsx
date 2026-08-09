@@ -18,6 +18,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     busy: false,
     actionError: false,
     logLabel: null,
+    onBack: noop,
     onCycle: noop,
     onScoreA: noop,
     onScoreB: noop,
