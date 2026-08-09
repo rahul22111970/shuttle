@@ -113,6 +113,12 @@ try {
   fixturePlayer = prof.data.id;
   console.log("PASS the captain minted a real account from Members");
 
+  // the group's own code is on the card, so the captain can share it
+  const gaCode = await admin.from("groups").select("code").eq("id", groupA).single();
+  await room.getByText(gaCode.data.code).waitFor({ timeout: 15000 });
+  await room.getByText("Everyone here signs in with their number and this code.").waitFor({ timeout: 15000 });
+  console.log("PASS the group code is readable on Members");
+
   // existing players from other groups join with one tap
   await room.getByLabel("Add Cap B").click();
   // the chip only leaves after the insert lands and the section reloads

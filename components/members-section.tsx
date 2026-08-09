@@ -127,6 +127,12 @@ export default function MembersSection({ group, selfId }: { group: Group; selfId
         {captain ? (
           <Text style={styles.quiet}>Removing someone keeps the games they played.</Text>
         ) : null}
+        <Text style={styles.codeLine}>
+          Group code: <Text style={styles.code}>{group.code}</Text>
+        </Text>
+        <Text style={styles.quiet}>
+          Everyone here signs in with their number and this code.
+        </Text>
       </Card>
       {captain ? (
         <Card testID="add-player-card">
@@ -186,6 +192,15 @@ export default function MembersSection({ group, selfId }: { group: Group; selfId
 const styles = StyleSheet.create({
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  codeLine: {
+    fontFamily: font.body,
+    fontSize: size.body,
+    color: color.ink2,
+    borderTopWidth: 1,
+    borderTopColor: color.line,
+    paddingTop: space.sm,
+  },
+  code: { fontFamily: font.monoBold, color: color.ink },
   row: {
     flexDirection: "row",
     alignItems: "center",

@@ -4,6 +4,8 @@ export type Group = {
   id: string;
   name: string;
   captain_id: string;
+  // the group's own sign-in code (0013); members read it, share it
+  code: string;
   created_at: string;
 };
 

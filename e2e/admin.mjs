@@ -47,7 +47,12 @@ try {
     email_confirm: true,
   });
   otherId = other.data.user.id;
-  await admin.from("profiles").insert({ id: otherId, display_name: "Stranger", account_type: "player" });
+  await admin.from("profiles").insert({
+    id: otherId,
+    display_name: "Stranger",
+    account_type: "player",
+    phone: `+918${String(stamp).slice(-9)}`,
+  });
   const og = await admin
     .from("groups")
     .insert({ name: `Strangers ${stamp}`, captain_id: otherId })
@@ -105,16 +110,35 @@ try {
 
   // the shared code can never open the admin account: even the right
   // number + the right code is refused, email link is the only door
+  const og2 = await admin.from("groups").select("code").eq("id", otherGroup).single();
+  const strangerCode = og2.data.code;
   const pilot = await fetch(`${APP}/api/pilot-login`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ phone: `9${String(stamp).slice(-9)}`, code: "smash21" }),
+    body: JSON.stringify({ phone: `9${String(stamp).slice(-9)}`, code: strangerCode }),
   });
   if (pilot.status !== 403) throw new Error(`admin pilot-login got ${pilot.status}, expected 403`);
   const pilotBody = await pilot.json();
   if (pilotBody.error !== "This account signs in by email link only.")
     throw new Error(`wrong refusal copy: ${pilotBody.error}`);
-  console.log("PASS the shared code cannot open the admin account");
+  console.log("PASS no code, right or wrong, opens the admin account");
+
+  // per-group codes (0013): the stranger's own group code signs them in,
+  // any other code is refused
+  const goodPilot = await fetch(`${APP}/api/pilot-login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ phone: `8${String(stamp).slice(-9)}`, code: strangerCode }),
+  });
+  if (goodPilot.status !== 200) throw new Error(`own-code login got ${goodPilot.status}`);
+  if (!(await goodPilot.json()).token_hash) throw new Error("no token_hash from own-code login");
+  const badPilot = await fetch(`${APP}/api/pilot-login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ phone: `8${String(stamp).slice(-9)}`, code: "not-their-code" }),
+  });
+  if (badPilot.status !== 401) throw new Error(`wrong-code login got ${badPilot.status}, expected 401`);
+  console.log("PASS a code only opens accounts inside its own group");
 } catch (e) {
   failed = e;
 } finally {

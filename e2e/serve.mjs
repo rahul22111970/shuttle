@@ -27,7 +27,6 @@ for (const envFile of [".env.local", ".secrets.env"]) {
     }
   }
 }
-if (!process.env.PILOT_CODE) process.env.PILOT_CODE = "smash21";
 
 async function handleApi(req, res, name) {
   let body = "";
