@@ -43,6 +43,7 @@ export default function LiveNight({
   groupId,
   groupName,
   captainId,
+  isCaptain,
   members,
   selfId,
   onClosed,
@@ -50,7 +51,10 @@ export default function LiveNight({
   session: Session;
   groupId: string;
   groupName: string;
+  // the owner: money collects to their UPI
   captainId: string;
+  // owner or co-captain: runs the night
+  isCaptain: boolean;
   members: readonly Member[];
   selfId: string;
   onClosed: () => void;
@@ -236,7 +240,7 @@ export default function LiveNight({
             onPress={act("checkin", () => checkIn(session.id))}
           />
         ) : null}
-        {selfId === captainId ? (
+        {isCaptain ? (
           addOpen ? (
             <AddPlayer groupId={groupId} onAdded={load} />
           ) : (
@@ -390,7 +394,7 @@ export default function LiveNight({
             checkedIn={checkedIn}
             selfId={selfId}
           />
-          {selfId === captainId ? (
+          {isCaptain ? (
             <Button
               label={
                 closeArmed

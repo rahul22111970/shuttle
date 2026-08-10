@@ -19,6 +19,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     kind: "ready",
     board: [],
     duos: [],
+    onOpenPlayer: () => {},
     highlights: NO_HIGHLIGHTS,
     ...over,
   }) as StatsViewProps;

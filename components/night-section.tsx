@@ -6,6 +6,7 @@ import { useLive } from "../lib/use-live";
 import SessionView from "./session-view";
 import LiveNight from "./live-night";
 import {
+  canCaptain,
   closeSession,
   createSession,
   getRoster,
@@ -89,6 +90,7 @@ export default function NightSection({ group, selfId }: { group: Group; selfId: 
         groupId={group.id}
         groupName={group.name}
         captainId={group.captain_id}
+        isCaptain={canCaptain(group, selfId, data.members)}
         members={data.members}
         selfId={selfId}
         onClosed={load}
@@ -102,7 +104,7 @@ export default function NightSection({ group, selfId }: { group: Group; selfId: 
       members={data.members}
       roster={data.roster}
       selfId={selfId}
-      captain={group.captain_id === selfId}
+      captain={canCaptain(group, selfId, data.members)}
       busyAction={busyAction === "plan" ? null : busyAction}
       actionError={actionError}
       onRsvpIn={act("in", () => rsvpIn(data.session!.id))}

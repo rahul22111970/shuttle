@@ -47,6 +47,10 @@ export type BulkLogViewProps =
       rows: readonly PreviewRow[];
       count: number;
       busy: boolean;
+      // while saving: how many are already in, so the button counts along
+      progress: number;
+      // after saving: "All N in." — shown before the screen leaves
+      saved: number | null;
       // "Added X of N. Line Y failed — the rest are untouched." or null
       partial: string | null;
       onAdd: () => void;
@@ -107,13 +111,19 @@ export default function BulkLogView(props: BulkLogViewProps) {
         </Card>
       ) : null}
       <View style={styles.actions}>
-        <Button
-          label={`Add ${props.count} ${props.count === 1 ? "game" : "games"}`}
-          busy={props.busy}
-          busyLabel="Adding…"
-          disabled={props.count === 0}
-          onPress={props.onAdd}
-        />
+        {props.saved !== null ? (
+          <Text style={styles.saved}>
+            {`All ${props.saved} in. Ratings updated.`}
+          </Text>
+        ) : (
+          <Button
+            label={`Add ${props.count} ${props.count === 1 ? "game" : "games"}`}
+            busy={props.busy}
+            busyLabel={`Saving ${props.progress} of ${props.count}…`}
+            disabled={props.count === 0}
+            onPress={props.onAdd}
+          />
+        )}
         {props.partial ? <ErrorNote>{props.partial}</ErrorNote> : null}
       </View>
     </Screen>
@@ -129,6 +139,13 @@ const styles = StyleSheet.create({
     letterSpacing: size.label * tracking.label,
   },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  saved: {
+    fontFamily: font.bold,
+    fontSize: size.body,
+    color: color.court,
+    textAlign: "center",
+    paddingVertical: 12,
+  },
   box: {
     borderWidth: 1,
     borderColor: color.lineStrong,

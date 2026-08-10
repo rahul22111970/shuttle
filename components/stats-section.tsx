@@ -2,6 +2,7 @@
 // rating rows in one load; lib/analytics turns them into the season,
 // stats-view draws it. The group arrives as a prop from the room.
 import { useCallback, useRef, useState } from "react";
+import { router } from "expo-router";
 import type { MatchState } from "@shuttle/score";
 import StatsView, {
   type BoardRow,
@@ -111,6 +112,7 @@ export default function StatsSection({ groupId }: { groupId: string }) {
       board={state.board}
       duos={state.duos}
       highlights={state.highlights}
+      onOpenPlayer={(playerId) => router.push(`/player/${playerId}`)}
     />
   );
 }

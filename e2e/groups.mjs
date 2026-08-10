@@ -130,6 +130,27 @@ try {
   if ((joined.count ?? 0) !== 3) throw new Error(`Alpha has ${joined.count} members, expected 3`);
   console.log("PASS an existing player joined Alpha with one tap");
 
+  // the owner promotes a co-captain; the chip appears and the DB agrees
+  await room.getByLabel("Make Cap B captain").click();
+  await room.getByText("Co-captain").waitFor({ timeout: 15000 });
+  const promoted = await admin
+    .from("group_members")
+    .select("is_captain")
+    .eq("group_id", groupA)
+    .eq("player_id", captainB)
+    .single();
+  if (!promoted.data.is_captain) throw new Error("Cap B not captain in the DB");
+  console.log("PASS the owner promoted a co-captain");
+
+  // tapping a name opens the player card, stats only
+  await room.getByLabel("Open Kavya").click();
+  const card = page.getByTestId("player-card");
+  await card.getByText("Kavya").waitFor({ timeout: 15000 });
+  await card.getByText("Counted from the groups you share.").waitFor({ timeout: 15000 });
+  await page.getByRole("button", { name: "Back" }).click();
+  await room.getByRole("button", { name: "Members", exact: true }).waitFor({ timeout: 15000 });
+  console.log("PASS a member's name opens their player card");
+
   // remove takes two taps and leaves everything but the membership alone
   await room.getByLabel("Remove Kavya").click();
   await room.getByLabel("Really remove Kavya").click();

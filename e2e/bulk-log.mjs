@@ -108,6 +108,9 @@ try {
   console.log("PASS 390px holds on bulk log");
 
   await bulk.getByText("Add 1 game", { exact: true }).click();
+  // the save says it landed before the screen leaves
+  await bulk.getByText("All 1 in. Ratings updated.").waitFor({ timeout: 15000 });
+  console.log("PASS the save announces success");
   await bulk.waitFor({ state: "hidden", timeout: 15000 });
   console.log("PASS adding routes back off the screen");
 

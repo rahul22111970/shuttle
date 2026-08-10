@@ -53,8 +53,8 @@ it("renders the roster with attending chips and the right call to action", async
       kind="session"
       session={session}
       members={[
-        { id: "u1", name: "Asha" },
-        { id: "u2", name: "Bela" },
+        { id: "u1", name: "Asha", is_captain: false },
+        { id: "u2", name: "Bela", is_captain: false },
       ]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u2"
@@ -79,7 +79,7 @@ it("offers the out and start-night actions once you are in", async () => {
     <SessionView
       kind="session"
       session={session}
-      members={[{ id: "u1", name: "Asha" }]}
+      members={[{ id: "u1", name: "Asha", is_captain: false }]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u1"
       captain={false}
@@ -101,7 +101,7 @@ it("draws the inline action error without losing the roster", async () => {
     <SessionView
       kind="session"
       session={session}
-      members={[{ id: "u1", name: "Asha" }]}
+      members={[{ id: "u1", name: "Asha", is_captain: false }]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u1"
       captain={false}
@@ -125,8 +125,8 @@ it("the captain taps names to mark them in or out; members cannot", async () => 
       kind="session"
       session={session}
       members={[
-        { id: "u1", name: "Asha" },
-        { id: "u2", name: "Bela" },
+        { id: "u1", name: "Asha", is_captain: false },
+        { id: "u2", name: "Bela", is_captain: false },
       ]}
       roster={{ attending: ["u1"], checkedIn: [] }}
       selfId="u1"
@@ -154,7 +154,7 @@ it("cancelling the night arms first and fires only on the second tap", async () 
     <SessionView
       kind="session"
       session={session}
-      members={[{ id: "u1", name: "Asha" }]}
+      members={[{ id: "u1", name: "Asha", is_captain: false }]}
       roster={{ attending: [], checkedIn: [] }}
       selfId="u1"
       captain={true}
@@ -180,7 +180,7 @@ it("labels are actions, never Submit or OK, in any state", async () => {
       key={selfIn ? "in" : "out"}
       kind="session"
       session={session}
-      members={[{ id: "u1", name: "A" }]}
+      members={[{ id: "u1", name: "A", is_captain: false }]}
       roster={{ attending: selfIn ? ["u1"] : [], checkedIn: [] }}
       selfId="u1"
       captain={false}
