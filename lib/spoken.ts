@@ -17,6 +17,10 @@ export type SpokenResult =
   | { ok: false; message: string };
 
 const HINT = "Say it like: Rahul and Sai versus Deo and Gautam, Rahul won 21-16.";
+const WON = /\s+(?:won|wins|win|took it|take it)\s*/i;
+// filler between the score and the losers in winner-first sentences
+const stripVsWords = (s: string) =>
+  s.replace(/\b(?:against|versus|vs\.?|v|over|to|beating)\b/gi, " ");
 
 // small spoken numbers -> digits ("twenty one" -> 21), for recognisers
 // that write words. Applied token-wise before parsing.
@@ -118,11 +122,30 @@ export function parseSpoken(transcript: string, members: readonly Member[]): Spo
   // form 1: <A> versus <B> ... <winner> won <score>
   const vs = text.split(/\s+(?:vs\.?|versus|against|v)\s+/i);
   if (vs.length === 2) {
+    // form 1b: the winner spoken first — "<A> won <score> versus <B>"
+    const wonFirst = vs[0].split(WON);
+    if (wonFirst.length >= 2) {
+      const winners = parseSide(stripAnd(wonFirst[0]), members);
+      if (winners.error || winners.ids.length === 0) {
+        return { ok: false, message: winners.error ?? `Didn't catch the winners. ${HINT}` };
+      }
+      const score = scoreFrom(wonFirst.slice(1).join(" "));
+      if (!score) return { ok: false, message: `Heard the winner but not the score. ${HINT}` };
+      if (score.tie) return { ok: false, message: TIE };
+      const losers = parseSide(stripAnd(vs[1]), members);
+      if (losers.error || losers.ids.length === 0) {
+        return { ok: false, message: losers.error ?? `Didn't catch who they beat. ${HINT}` };
+      }
+      return {
+        ok: true,
+        game: { line: 1, a: winners.ids, b: losers.ids, score: { a: score.hi, b: score.lo } },
+      };
+    }
     const sideA = parseSide(stripAnd(vs[0]), members);
     if (sideA.error || sideA.ids.length === 0) {
       return { ok: false, message: sideA.error ?? `Didn't catch the first pair. ${HINT}` };
     }
-    const wonSplit = vs[1].split(/\s+(?:won|wins|win|took it|take it)\s*/i);
+    const wonSplit = vs[1].split(WON);
     if (wonSplit.length >= 2) {
       const score = scoreFrom(wonSplit.slice(1).join(" "));
       if (!score) return { ok: false, message: `Heard the winner but not the score. ${HINT}` };
@@ -171,6 +194,28 @@ export function parseSpoken(transcript: string, members: readonly Member[]): Spo
     }
     // no "won": maybe "<A> versus <B> 21-16" — winner unstated, refuse
     return { ok: false, message: `Say who won. ${HINT}` };
+  }
+
+  // form 1c: no versus at all — "<winners> won <score> <losers>"
+  const wonOnly = text.split(WON);
+  if (wonOnly.length >= 2) {
+    const winners = parseSide(stripAnd(wonOnly[0]), members);
+    if (winners.error || winners.ids.length === 0) {
+      return { ok: false, message: winners.error ?? `Didn't catch the winners. ${HINT}` };
+    }
+    const score = scoreFrom(wonOnly.slice(1).join(" "));
+    if (!score) return { ok: false, message: `Heard the winner but not the score. ${HINT}` };
+    if (score.tie) return { ok: false, message: TIE };
+    const losersText = clean(stripVsWords(stripAnd(score.rest)));
+    if (!losersText) return { ok: false, message: `Say who they beat. ${HINT}` };
+    const losers = parseSide(losersText, members);
+    if (losers.error || losers.ids.length === 0) {
+      return { ok: false, message: losers.error ?? `Didn't catch who they beat. ${HINT}` };
+    }
+    return {
+      ok: true,
+      game: { line: 1, a: winners.ids, b: losers.ids, score: { a: score.hi, b: score.lo } },
+    };
   }
 
   // form 2: <A> beat <B> <score>

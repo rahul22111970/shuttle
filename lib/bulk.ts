@@ -41,11 +41,47 @@ type Resolved =
   | { ok: true; id: string }
   | { ok: false; ambiguous: boolean; message: string };
 
+// small edit distance for recogniser mangling ("gotham" -> Gautam). Only
+// consulted when prefix matching finds NOTHING, and only trusted when it
+// lands on exactly one first name.
+function editDistance(a: string, b: string): number {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+      );
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+function fuzzyByFirstName(token: string, members: readonly Member[]): readonly Member[] {
+  if (token.length < 3) return [];
+  const budget = token.length >= 5 ? 2 : 1;
+  let best = budget + 1;
+  let hits: Member[] = [];
+  for (const m of members) {
+    const d = editDistance(token, first(m.name).toLowerCase());
+    if (d < best) {
+      best = d;
+      hits = [m];
+    } else if (d === best) {
+      hits.push(m);
+    }
+  }
+  return best <= budget ? hits : [];
+}
+
 function resolveToken(token: string, members: readonly Member[]): Resolved {
   const ws = words(token);
   let candidates: readonly Member[];
   if (ws.length === 1) {
     candidates = members.filter((m) => first(m.name).toLowerCase().startsWith(ws[0]));
+    if (candidates.length === 0) candidates = fuzzyByFirstName(ws[0], members);
   } else {
     candidates = members.filter((m) => {
       const nw = words(m.name);

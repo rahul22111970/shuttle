@@ -147,3 +147,36 @@ it("'twenty one sixteen' is untouched by the won-for-one fix", () => {
   const g = ok(parseSpoken("rajat versus gautam rajat won twenty one sixteen", members));
   expect(g.score).toEqual({ a: 21, b: 16 });
 });
+
+// field bug 2026-08-11 round three: winner-first sentences and mangled names
+it("winners first, no versus: 'A won S B'", () => {
+  const withNew = [...members, { id: "ad", name: "Aditya" }, { id: "pv", name: "Pavitra" }];
+  const g = ok(parseSpoken("rahul p and sai won 21-16 aditya and pavitra", withNew));
+  expect(g.a).toEqual(["rp", "sk"]);
+  expect(g.b).toEqual(["ad", "pv"]);
+  expect(g.score).toEqual({ a: 21, b: 16 });
+});
+
+it("winners first with 'against', fused score", () => {
+  const withNew = [...members, { id: "ad", name: "Aditya" }, { id: "pv", name: "Pavitra" }];
+  const g = ok(parseSpoken("rahul p and sai won 2116 against aditya and pavitra", withNew));
+  expect(g.a).toEqual(["rp", "sk"]);
+  expect(g.score).toEqual({ a: 21, b: 16 });
+});
+
+it("a mangled name lands on the closest member: gautham/gowtam -> Gautam", () => {
+  expect(ok(parseSpoken("gautham beat rajat 21-12", members)).a).toEqual(["gt"]);
+  expect(ok(parseSpoken("gowtam beat rajat 21-12", members)).a).toEqual(["gt"]);
+});
+
+it("a mangled name near two Rahuls still asks which one", () => {
+  const r = parseSpoken("rahol won 21-16 gautam and sai", members);
+  expect(r.ok).toBe(false);
+  if (!r.ok) expect(r.message).toMatch(/Rahul/);
+});
+
+it("winner-first with nobody named after the score asks who they beat", () => {
+  const r = parseSpoken("rajat won 21-16", members);
+  expect(r.ok).toBe(false);
+  if (!r.ok) expect(r.message).toMatch(/who they beat/i);
+});
