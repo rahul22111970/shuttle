@@ -28,8 +28,8 @@ it("ready state draws presets, participants, debtors and chips", async () => {
       captainName="Asha"
       vpa="asha@upi"
       checkedInMembers={[
-        { id: "u1", name: "Asha" },
-        { id: "u2", name: "Bela" },
+        { id: "u1", name: "Asha", is_captain: false },
+        { id: "u2", name: "Bela", is_captain: false },
       ]}
       debtors={[
         { id: "u2", name: "Bela", amountPaise: 30000, settled: false },

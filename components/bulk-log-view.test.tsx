@@ -12,6 +12,8 @@ const ready = (over: Record<string, unknown> = {}) =>
     rows: [] as PreviewRow[],
     count: 0,
     busy: false,
+    progress: 0,
+    saved: null,
     partial: null,
     onAdd: noop,
     ...over,
@@ -49,9 +51,14 @@ it("preview rows render games and errors by their text", async () => {
   expect(screen.getByText("Line 2: 21-21 is a tie. One side has to win.")).toBeTruthy();
 });
 
-it("busy swaps the label for Adding…", async () => {
-  await render(<BulkLogView {...ready({ count: 2, busy: true })} />);
-  expect(screen.getByText("Adding…")).toBeTruthy();
+it("busy counts the saves along", async () => {
+  await render(<BulkLogView {...ready({ count: 2, busy: true, progress: 1 })} />);
+  expect(screen.getByText("Saving 1 of 2…")).toBeTruthy();
+});
+
+it("success says all N are in", async () => {
+  await render(<BulkLogView {...ready({ count: 2, saved: 2 })} />);
+  expect(screen.getByText("All 2 in. Ratings updated.")).toBeTruthy();
 });
 
 it("a partial failure is reported in full", async () => {

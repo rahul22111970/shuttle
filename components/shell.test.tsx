@@ -12,6 +12,7 @@ it("Stats greets a fresh group with the teaching empty state", async () => {
       board={[]}
       duos={[]}
       highlights={{ mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null }}
+      onOpenPlayer={() => {}}
     />
   );
   expect(screen.getByText("Play a night and this page writes itself.")).toBeTruthy();

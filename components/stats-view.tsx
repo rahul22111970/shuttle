@@ -2,7 +2,7 @@
 // page — podium, leaderboard, best pairs, highlights. Built to be
 // screenshot straight into the group chat, so every row must read at a
 // glance. Chrome belongs to the group room that mounts this.
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
 import { Button, Card, Chip, ErrorNote } from "./ui";
@@ -35,6 +35,7 @@ export type StatsViewProps =
       board: readonly BoardRow[];
       duos: readonly DuoRow[];
       highlights: Highlights;
+      onOpenPlayer: (playerId: string) => void;
     };
 
 // one sentence per superlative, in the app's voice
@@ -130,7 +131,14 @@ export default function StatsView(props: StatsViewProps) {
           <Text style={[styles.headLabel, styles.ratingCell]}>Rtg</Text>
         </View>
         {board.map((r, i) => (
-          <View key={r.playerId} style={[styles.boardRow, styles.boardRowLine]} testID={`board-row-${r.playerId}`}>
+          <Pressable
+            key={r.playerId}
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${r.name}`}
+            style={[styles.boardRow, styles.boardRowLine]}
+            testID={`board-row-${r.playerId}`}
+            onPress={() => props.onOpenPlayer(r.playerId)}
+          >
             <Text style={[styles.rank, styles.rankCell]}>{i + 1}</Text>
             <Text style={[styles.playerName, styles.nameCell]} numberOfLines={1}>
               {r.name}
@@ -141,8 +149,9 @@ export default function StatsView(props: StatsViewProps) {
               {r.winPct === null ? "–" : `${r.winPct}%`}
             </Text>
             <Text style={[styles.ratingFig, styles.ratingCell]}>{r.rating}</Text>
-          </View>
+          </Pressable>
         ))}
+        <Text style={styles.quiet}>Tap a row for the player's card.</Text>
       </Card>
       <Card testID="duos-card">
         <Text style={styles.title}>Best pairs</Text>

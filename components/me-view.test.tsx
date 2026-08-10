@@ -8,7 +8,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     kind: "ready",
     name: "Rahul Pareek",
     detail: "Player · +917018654784",
-    rating: { current: 1200, provisional: true, series: [], groupName: 'Tuesday Gang' },
+    rating: { blended: 1200, groups: [] },
     winPct: null,
     streak: 0,
     lastTen: [],
@@ -18,7 +18,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     onTheme: noop,
     onSignOut: noop,
     onOpenMath: noop,
-    captainGroup: null,
+    captainGroups: [],
     adminGroups: null,
     wiping: false,
     wipeDone: false,
@@ -39,7 +39,7 @@ it("a new player sees name, detail and every empty state", async () => {
 
 it("the rating hero shows the current number and its state", async () => {
   await render(
-    <MeView {...ready({ rating: { current: 1252, provisional: true, series: [1232, 1252], groupName: 'Tuesday Gang' } })} />
+    <MeView {...ready({ rating: { blended: 1252, groups: [{ groupId: "g1", name: "Tuesday Gang", current: 1252, provisional: true, series: [1232, 1252] }] } })} />
   );
   expect(screen.getByText("1252")).toBeTruthy();
   expect(screen.getByText("Finding your level")).toBeTruthy();
@@ -60,7 +60,7 @@ it("an established player reads Established", async () => {
   await render(
     <MeView
       {...ready({
-        rating: { current: 1301, provisional: false, series: Array(12).fill(1300), groupName: 'Tuesday Gang' },
+        rating: { blended: 1301, groups: [{ groupId: "g1", name: "Tuesday Gang", current: 1301, provisional: false, series: Array(12).fill(1300) }] },
       })}
     />
   );
@@ -119,7 +119,7 @@ it("recent games use the winners-first idiom with a badge", async () => {
 
 it("the captain sees the pilot wipe tool", async () => {
   await render(
-    <MeView {...ready({ captainGroup: { id: "g1", name: "Tuesday Smashers" } })} />
+    <MeView {...ready({ captainGroups: [{ id: "g1", name: "Tuesday Smashers" }] })} />
   );
   expect(screen.getByText("Captain tools")).toBeTruthy();
   expect(screen.getByText("Pilot-only. This tool leaves before the app store.")).toBeTruthy();
@@ -136,17 +136,39 @@ it("the wipe arms on the first tap and fires on the second", async () => {
   const onWipe = jest.fn();
   const user = userEvent.setup();
   await render(
-    <MeView {...ready({ captainGroup: { id: "g1", name: "Tuesday Smashers" }, onWipe })} />
+    <MeView {...ready({ captainGroups: [{ id: "g1", name: "Tuesday Smashers" }], onWipe })} />
   );
   await user.press(screen.getByText("Wipe Tuesday Smashers's games and money"));
   expect(onWipe).not.toHaveBeenCalled();
   const armed = screen.getByText("Wipe Tuesday Smashers's games and money · tap again");
   await user.press(armed);
-  expect(onWipe).toHaveBeenCalledTimes(1);
+  expect(onWipe).toHaveBeenCalledWith("g1");
+});
+
+it("two group ladders blend into one headline with a row each", async () => {
+  await render(
+    <MeView
+      {...ready({
+        rating: {
+          blended: 1300,
+          groups: [
+            { groupId: "g1", name: "Bad-minton", current: 1390, provisional: false, series: Array(11).fill(1390) },
+            { groupId: "g2", name: "Week Day Group", current: 1210, provisional: true, series: [1200, 1210] },
+          ],
+        },
+      })}
+    />
+  );
+  expect(screen.getByText("1300")).toBeTruthy();
+  expect(screen.getByText("Blended · 2 groups")).toBeTruthy();
+  expect(screen.getByText("Bad-minton")).toBeTruthy();
+  expect(screen.getByText("1390")).toBeTruthy();
+  expect(screen.getByText("Week Day Group")).toBeTruthy();
+  expect(screen.getByText("1210")).toBeTruthy();
 });
 
 it("the wipe outcomes read as promised", async () => {
-  const group = { captainGroup: { id: "g1", name: "Tuesday Smashers" } };
+  const group = { captainGroups: [{ id: "g1", name: "Tuesday Smashers" }] };
   await render(<MeView {...ready({ ...group, wipeDone: true })} />);
   expect(screen.getByText("Wiped. Fresh night.")).toBeTruthy();
   await render(<MeView {...ready({ ...group, wipeError: true })} />);

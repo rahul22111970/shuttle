@@ -24,13 +24,20 @@ export type ChemistryRow = {
   winPct: number | null;
 };
 
-export type RatingLine = {
+export type GroupRating = {
+  groupId: string;
+  name: string;
   current: number;
   provisional: boolean;
-  // rating_after series, oldest first; empty until the first rated game
+  // rating_after series, oldest first
   series: readonly number[];
-  // ratings are per group: the ladder this number belongs to
-  groupName: string | null;
+};
+
+// Me is GLOBAL: every group's ladder, plus one blended headline
+// (games-weighted mean) when there is more than one
+export type RatingLine = {
+  blended: number;
+  groups: readonly GroupRating[];
 };
 
 export type AdminGroupRow = {
@@ -61,14 +68,15 @@ export type MeViewProps =
       onTheme: (c: ThemeChoice) => void;
       onSignOut: () => void;
       onOpenMath: () => void;
-      // pilot-only captain tools; null hides the card entirely
-      captainGroup: { id: string; name: string } | null;
+      // pilot-only captain tools; empty hides the card entirely. Only
+      // groups the player OWNS: co-captains never see the wipe.
+      captainGroups: readonly { id: string; name: string }[];
       // pilot-only app-wide oversight; null hides the card entirely
       adminGroups: readonly AdminGroupRow[] | null;
       wiping: boolean;
       wipeDone: boolean;
       wipeError: boolean;
-      onWipe: () => void;
+      onWipe: (groupId: string) => void;
     };
 
 // the sparkline as pure Views: one thin bar per rated game, height
@@ -98,8 +106,9 @@ const streakLabel = (streak: number) =>
   streak === 0 ? null : streak > 0 ? `W${streak}` : `L${-streak}`;
 
 export default function MeView(props: MeViewProps) {
-  // two-tap confirm for the captain wipe; the second label restates the destruction
-  const [wipeArmed, setWipeArmed] = useState(false);
+  // two-tap confirm for the captain wipe; the second label restates the
+  // destruction. Armed per group id, since an owner can hold several.
+  const [wipeArmed, setWipeArmed] = useState<string | null>(null);
 
   if (props.kind === "loading") {
     return (
@@ -126,22 +135,39 @@ export default function MeView(props: MeViewProps) {
     <Screen testID="me-screen">
       <AppBar title={props.name} sub={props.detail} />
       <Card testID="rating-card">
-        <Text style={styles.title}>{props.rating.groupName ? `Rating · ${props.rating.groupName}` : "Rating"}</Text>
+        <Text style={styles.title}>Rating</Text>
         <View style={styles.formRow}>
           <View style={styles.stat}>
-            <Text style={styles.ratingHero}>{props.rating.current}</Text>
+            <Text style={styles.ratingHero}>{props.rating.blended}</Text>
             <Text style={styles.statLabel}>
-              {props.rating.provisional ? "Finding your level" : "Established"}
+              {props.rating.groups.length > 1
+                ? `Blended · ${props.rating.groups.length} groups`
+                : props.rating.groups.length === 1 && !props.rating.groups[0].provisional
+                  ? "Established"
+                  : "Finding your level"}
             </Text>
           </View>
-          {props.rating.series.length >= 2 ? (
-            <Spark series={props.rating.series} />
-          ) : (
+          {props.rating.groups.length === 1 && props.rating.groups[0].series.length >= 2 ? (
+            <Spark series={props.rating.groups[0].series} />
+          ) : props.rating.groups.length === 0 ? (
             <Text style={styles.quiet}>
               {`Every player starts at ${INITIAL_RATING}. Your line begins with your first game.`}
             </Text>
-          )}
+          ) : null}
         </View>
+        {props.rating.groups.length > 1
+          ? props.rating.groups.map((g) => (
+              <View key={g.groupId} style={styles.groupRatingRow}>
+                <Text style={styles.groupRatingName} numberOfLines={1}>
+                  {g.name}
+                </Text>
+                <Text style={styles.quiet}>
+                  {g.provisional ? "Finding your level" : "Established"}
+                </Text>
+                <Text style={styles.groupRatingFig}>{g.current}</Text>
+              </View>
+            ))
+          : null}
         <Button label="How the rating works" variant="quiet" onPress={props.onOpenMath} />
       </Card>
       <Card>
@@ -232,29 +258,32 @@ export default function MeView(props: MeViewProps) {
           ))
         )}
       </Card>
-      {props.captainGroup ? (
+      {props.captainGroups.length > 0 ? (
         <Card testID="captain-tools">
           <Text style={styles.title}>Captain tools</Text>
           <Text style={styles.quiet}>Pilot-only. This tool leaves before the app store.</Text>
-          <Button
-            label={
-              wipeArmed
-                ? `Wipe ${props.captainGroup.name}'s games and money · tap again`
-                : `Wipe ${props.captainGroup.name}'s games and money`
-            }
-            variant="quiet"
-            tone="cork"
-            busy={props.wiping}
-            busyLabel="Wiping…"
-            onPress={() => {
-              if (wipeArmed) {
-                setWipeArmed(false);
-                props.onWipe();
-              } else {
-                setWipeArmed(true);
+          {props.captainGroups.map((g) => (
+            <Button
+              key={g.id}
+              label={
+                wipeArmed === g.id
+                  ? `Wipe ${g.name}'s games and money · tap again`
+                  : `Wipe ${g.name}'s games and money`
               }
-            }}
-          />
+              variant="quiet"
+              tone="cork"
+              busy={props.wiping}
+              busyLabel="Wiping…"
+              onPress={() => {
+                if (wipeArmed === g.id) {
+                  setWipeArmed(null);
+                  props.onWipe(g.id);
+                } else {
+                  setWipeArmed(g.id);
+                }
+              }}
+            />
+          ))}
           {props.wipeDone ? <Text style={styles.wipeDone}>Wiped. Fresh night.</Text> : null}
           {props.wipeError ? (
             <ErrorNote>The wipe failed partway. Tell the builder.</ErrorNote>
@@ -319,6 +348,21 @@ const styles = StyleSheet.create({
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   wipeDone: { fontFamily: font.body, fontSize: size.body, color: color.court, textAlign: "center" },
+  groupRatingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    borderTopWidth: 1,
+    borderTopColor: color.line,
+    paddingTop: space.sm,
+  },
+  groupRatingName: { flex: 1, fontFamily: font.semibold, fontSize: 14, color: color.ink },
+  groupRatingFig: {
+    fontFamily: font.monoBold,
+    fontSize: 16,
+    color: color.ink,
+    fontVariant: ["tabular-nums"],
+  },
   adminRow: { gap: 2, borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.sm },
   adminHead: { flexDirection: "row", justifyContent: "space-between", gap: space.sm },
   adminName: { flex: 1, fontFamily: font.bold, fontSize: 13.5, color: color.ink },

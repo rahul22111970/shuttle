@@ -23,6 +23,8 @@ export default function BulkLog() {
   >({ kind: "loading" });
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [saved, setSaved] = useState<number | null>(null);
   const [partial, setPartial] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -71,11 +73,14 @@ export default function BulkLog() {
       rows={previewRows(result, nameOf)}
       count={result.games.length}
       busy={busy}
+      progress={progress}
+      saved={saved}
       partial={partial}
       onAdd={async () => {
         if (busy || result.games.length === 0) return;
         setBusy(true);
         setPartial(null);
+        setProgress(0);
         const n = result.games.length;
         for (let i = 0; i < n; i++) {
           const g = result.games[i];
@@ -91,14 +96,19 @@ export default function BulkLog() {
               g.score,
               session || state.liveSessionId || undefined
             );
+            setProgress(i + 1);
           } catch {
             setPartial(`Added ${i} of ${n}. Line ${g.line} failed — the rest are untouched.`);
             setBusy(false);
             return;
           }
         }
+        // say it landed, then leave: the silent instant exit read as "did
+        // anything happen?" at the hall
         foley.drive();
-        back();
+        setBusy(false);
+        setSaved(n);
+        setTimeout(back, 1200);
       }}
     />
   );

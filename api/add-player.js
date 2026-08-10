@@ -38,7 +38,16 @@ export default async function handler(req, res) {
       .maybeSingle();
     if (!group.data) return res.status(404).json({ error: "No such group." });
     if (group.data.captain_id !== caller.data.user.id) {
-      return res.status(403).json({ error: "Only the captain can add players." });
+      // co-captains (0014) hold the day-to-day powers too
+      const co = await admin
+        .from("group_members")
+        .select("is_captain")
+        .eq("group_id", groupId)
+        .eq("player_id", caller.data.user.id)
+        .maybeSingle();
+      if (!co.data?.is_captain) {
+        return res.status(403).json({ error: "Only a captain can add players." });
+      }
     }
 
     // existing person joins; no second account — by id (tap-to-add from

@@ -166,18 +166,27 @@ export async function listGroups(): Promise<Group[]> {
   return (data ?? []) as Group[];
 }
 
-export type Member = { id: string; name: string };
+export type Member = { id: string; name: string; is_captain: boolean };
 
 export async function listGroupMembers(groupId: string): Promise<Member[]> {
   const { data, error } = await supabase
     .from("group_members")
-    .select("player_id, profiles(display_name)")
+    .select("player_id, is_captain, profiles(display_name)")
     .eq("group_id", groupId);
   if (error) throw error;
   return (data ?? []).map((row) => {
-    const r = row as unknown as { player_id: string; profiles: { display_name: string } | null };
-    return { id: r.player_id, name: r.profiles?.display_name ?? "Player" };
+    const r = row as unknown as {
+      player_id: string;
+      is_captain: boolean;
+      profiles: { display_name: string } | null;
+    };
+    return { id: r.player_id, name: r.profiles?.display_name ?? "Player", is_captain: r.is_captain };
   });
+}
+
+// the owner (groups.captain_id) or a promoted co-captain
+export function canCaptain(group: Group, selfId: string, members: readonly Member[]): boolean {
+  return group.captain_id === selfId || members.some((m) => m.id === selfId && m.is_captain);
 }
 
 // the next session that still matters: planned or live, soonest first

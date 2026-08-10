@@ -6,12 +6,12 @@ import { useFocusEffect } from "expo-router";
 import MeView, {
   type AdminGroupRow,
   type ChemistryRow,
+  type GroupRating,
   type MeFeedRow,
   type RatingLine,
 } from "../../components/me-view";
 import { INITIAL_RATING, PROVISIONAL_MATCHES } from "@shuttle/rating";
 import { useAuth } from "../../lib/auth";
-import { pickActive } from "../../lib/groups";
 import { listGroups } from "../../lib/session";
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from "../../lib/theme";
 import {
@@ -65,7 +65,7 @@ export default function Me() {
         chemistry: ChemistryRow[];
         recent: MeFeedRow[];
         rating: RatingLine;
-        captainGroup: { id: string; name: string } | null;
+        captainGroups: { id: string; name: string }[];
         adminGroups: AdminGroupRow[] | null;
       }
   >({ kind: "loading" });
@@ -79,28 +79,52 @@ export default function Me() {
       if (seq === loadSeq.current) setState(next);
     };
     try {
-      // ratings are per group: the card shows the ACTIVE group's ladder
-      const group = pickActive(await listGroups());
+      // Me is GLOBAL: every group's ladder plus cross-group form. The room
+      // is where a single group's world lives.
+      const groups = await listGroups();
       const [played, ratingRes] = await Promise.all([
         fetchPlayedMatches(selfId),
-        group
+        groups.length > 0
           ? supabase
               .from("rating_history")
-              .select("rating_after, created_at")
+              .select("group_id, rating_after, created_at")
               .eq("player_id", selfId)
-              .eq("group_id", group.id)
+              .in("group_id", groups.map((g) => g.id))
               .order("created_at", { ascending: true })
               .order("id", { ascending: true })
-          : Promise.resolve({ data: [] as { rating_after: number; created_at: string }[], error: null }),
+          : Promise.resolve({
+              data: [] as { group_id: string; rating_after: number; created_at: string }[],
+              error: null,
+            }),
       ]);
       if (ratingRes.error) throw ratingRes.error;
-      // captaining the ACTIVE group is what unlocks captain tools; a
-      // maybeSingle over all captaincies crashed the screen the moment
-      // one person captained two groups
-      const captainRes = {
-        data: group && group.captain_id === selfId ? { id: group.id, name: group.name } : null,
-      };
-      const series = ratingRes.data.map((r) => r.rating_after);
+      const perGroup = new Map<string, number[]>();
+      for (const r of ratingRes.data) {
+        perGroup.set(r.group_id, [...(perGroup.get(r.group_id) ?? []), r.rating_after]);
+      }
+      const groupRatings: GroupRating[] = groups
+        .filter((g) => perGroup.has(g.id))
+        .map((g) => {
+          const series = perGroup.get(g.id)!;
+          return {
+            groupId: g.id,
+            name: g.name,
+            current: series[series.length - 1],
+            provisional: series.length < PROVISIONAL_MATCHES,
+            series,
+          };
+        });
+      // blended: games-weighted mean of each ladder's current number
+      const totalGames = groupRatings.reduce((n, g) => n + g.series.length, 0);
+      const blended =
+        totalGames === 0
+          ? INITIAL_RATING
+          : Math.round(
+              groupRatings.reduce((s, g) => s + g.current * g.series.length, 0) / totalGames
+            );
+      const captainGroups = groups
+        .filter((g) => g.captain_id === selfId)
+        .map((g) => ({ id: g.id, name: g.name }));
       const ids = [
         ...new Set(played.flatMap((m) => [...m.partnerIds, ...m.opponentIds])),
       ];
@@ -125,12 +149,7 @@ export default function Me() {
       }
       paint({
         kind: "ready",
-        rating: {
-          current: series.length > 0 ? series[series.length - 1] : INITIAL_RATING,
-          provisional: series.length < PROVISIONAL_MATCHES,
-          series,
-          groupName: group?.name ?? null,
-        },
+        rating: { blended, groups: groupRatings },
         winPct: winPct(played),
         streak: currentStreak(played),
         lastTen: lastTen(played),
@@ -143,7 +162,7 @@ export default function Me() {
         recent: played
           .slice(0, 5)
           .map((m) => feedRow(m, name, profile?.display_name ?? "You")),
-        captainGroup: captainRes.data,
+        captainGroups,
         adminGroups,
       });
     } catch {
@@ -205,14 +224,12 @@ export default function Me() {
       }}
       onSignOut={() => supabase.auth.signOut()}
       onOpenMath={() => router.push("/rating-math")}
-      captainGroup={state.captainGroup}
+      captainGroups={state.captainGroups}
       adminGroups={state.adminGroups}
       wiping={wipe === "wiping"}
       wipeDone={wipe === "done"}
       wipeError={wipe === "error"}
-      onWipe={() => {
-        if (state.captainGroup) wipeGroup(state.captainGroup.id);
-      }}
+      onWipe={wipeGroup}
     />
   );
 }
