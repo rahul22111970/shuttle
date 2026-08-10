@@ -1,6 +1,7 @@
 // The game log, presentational and pure: window chips up top, then every
 // game in the window grouped by day, written the way players say them.
 // Chrome belongs to the group room that mounts this.
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { LogWindow } from "../lib/gamelog";
@@ -25,6 +26,10 @@ export type GamesViewProps =
       total: number;
       // true when the fetch cap was hit: the log admits what it dropped
       capped: boolean;
+      // recent games the viewer may undo (logger or captain, 48h)
+      removableIds: ReadonlySet<string>;
+      removeBusy: boolean;
+      onRemove: (matchId: string) => void;
     };
 
 const WINDOWS: { key: LogWindow; label: string }[] = [
@@ -35,6 +40,9 @@ const WINDOWS: { key: LogWindow; label: string }[] = [
 ];
 
 export default function GamesView(props: GamesViewProps) {
+  // two-tap undo, armed per row
+  const [removeArmed, setRemoveArmed] = useState<string | null>(null);
+
   if (props.kind === "loading") {
     return <Text style={styles.quiet}>Fetching the log…</Text>;
   }
@@ -91,6 +99,30 @@ export default function GamesView(props: GamesViewProps) {
                 <Text style={styles.quiet}>{row.when}</Text>
               </View>
               <Text style={styles.feedScore}>{row.score}</Text>
+              {props.removableIds.has(row.id) ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    removeArmed === row.id ? `Really remove this game` : `Remove ${row.line}`
+                  }
+                  disabled={props.removeBusy}
+                  style={[styles.removeBtn, removeArmed === row.id && styles.removeBtnArmed]}
+                  onPress={() => {
+                    if (removeArmed === row.id) {
+                      setRemoveArmed(null);
+                      props.onRemove(row.id);
+                    } else {
+                      setRemoveArmed(row.id);
+                    }
+                  }}
+                >
+                  <Text
+                    style={[styles.removeText, removeArmed === row.id && styles.removeTextArmed]}
+                  >
+                    {removeArmed === row.id ? "Sure?" : "Undo"}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ))}
         </Card>
@@ -137,4 +169,13 @@ const styles = StyleSheet.create({
     color: color.ink2,
     fontVariant: ["tabular-nums"],
   },
+  removeBtn: {
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    backgroundColor: color.inkWash,
+  },
+  removeBtnArmed: { backgroundColor: color.corkWash },
+  removeText: { fontFamily: font.bold, fontSize: 11.5, color: color.ink2 },
+  removeTextArmed: { color: color.cork },
 });

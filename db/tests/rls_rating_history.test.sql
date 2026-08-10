@@ -95,15 +95,9 @@ do $$ begin
   end;
 end $$;
 
--- rating_history_delete_denied
-do $$ begin
-  begin
-    delete from public.rating_history
-      where player_id = '00000000-0000-4000-8000-00000000e0aa';
-    raise exception 'TEST FAIL rating_history_delete_denied: delete succeeded';
-  exception when insufficient_privilege then null;
-  end;
-end $$;
+-- delete moved below: 0015 re-granted DELETE for the voice undo, gated to
+-- the match's logger or a captain within 48h; the stranger case proves the
+-- policy filters
 
 -- rating_history_truncate_denied (its own privilege, RLS never gates it)
 do $$ begin
@@ -131,6 +125,19 @@ do $$ begin
     raise exception 'TEST FAIL rating_history_insert_by_non_member_denied: insert succeeded';
   exception when insufficient_privilege then null;
   end;
+end $$;
+
+-- rating_history_delete_by_stranger_filtered (0015): the stranger's delete
+-- reaches zero rows; the two lines on the match survive
+delete from public.rating_history where match_id = '00000000-0000-4000-8000-00000000e002';
+do $$
+declare n integer;
+begin
+  select count(*) into n from public.rating_history
+    where match_id = '00000000-0000-4000-8000-00000000e002';
+  if n <> 2 then
+    raise exception 'TEST FAIL rating_history_delete_by_stranger_filtered: % rows left', n;
+  end if;
 end $$;
 
 -- rating_history_wrong_group_label_denied: the row must claim the match's

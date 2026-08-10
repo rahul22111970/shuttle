@@ -11,6 +11,9 @@ const ready = (over: Record<string, unknown> = {}) =>
     days: [],
     total: 0,
     capped: false,
+    removableIds: new Set<string>(),
+    removeBusy: false,
+    onRemove: noop,
     ...over,
   }) as Parameters<typeof GamesView>[0];
 

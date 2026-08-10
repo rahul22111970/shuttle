@@ -128,7 +128,7 @@ export default function RoundsView(props: RoundsViewProps) {
         ) : null}
       </Card>
       {props.standings.length > 0 ? (
-        <Card>
+        <Card testID="round-standings">
           <Text style={styles.title}>Tonight</Text>
           {props.standings.map((row) => (
             <View key={row.id} style={styles.standingRow}>
