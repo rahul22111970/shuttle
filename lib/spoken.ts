@@ -50,6 +50,37 @@ function digitise(text: string): string {
   return out.join(" ");
 }
 
+// Recognisers fuse spoken scores into one token: "21-18" arrives as
+// "2118", "21 8" as "218". Split any lone 3-4 digit token into the one
+// plausible game score: both halves 0-30, no leading zero, and the winner
+// holding at least 15 points. "2118" -> "21-18"; a token with no plausible
+// split (or several equally plausible) is left alone and fails loudly at
+// the score check instead of guessing.
+function splitFusedScore(text: string): string {
+  return text.replace(/(?<!\w)(\d{3,4})(?!\w)/g, (tok) => {
+    const splits: [number, number][] = [];
+    for (let i = 1; i < tok.length; i++) {
+      const a = tok.slice(0, i);
+      const b = tok.slice(i);
+      if (a.length > 1 && a.startsWith("0")) continue;
+      if (b.length > 1 && b.startsWith("0")) continue;
+      const x = Number(a);
+      const y = Number(b);
+      if (x > 30 || y > 30) continue;
+      if (Math.max(x, y) < 15) continue;
+      splits.push([x, y]);
+    }
+    if (splits.length > 1) {
+      // prefer the split where somebody reached game point
+      const at21 = splits.filter(([x, y]) => Math.max(x, y) === 21);
+      if (at21.length === 1) return `${at21[0][0]}-${at21[0][1]}`;
+      return tok;
+    }
+    if (splits.length === 1) return `${splits[0][0]}-${splits[0][1]}`;
+    return tok;
+  });
+}
+
 // drop connector words so "rahul and sai" reads as a plain name run the
 // side parser already understands
 const stripAnd = (s: string) => s.replace(/\b(?:and|n|plus|with)\b/gi, " ");
@@ -57,7 +88,9 @@ const stripAnd = (s: string) => s.replace(/\b(?:and|n|plus|with)\b/gi, " ");
 const clean = (s: string) =>
   s.replace(/[.,!?]/g, " ").replace(/\s+/g, " ").trim();
 
-function scoreFrom(text: string): { hi: number; lo: number; rest: string } | null {
+function scoreFrom(
+  text: string
+): { hi: number; lo: number; tie: boolean; rest: string } | null {
   const m = EXPLICIT.exec(text) ?? SPACED.exec(text);
   if (!m) return null;
   const x = Number(m[1]);
@@ -65,12 +98,15 @@ function scoreFrom(text: string): { hi: number; lo: number; rest: string } | nul
   return {
     hi: Math.max(x, y),
     lo: Math.min(x, y),
+    tie: x === y,
     rest: (text.slice(0, m.index) + " " + text.slice(m.index + m[0].length)).trim(),
   };
 }
 
+const TIE = "That score is a tie. One side has to win.";
+
 export function parseSpoken(transcript: string, members: readonly Member[]): SpokenResult {
-  const text = clean(digitise(transcript));
+  const text = splitFusedScore(clean(digitise(transcript)));
   if (!text) return { ok: false, message: HINT };
 
   // form 1: <A> versus <B> ... <winner> won <score>
@@ -84,6 +120,7 @@ export function parseSpoken(transcript: string, members: readonly Member[]): Spo
     if (wonSplit.length >= 2) {
       const score = scoreFrom(wonSplit.slice(1).join(" "));
       if (!score) return { ok: false, message: `Heard the winner but not the score. ${HINT}` };
+      if (score.tie) return { ok: false, message: TIE };
       // the tail tokens before "won" name the winner; peel 1-3 tokens off
       // the end until the rest parses as side B and the peel resolves to
       // players already seated on one side
@@ -120,6 +157,7 @@ export function parseSpoken(transcript: string, members: readonly Member[]): Spo
   if (beat.length === 2) {
     const score = scoreFrom(beat[1]);
     if (!score) return { ok: false, message: `Heard who won but not the score. ${HINT}` };
+    if (score.tie) return { ok: false, message: TIE };
     const sideA = parseSide(stripAnd(beat[0]), members);
     if (sideA.error || sideA.ids.length === 0) {
       return { ok: false, message: sideA.error ?? `Didn't catch the winners. ${HINT}` };

@@ -84,3 +84,28 @@ it("empty and garbage utterances get the teaching hint", () => {
     if (!r.ok) expect(r.message).toMatch(/Say it like/);
   }
 });
+
+// field bug 2026-08-11: the recogniser fuses "21-18" into "2118"
+it("splits a fused four-digit score the way Pavitra's game needed", () => {
+  const withPavitra = [...members, { id: "pv", name: "Pavitra" }];
+  const g = ok(parseSpoken("rajat versus pavitra pavitra won 2118", withPavitra));
+  expect(g.a).toEqual(["rj"]);
+  expect(g.b).toEqual(["pv"]);
+  expect(g.score).toEqual({ a: 18, b: 21 });
+});
+
+it("splits a fused three-digit score preferring the game-point half", () => {
+  const g = ok(parseSpoken("rajat beat gautam 218", members));
+  expect(g.score).toEqual({ a: 21, b: 8 });
+});
+
+it("splits a fused deuce score", () => {
+  const g = ok(parseSpoken("rajat beat gautam 3028", members));
+  expect(g.score).toEqual({ a: 30, b: 28 });
+});
+
+it("a fused tie is refused, never guessed", () => {
+  const r = parseSpoken("rajat versus gautam rajat won 2121", members);
+  expect(r.ok).toBe(false);
+  if (!r.ok) expect(r.message).toMatch(/tie/i);
+});
