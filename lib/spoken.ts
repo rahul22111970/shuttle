@@ -105,8 +105,14 @@ function scoreFrom(
 
 const TIE = "That score is a tie. One side has to win.";
 
+// recognisers hear "won" as "one": a standalone "one" that sits right
+// before the score is the verb, not a number. Guarded so "twenty one" and
+// "thirty one" stay numbers.
+const fixHeardOne = (s: string) =>
+  s.replace(/(?<!\btwenty\s)(?<!\bthirty\s)\bone\b(?=\s+(?:twenty|thirty|\d))/gi, "won");
+
 export function parseSpoken(transcript: string, members: readonly Member[]): SpokenResult {
-  const text = splitFusedScore(clean(digitise(transcript)));
+  const text = splitFusedScore(clean(digitise(fixHeardOne(clean(transcript)))));
   if (!text) return { ok: false, message: HINT };
 
   // form 1: <A> versus <B> ... <winner> won <score>
@@ -123,15 +129,27 @@ export function parseSpoken(transcript: string, members: readonly Member[]): Spo
       if (score.tie) return { ok: false, message: TIE };
       // the tail tokens before "won" name the winner; peel 1-3 tokens off
       // the end until the rest parses as side B and the peel resolves to
-      // players already seated on one side
+      // players already seated on one side. The winner resolves against
+      // the FOUR ON COURT, not the whole group: "rahul won" is unambiguous
+      // when only one of the group's Rahuls is in this game.
       const tokens = stripAnd(clean(wonSplit[0])).split(/\s+/).filter(Boolean);
+      let ambiguity: string | null = null;
       for (let take = 1; take <= Math.min(4, tokens.length - 1); take++) {
         const winnerText = tokens.slice(tokens.length - take).join(" ");
         const sideBText = tokens.slice(0, tokens.length - take).join(" ");
         const sideB = parseSide(sideBText, members);
         if (sideB.error || sideB.ids.length === 0) continue;
-        const winner = parseSide(winnerText, members);
-        if (winner.error || winner.ids.length === 0) continue;
+        const seated = members.filter(
+          (m) => sideA.ids.includes(m.id) || sideB.ids.includes(m.id)
+        );
+        const winner = parseSide(winnerText, seated);
+        if (winner.error) {
+          // the first failure names the real clash ("Two Rahuls…"); later
+          // peels fail on junk tokens and would bury it
+          ambiguity ??= winner.error;
+          continue;
+        }
+        if (winner.ids.length === 0) continue;
         const inA = winner.ids.every((id) => sideA.ids.includes(id));
         const inB = winner.ids.every((id) => sideB.ids.includes(id));
         if (!inA && !inB) continue;
@@ -146,7 +164,10 @@ export function parseSpoken(transcript: string, members: readonly Member[]): Spo
           },
         };
       }
-      return { ok: false, message: `Couldn't tell the winner from the second pair. ${HINT}` };
+      return {
+        ok: false,
+        message: ambiguity ?? `Couldn't tell the winner from the second pair. ${HINT}`,
+      };
     }
     // no "won": maybe "<A> versus <B> 21-16" — winner unstated, refuse
     return { ok: false, message: `Say who won. ${HINT}` };

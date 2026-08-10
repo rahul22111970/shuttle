@@ -109,3 +109,41 @@ it("a fused tie is refused, never guessed", () => {
   expect(r.ok).toBe(false);
   if (!r.ok) expect(r.message).toMatch(/tie/i);
 });
+
+// field bug 2026-08-11 round two: the winner must resolve by single first
+// name against the four ON COURT, even when the group holds two Rahuls
+it("a single first name picks the on-court Rahul, not the group's clash", () => {
+  const withNew = [...members, { id: "ad", name: "Aditya" }, { id: "pv", name: "Pavitra" }];
+  const g = ok(
+    parseSpoken("rahul p and sai vs aditya and pavitra rahul won 21-16", withNew)
+  );
+  expect(g.a).toEqual(["rp", "sk"]);
+  expect(g.b).toEqual(["ad", "pv"]);
+  expect(g.score).toEqual({ a: 21, b: 16 });
+});
+
+it("two on-court Rahuls still refuse a bare 'rahul won'", () => {
+  const g = parseSpoken("rahul p and sai vs rahul d and gautam rahul won 21-16", members);
+  expect(g.ok).toBe(false);
+  if (!g.ok) expect(g.message).toMatch(/Rahul/);
+});
+
+it("'one' heard for 'won' still lands the winner and the score", () => {
+  const withNew = [...members, { id: "ad", name: "Aditya" }, { id: "pv", name: "Pavitra" }];
+  const g = ok(
+    parseSpoken("rahul p and sai vs aditya and pavitra rahul one 21 16", withNew)
+  );
+  expect(g.score).toEqual({ a: 21, b: 16 });
+  expect(g.a).toEqual(["rp", "sk"]);
+});
+
+it("'one' fused with the score still parses", () => {
+  const withNew = [...members, { id: "pv", name: "Pavitra" }];
+  const g = ok(parseSpoken("rajat versus pavitra pavitra one 2118", withNew));
+  expect(g.score).toEqual({ a: 18, b: 21 });
+});
+
+it("'twenty one sixteen' is untouched by the won-for-one fix", () => {
+  const g = ok(parseSpoken("rajat versus gautam rajat won twenty one sixteen", members));
+  expect(g.score).toEqual({ a: 21, b: 16 });
+});
