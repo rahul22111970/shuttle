@@ -180,3 +180,24 @@ it("winner-first with nobody named after the score asks who they beat", () => {
   expect(r.ok).toBe(false);
   if (!r.ok) expect(r.message).toMatch(/who they beat/i);
 });
+
+// field bug 2026-08-11 round four: a mangled SURNAME must still resolve
+// the full name, even between two Rahuls
+it("a mangled surname still picks the right Rahul", () => {
+  const g = ok(
+    parseSpoken("rahul parik and sai vs baibhab and rajat rahul parik won 21-16", members)
+  );
+  expect(g.a).toEqual(["rp", "sk"]);
+  expect(g.score).toEqual({ a: 21, b: 16 });
+});
+
+it("'rahul dev' lands on Rahul Deo", () => {
+  const g = ok(parseSpoken("rahul dev beat gautam 21-5", members));
+  expect(g.a).toEqual(["rd"]);
+});
+
+it("a bare ambiguous first name still asks, fuzzy or not", () => {
+  const r = parseSpoken("rahul beat gautam 21-5", members);
+  expect(r.ok).toBe(false);
+  if (!r.ok) expect(r.message).toMatch(/Rahul/);
+});

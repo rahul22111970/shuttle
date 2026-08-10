@@ -76,6 +76,41 @@ function fuzzyByFirstName(token: string, members: readonly Member[]): readonly M
   return best <= budget ? hits : [];
 }
 
+// full-name rescue: every spoken word within its own budget of the name's
+// corresponding word ("rahul parik" -> Rahul Pareek even with two Rahuls).
+// Words under 3 letters must match as a prefix — no budget to spend.
+function fuzzyByWords(ws: readonly string[], members: readonly Member[]): readonly Member[] {
+  let best = Number.POSITIVE_INFINITY;
+  let hits: Member[] = [];
+  for (const m of members) {
+    const nw = words(m.name);
+    if (nw.length < ws.length) continue;
+    let total = 0;
+    let fits = true;
+    for (let i = 0; i < ws.length; i++) {
+      if (ws[i].length < 3) {
+        if (!nw[i].startsWith(ws[i])) fits = false;
+        continue;
+      }
+      const budget = ws[i].length >= 5 ? 2 : 1;
+      const d = editDistance(ws[i], nw[i]);
+      if (d > budget) {
+        fits = false;
+        break;
+      }
+      total += d;
+    }
+    if (!fits) continue;
+    if (total < best) {
+      best = total;
+      hits = [m];
+    } else if (total === best) {
+      hits.push(m);
+    }
+  }
+  return hits;
+}
+
 function resolveToken(token: string, members: readonly Member[]): Resolved {
   const ws = words(token);
   let candidates: readonly Member[];
@@ -87,6 +122,7 @@ function resolveToken(token: string, members: readonly Member[]): Resolved {
       const nw = words(m.name);
       return nw.length >= ws.length && ws.every((w, i) => nw[i].startsWith(w));
     });
+    if (candidates.length === 0) candidates = fuzzyByWords(ws, members);
   }
   if (candidates.length > 1) {
     // an exact hit beats prefix rivals: "raj" is Raj even when Rajat plays
