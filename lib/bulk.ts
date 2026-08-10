@@ -23,8 +23,8 @@ type Member = { id: string; name: string };
 // A score written 21-15 / 21–15 / 21:15 anywhere on the line beats a bare
 // "21 15", so a numbered player ("Rahul 2") never eats a spaced score when
 // an explicit one exists.
-const EXPLICIT = /(?<!\w)(\d{1,2})\s*[-–:]\s*(\d{1,2})(?!\w)/;
-const SPACED = /(?<!\w)(\d{1,2})\s+(\d{1,2})(?!\w)/;
+export const EXPLICIT = /(?<!\w)(\d{1,2})\s*[-–:]\s*(\d{1,2})(?!\w)/;
+export const SPACED = /(?<!\w)(\d{1,2})\s+(\d{1,2})(?!\w)/;
 
 const words = (s: string) =>
   s
@@ -91,7 +91,7 @@ function resolveToken(token: string, members: readonly Member[]): Resolved {
 // two-word name first so "sai kiran gautam" seats Sai Kiran and Gautam.
 // An ambiguous multi-word attempt is terminal (the player meant one name);
 // only a zero-candidate attempt falls back to single words.
-function parseSide(
+export function parseSide(
   text: string,
   members: readonly Member[]
 ): { ids: string[]; error?: string } {

@@ -40,3 +40,4 @@ node e2e/stats.mjs
 node e2e/games.mjs
 node e2e/groups.mjs
 node e2e/admin.mjs
+node e2e/voice.mjs

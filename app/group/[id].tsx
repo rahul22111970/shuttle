@@ -92,7 +92,7 @@ export default function GroupRoom() {
         })}
       </View>
       {section === "night" ? <NightSection group={group} selfId={selfId} /> : null}
-      {section === "games" ? <GamesSection groupId={group.id} selfId={selfId} /> : null}
+      {section === "games" ? <GamesSection group={group} selfId={selfId} /> : null}
       {section === "stats" ? <StatsSection groupId={group.id} /> : null}
       {section === "members" ? <MembersSection group={group} selfId={selfId} /> : null}
     </Screen>

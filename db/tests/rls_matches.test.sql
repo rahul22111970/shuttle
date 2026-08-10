@@ -111,13 +111,14 @@ do $$ begin
   end;
 end $$;
 
--- matches_direct_delete_denied: DELETE is grant-revoked like UPDATE
+-- matches_delete_non_party_filtered: 0015 re-granted DELETE for the undo,
+-- policy-gated to the logger or a captain within 48h. B is neither for
+-- f01 (A's match, A's group), so the delete filters to zero rows.
+delete from public.matches where id = '00000000-0000-4000-8000-000000000f01';
 do $$ begin
-  begin
-    delete from public.matches where id = '00000000-0000-4000-8000-000000000f01';
-    raise exception 'TEST FAIL matches_direct_delete_denied: delete succeeded';
-  exception when insufficient_privilege then null;
-  end;
+  if not exists (select 1 from public.matches where id = '00000000-0000-4000-8000-000000000f01') then
+    raise exception 'TEST FAIL matches_delete_non_party_filtered: delete went through';
+  end if;
 end $$;
 
 -- match_participants_outsider_player_denied: B seats C (not a group member)

@@ -24,6 +24,7 @@ import { TextInput } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import AddPlayer from "./add-player";
 import LedgerPanel from "./ledger-panel";
+import VoiceLog from "./voice-log";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
 import { Button, Card, Chip, ErrorNote } from "./ui";
 
@@ -294,6 +295,15 @@ export default function LiveNight({
               label="Enter a result"
               onPress={() => router.push(`/quick-log?group=${groupId}&session=${session.id}`)}
             />
+          </Card>
+          <VoiceLog
+            members={members}
+            groupId={groupId}
+            sessionId={session.id}
+            onLogged={load}
+          />
+          <Card>
+            <Text style={styles.title}>More ways in</Text>
             <Button
               label="Paste a whole night"
               variant="quiet"

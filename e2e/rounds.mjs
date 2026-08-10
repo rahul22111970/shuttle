@@ -157,9 +157,10 @@ try {
   await page.getByText("Back to the night").click();
 
   // standings update after the scored match: side a players carry 24, and
-  // the Done card wears its final score as the hero
-  await page.getByText("Tonight").waitFor({ timeout: 15000 });
-  await page.getByText("24").first().waitFor({ timeout: 15000 });
+  // the Done card wears its final score as the hero. Scoped: the night
+  // summary card is also titled Tonight.
+  await page.getByTestId("round-standings").getByText("Tonight").waitFor({ timeout: 15000 });
+  await page.getByTestId("round-standings").getByText("24").first().waitFor({ timeout: 15000 });
   await page.getByText("24–0").waitFor({ timeout: 15000 });
   console.log("PASS standings update after a scored match");
 } catch (e) {

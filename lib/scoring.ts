@@ -11,7 +11,7 @@ import {
   type Side,
 } from "@shuttle/score";
 import { supabase } from "./supabase";
-import { recordRatings } from "./rating";
+import { rebuildRatings, recordRatings } from "./rating";
 
 export type MatchRow = {
   id: string;
@@ -220,4 +220,24 @@ export function replayMatch(config: MatchConfig, events: readonly MatchEventRow[
     else throw new Error("replayMatch folds live logs only; result events have no history");
   }
   return state;
+}
+
+// Voice logging's undo: delete a recent match and rebuild its players'
+// ladders. RLS (0015) is the gate — only the logger or a captain, only
+// within 48 hours; events and participants cascade off the match row.
+// ponytail: only the four participants' ratings are rebuilt; other
+// players' later rows keep the numbers they were computed with. Rebuild
+// the whole group if retro-accuracy ever matters.
+export async function deleteMatch(
+  matchId: string,
+  groupId: string,
+  participantIds: readonly string[]
+): Promise<void> {
+  const ratings = await supabase.from("rating_history").delete().eq("match_id", matchId);
+  if (ratings.error) throw ratings.error;
+  const match = await supabase.from("matches").delete().eq("id", matchId);
+  if (match.error) throw match.error;
+  for (const playerId of participantIds) {
+    await rebuildRatings(playerId, groupId);
+  }
 }
