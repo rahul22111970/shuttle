@@ -52,6 +52,47 @@ it("parses space-only names, pairing two-word members greedily", () => {
   expect(g.b).toEqual(["sk", "pw"]);
 });
 
+it("parses 'A vs B' with the score at the end", () => {
+  const g = one("Prajwal/ Rajat Vs Gautam/ Sai Kiran 21-15");
+  expect(g.a).toEqual(["pw", "rj"]);
+  expect(g.b).toEqual(["g", "sk"]);
+  expect(g.score).toEqual({ a: 21, b: 15 });
+});
+
+it("parses space-only names either side of vs", () => {
+  const g = one("Rahul P Gautam vs Sai Kiran Mitrajit 21-17");
+  expect(g.a).toEqual(["rp", "g"]);
+  expect(g.b).toEqual(["sk", "mj"]);
+  expect(g.score).toEqual({ a: 21, b: 17 });
+});
+
+it("accepts v, v. and v/s as the separator", () => {
+  for (const sep of ["v", "v.", "v/s", "vs.", "versus"]) {
+    expect(one(`prajwal ${sep} rajat 21-19`).b).toEqual(["rj"]);
+  }
+});
+
+it("a lone 'v' stays an initial when the line needs it as one", () => {
+  const withV = [...M, { id: "rv", name: "Rahul Verma" }, { id: "vk", name: "Vikas" }];
+  const g = (text: string) => {
+    const r = parseBulk(text, withV);
+    expect(r.errors).toEqual([]);
+    return r.games[0];
+  };
+  expect(g("rahul v 21-15 gautam").a).toEqual(["rv"]);
+  expect(g("gautam 21-15 v").b).toEqual(["vk"]);
+  expect(g("v 21-15 gautam").a).toEqual(["vk"]);
+  expect(g("rajat v 21-15 gautam prajwal").a).toEqual(["rj", "vk"]);
+  // a real vs outranks an initial earlier on the line
+  expect(g("prajwal rahul v vs gautam mitrajit 21-17").a).toEqual(["pw", "rv"]);
+});
+
+it("keeps working when vs sits beside a mid-line score", () => {
+  const g = one("prajwal vs 21-19 rajat");
+  expect(g.a).toEqual(["pw"]);
+  expect(g.b).toEqual(["rj"]);
+});
+
 it("accepts an en dash score", () => {
   expect(one("prajwal 21–19 rajat").score).toEqual({ a: 21, b: 19 });
 });

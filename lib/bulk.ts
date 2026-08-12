@@ -1,7 +1,8 @@
 // Bulk score entry, the pure half: one pasted night -> parsed games plus
 // per-line errors. No I/O; the screen feeds it the member list.
 //
-// Grammar per non-empty line: <names A> <score> <names B>. The score is the
+// Grammar per non-empty line: <names A> <score> <names B>, or <names A> vs
+// <names B> with the score anywhere on the line. The score is the
 // first \d{1,2} pair joined by -, en dash, : or a space; names are separated
 // by &, comma, / or plain spaces. Tokens resolve by case-insensitive prefix
 // on the member's first name; a multi-word token resolves by prefix per word
@@ -25,6 +26,14 @@ type Member = { id: string; name: string };
 // an explicit one exists.
 export const EXPLICIT = /(?<!\w)(\d{1,2})\s*[-–:]\s*(\d{1,2})(?!\w)/;
 export const SPACED = /(?<!\w)(\d{1,2})\s+(\d{1,2})(?!\w)/;
+
+// People write "Bibhu/Rajat vs Sambit/MD Bhai 21-15" as readily as they write
+// the score in the middle. When a line says vs, the sides split there and the
+// score is lifted out from wherever it sits. Longest alternative first so
+// "v/s" is not read as a bare "v". A lone "v" is also how an initial is
+// written ("rahul v"), so it is a weaker candidate, tried second.
+export const VS = /(?<=^|[\s&,/])(?:versus|v\/s|vs)\.?(?=$|[\s&,/])/i;
+const VS_INITIAL = /(?<=^|[\s&,/])v\.?(?=$|[\s&,/])/i;
 
 const words = (s: string) =>
   s
@@ -214,12 +223,48 @@ export function parseBulk(text: string, members: readonly Member[]): BulkResult 
     if (!m) return fail("No score on this line. Put it between the sides, like 21-15.");
     const score = { a: Number(m[1]), b: Number(m[2]) };
 
-    const left = parseSide(raw.slice(0, m.index), members);
+    // Where the line splits into two sides: at a vs if it has one, otherwise
+    // around the score. Each candidate is tried in turn and the first that
+    // seats two legal sides wins, so a "v" that was really an initial hands
+    // the line back to the score split instead of wrecking it.
+    const rest = raw.slice(0, m.index) + " " + raw.slice(m.index + m[0].length);
+    const cuts = [VS, VS_INITIAL]
+      .map((re) => re.exec(rest))
+      .filter((v): v is RegExpExecArray => v !== null)
+      .map((v) => ({
+        vs: true,
+        left: rest.slice(0, v.index),
+        right: rest.slice(v.index + v[0].length),
+      }));
+    cuts.push({
+      vs: false,
+      left: raw.slice(0, m.index),
+      right: raw.slice(m.index + m[0].length),
+    });
+
+    const tried = cuts.map((c) => {
+      const left = parseSide(c.left, members);
+      const right = parseSide(c.right, members);
+      const n = left.ids.length;
+      return {
+        vs: c.vs,
+        left,
+        right,
+        ok: !left.error && !right.error && n > 0 && n <= 2 && n === right.ids.length,
+      };
+    });
+    // nothing seats cleanly: report the strongest candidate's own complaint
+    const cut = tried.find((t) => t.ok) ?? tried[0];
+    const { left, right } = cut;
+
     if (left.error) return fail(left.error);
-    const right = parseSide(raw.slice(m.index + m[0].length), members);
     if (right.error) return fail(right.error);
-    if (left.ids.length === 0) return fail("No names before the score.");
-    if (right.ids.length === 0) return fail("No names after the score.");
+    if (left.ids.length === 0) {
+      return fail(cut.vs ? "No names before vs." : "No names before the score.");
+    }
+    if (right.ids.length === 0) {
+      return fail(cut.vs ? "No names after vs." : "No names after the score.");
+    }
     if (
       left.ids.length !== right.ids.length ||
       left.ids.length > 2

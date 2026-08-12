@@ -88,7 +88,9 @@ export default function BulkLogView(props: BulkLogViewProps) {
       <BackBar title="Paste scores" onBack={props.onBack} />
       <Card>
         <Text style={styles.title}>The night's games</Text>
-        <Text style={styles.quiet}>One game a line. Names, score, names.</Text>
+        <Text style={styles.quiet}>
+          One game a line. Names, score, names. Or A vs B, score at the end.
+        </Text>
         <TextInput
           accessibilityLabel="Scores"
           style={styles.box}

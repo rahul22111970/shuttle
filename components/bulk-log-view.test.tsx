@@ -22,7 +22,9 @@ const ready = (over: Record<string, unknown> = {}) =>
 it("ready state shows the title, the hint and the grammar by example", async () => {
   await render(<BulkLogView {...ready()} />);
   expect(screen.getByText("Paste scores")).toBeTruthy();
-  expect(screen.getByText("One game a line. Names, score, names.")).toBeTruthy();
+  expect(
+    screen.getByText("One game a line. Names, score, names. Or A vs B, score at the end.")
+  ).toBeTruthy();
   expect(screen.getByPlaceholderText("Rahul & Sai 21-15 Gautam & Mitrajit")).toBeTruthy();
 });
 
