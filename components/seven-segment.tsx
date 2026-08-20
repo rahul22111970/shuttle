@@ -140,7 +140,7 @@ export default function SevenSegment({
   // stay the same width all match
   const text = String(Math.max(0, Math.trunc(value))).padStart(minDigits, " ");
   return (
-    <View style={[styles.row, { gap: size * 0.09 }]}>
+    <View dataSet={{ shKeepColour: "segments" }} style={[styles.row, { gap: size * 0.09 }]}>
       {/* Seven segments made of Views are invisible to a screen reader and
           to anything that reads text. The number stays in the tree, clipped
           to a pixel — the display is decoration over a real value. */}

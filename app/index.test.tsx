@@ -15,7 +15,7 @@ it("renders the pilot-first login", async () => {
 
   expect(screen.getByText("SHUTTLE")).toBeTruthy();
   expect(screen.getByText("The night runs on your phone.")).toBeTruthy();
-  expect(screen.getByPlaceholderText("Your number")).toBeTruthy();
+  expect(screen.getByLabelText("Your number")).toBeTruthy();
   expect(screen.getByPlaceholderText("Group code")).toBeTruthy();
 
   // the email door stays open, demoted to quiet

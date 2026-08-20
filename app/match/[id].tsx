@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import type { MatchConfig, Side } from "@shuttle/score";
 import ScorerView from "../../components/scorer-view";
 import { useAuth } from "../../lib/auth";
+import { announce } from "../../lib/announce";
 import { foley } from "../../lib/foley";
 import { recordRatings } from "../../lib/rating";
 import { groupSport } from "../../lib/session";
@@ -80,6 +81,7 @@ export default function MatchScorer() {
     try {
       const next = side ? await scorePoint(live, side) : await undoPoint(live);
       setLive(next);
+      announce(`A ${next.state.score.a}, B ${next.state.score.b}`);
       if (next.state.finished) {
         foley.smash();
         setRow((r) => (r ? { ...r, status: "complete", snapshot: next.state } : r));
@@ -90,6 +92,7 @@ export default function MatchScorer() {
         setCaughtUp(true);
       } else {
         setWriteFailed(true);
+        announce("That point did not save. Tap again.", true);
       }
     } finally {
       setPendingSide(null);

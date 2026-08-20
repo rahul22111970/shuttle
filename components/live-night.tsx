@@ -24,6 +24,8 @@ import { TextInput } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import AddPlayer from "./add-player";
 import NumberRoll from "./number-roll";
+import Settle from "./settle";
+import Dialog from "./dialog";
 import LedgerPanel from "./ledger-panel";
 import VoiceLog from "./voice-log";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
@@ -382,8 +384,8 @@ export default function LiveNight({
                   <Text style={styles.sumCell}>Win %</Text>
                   <Text style={styles.sumCell}>Pts</Text>
                 </View>
-                {rows.map((r) => (
-                  <View key={r.playerId} style={styles.sumRow}>
+                {rows.map((r, i) => (
+                  <Settle key={r.playerId} index={i} style={styles.sumRow}>
                     <Text style={[styles.sumCellText, styles.sumName]} numberOfLines={1}>
                       {name(r.playerId)}
                     </Text>
@@ -391,7 +393,7 @@ export default function LiveNight({
                     <Text style={styles.sumFig}>{r.losses}</Text>
                     <Text style={styles.sumFig}>{r.winPct === null ? "–" : `${r.winPct}%`}</Text>
                     <Text style={styles.sumFig}>{r.points}</Text>
-                  </View>
+                  </Settle>
                 ))}
               </Card>
             );
@@ -405,32 +407,34 @@ export default function LiveNight({
             selfId={selfId}
           />
           {isCaptain ? (
-            <Button
-              label={
-                closeArmed
-                  ? "Close the night · no more games join it · tap again"
-                  : "Close the night"
-              }
-              variant="quiet"
-              busy={closing}
-              busyLabel="Closing…"
-              onPress={async () => {
-                if (!closeArmed) {
-                  setCloseArmed(true);
-                  return;
-                }
-                setClosing(true);
-                try {
-                  await closeSession(session.id);
-                  onClosed();
-                } catch {
-                  setNightError(true);
-                } finally {
-                  setClosing(false);
-                  setCloseArmed(false);
-                }
-              }}
-            />
+            <>
+              <Button
+                label="Close the night"
+                variant="quiet"
+                onPress={() => setCloseArmed(true)}
+              />
+              <Dialog
+                open={closeArmed}
+                title="Close the night?"
+                body="No more games join it after this. Scores already in stay in."
+                confirmLabel="Close it"
+                busy={closing}
+                onCancel={() => setCloseArmed(false)}
+                onConfirm={async () => {
+                  setClosing(true);
+                  try {
+                    await closeSession(session.id);
+                    setCloseArmed(false);
+                    onClosed();
+                  } catch {
+                    setNightError(true);
+                    setCloseArmed(false);
+                  } finally {
+                    setClosing(false);
+                  }
+                }}
+              />
+            </>
           ) : null}
         </>
       )}

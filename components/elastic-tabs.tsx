@@ -46,6 +46,7 @@ export default function ElasticTabs<K extends string>({
 
   return (
     <View
+      accessibilityRole="tablist"
       style={styles.tabs}
       onLayout={(e) => setTrack(e.nativeEvent.layout.width)}
     >
@@ -67,7 +68,7 @@ export default function ElasticTabs<K extends string>({
         return (
           <Pressable
             key={s.key}
-            accessibilityRole="button"
+            accessibilityRole="tab"
             accessibilityState={{ selected: on }}
             style={styles.tab}
             onPress={() => onPick(s.key)}

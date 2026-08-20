@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -16,6 +17,8 @@ import {
 } from "react-native";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { prefersReducedMotion, PULL, rubber, SETTLE, timing } from "../lib/motion";
+import { maskPhone, PHONE_DIGITS } from "../lib/mask";
+import { announce } from "../lib/announce";
 import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 
 export function Screen({
@@ -125,6 +128,81 @@ function usePull(onRefresh?: () => Promise<unknown>) {
       at.current.top = e.nativeEvent.contentOffset.y;
     },
   };
+}
+
+// Pattern 43's field. The country code is a label, not a value: it never
+// enters the input, so nothing can reparse it back into the number.
+export function PhoneField({
+  value,
+  onChange,
+  placeholder = "98765 43210",
+  label,
+}: {
+  value: string;
+  onChange: (formatted: string) => void;
+  placeholder?: string;
+  label: string;
+}) {
+  return (
+    <View style={styles.phoneRow}>
+      <Text style={styles.phonePrefix}>+91</Text>
+      <TextInput
+        style={styles.phoneInput}
+        value={value}
+        onChangeText={(next) => onChange(maskPhone(value, next))}
+        placeholder={placeholder}
+        accessibilityLabel={label}
+        placeholderTextColor={color.ink3}
+        inputMode="tel"
+        autoComplete="tel"
+        maxLength={PHONE_DIGITS + 1}
+      />
+    </View>
+  );
+}
+
+// Pattern 54. The source pattern's real content is a scroll-restore dance
+// around collapsing the box to 4px to force an honest scrollHeight; that is
+// a DOM problem react-native does not have, because onContentSizeChange
+// reports the measurement directly. What ports is the clamp and the honest
+// overflow: grow to the content, stop at max, never twitch.
+export function GrowingInput({
+  value,
+  onChange,
+  placeholder,
+  label,
+  minHeight = 120,
+  maxHeight = 360,
+  testID,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  label: string;
+  minHeight?: number;
+  maxHeight?: number;
+  testID?: string;
+}) {
+  const [height, setHeight] = useState(minHeight);
+  return (
+    <TextInput
+      testID={testID}
+      style={[styles.growing, { height }]}
+      value={value}
+      onChangeText={onChange}
+      onContentSizeChange={(e) =>
+        setHeight(
+          Math.min(Math.max(e.nativeEvent.contentSize.height + 24, minHeight), maxHeight)
+        )
+      }
+      scrollEnabled={height >= maxHeight}
+      multiline
+      placeholder={placeholder}
+      accessibilityLabel={label}
+      placeholderTextColor={color.ink3}
+      textAlignVertical="top"
+    />
+  );
 }
 
 // The shapes, named for what they stand in for. Heights are the real
@@ -292,8 +370,31 @@ export function Button({
   );
 }
 
+// Pattern 83. The source builds a summary that scrolls the label and
+// focuses the field; SHUTTLE's forms are two fields deep, so a summary
+// would be scaffolding. What ports is the part that matters: an error that
+// appears must be ANNOUNCED, not just drawn, and it must be reachable.
+// Every error surface in the app already comes through here.
+// Pattern 83. The source builds a summary that scrolls the label and focuses
+// the field; SHUTTLE's forms are two fields deep, so a summary would be
+// scaffolding. What ports is the part that matters: an error that appears
+// must be ANNOUNCED, not just drawn. Every error surface routes through here.
 export function ErrorNote({ children }: { children: ReactNode }) {
-  return <Text style={styles.error}>{children}</Text>;
+  const said = useRef<string | null>(null);
+  const text = typeof children === "string" ? children : null;
+  useEffect(() => {
+    // assertive: an error interrupts. The same message twice running is the
+    // same problem, not a new one.
+    if (text && text !== said.current) {
+      said.current = text;
+      announce(text, true);
+    }
+  }, [text]);
+  return (
+    <Text accessibilityRole="alert" style={styles.error}>
+      {children}
+    </Text>
+  );
 }
 
 // The member chip: neutral at rest, court-marked when active (attending,
@@ -306,7 +407,42 @@ export function Chip({ label, active = false }: { label: string; active?: boolea
   );
 }
 
+const inputBase = {
+  borderWidth: 1,
+  borderColor: color.lineStrong,
+  borderRadius: radius.control,
+  padding: space.md,
+  fontFamily: font.body,
+  fontSize: size.body,
+  color: color.ink,
+  backgroundColor: color.card,
+} as const;
+
 const styles = StyleSheet.create({
+  phoneRow: {
+    alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space.sm,
+    ...inputBase,
+    padding: 0,
+    paddingLeft: space.md,
+  },
+  phonePrefix: { fontFamily: font.mono, fontSize: size.body, color: color.ink3 },
+  phoneInput: {
+    flex: 1,
+    paddingVertical: space.md,
+    paddingRight: space.md,
+    fontFamily: font.mono,
+    fontSize: size.body,
+    color: color.ink,
+  },
+  growing: {
+    alignSelf: "stretch",
+    ...inputBase,
+    backgroundColor: color.fog1,
+    lineHeight: size.body * 1.5,
+  },
   pullRoot: { flex: 1, overflow: "hidden" },
   pullTrack: {
     position: "absolute",

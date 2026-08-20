@@ -5,7 +5,7 @@ import { useState } from "react";
 import { StyleSheet, Text, TextInput } from "react-native";
 import { supabase } from "../lib/supabase";
 import { color, font, radius, size, space } from "../theme/tokens";
-import { Button, ErrorNote } from "./ui";
+import { Button, ErrorNote, PhoneField } from "./ui";
 
 export default function AddPlayer({
   groupId,
@@ -30,15 +30,7 @@ export default function AddPlayer({
         accessibilityLabel="New player name"
         placeholderTextColor={color.ink3}
       />
-      <TextInput
-        style={styles.input}
-        value={phone}
-        onChangeText={setPhone}
-        placeholder="Their number"
-        accessibilityLabel="New player number"
-        inputMode="tel"
-        placeholderTextColor={color.ink3}
-      />
+      <PhoneField value={phone} onChange={setPhone} label="New player number" />
       <Button
         label="Add to the group"
         busy={busy}

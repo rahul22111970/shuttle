@@ -5,6 +5,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
+import Settle from "./settle";
 import { Button, Card, Chip, ErrorNote, Skeleton, SKEL } from "./ui";
 
 export type BoardRow = {
@@ -131,8 +132,8 @@ export default function StatsView(props: StatsViewProps) {
           <Text style={[styles.headLabel, styles.ratingCell]}>Rtg</Text>
         </View>
         {board.map((r, i) => (
+          <Settle key={r.playerId} index={i}>
           <Pressable
-            key={r.playerId}
             accessibilityRole="button"
             accessibilityLabel={`Open ${r.name}`}
             style={[styles.boardRow, styles.boardRowLine]}
@@ -150,6 +151,7 @@ export default function StatsView(props: StatsViewProps) {
             </Text>
             <Text style={[styles.ratingFig, styles.ratingCell]}>{r.rating}</Text>
           </Pressable>
+          </Settle>
         ))}
         <Text style={styles.quiet}>Tap a row for the player's card.</Text>
       </Card>

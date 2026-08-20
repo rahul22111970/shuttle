@@ -11,6 +11,7 @@ import { createGroup, listGroups, type Group, type Session } from "../../lib/ses
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { color, font, layout, radius, shadow, size, space, tracking } from "../../theme/tokens";
+import Settle from "../../components/settle";
 import { AppBar, Button, Card, Chip, ErrorNote, Screen, Skeleton, SKEL } from "../../components/ui";
 
 type Row = Group & { members: number; next: Session | null };
@@ -180,11 +181,11 @@ export default function Groups() {
           <Text style={styles.copy}>Pick the one you are playing. Your groups follow.</Text>
         </Card>
       ) : (
-        rows.map((g) => {
+        rows.map((g, i) => {
           const night = nightLabel(g.next);
           return (
+            <Settle key={g.id} index={i}>
             <Pressable
-              key={g.id}
               accessibilityRole="button"
               style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               onPress={() => router.push(`/group/${g.id}`)}
@@ -204,6 +205,7 @@ export default function Groups() {
               {g.captain_id === selfId ? <Chip label="Captain" active /> : null}
               <Text style={styles.rowGo}>›</Text>
             </Pressable>
+            </Settle>
           );
         })
       )}

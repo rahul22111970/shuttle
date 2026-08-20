@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Redirect } from "expo-router";
 import Onboarding from "../components/onboarding";
-import { Button, Card, ErrorNote, Screen, Wordmark } from "../components/ui";
+import { Button, Card, ErrorNote, PhoneField, Screen, Wordmark } from "../components/ui";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
@@ -111,15 +111,7 @@ export default function Index() {
 
       <Card>
         <Text style={styles.cardLabel}>Play tonight</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="Your number"
-          placeholderTextColor={color.ink3}
-          inputMode="tel"
-          autoComplete="tel"
-        />
+        <PhoneField value={phone} onChange={setPhone} label="Your number" />
         <TextInput
           style={styles.input}
           value={code}

@@ -30,6 +30,14 @@ if (Platform.OS === "web" && typeof document !== "undefined") {
     `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { ${vars(PALETTES.dark)} } }` +
     `:root[data-theme="dark"] { ${vars(PALETTES.dark)} }` +
     "html, body, #root { height: 100%; margin: 0; background: transparent; }" +
+    // Pattern 85. Forced colours override every background-color, which is
+    // fine for a card and fatal for a display: the seven-segment score and
+    // the serving side are BUILT out of background colour, so high contrast
+    // erased both. Opting these two out is the honest answer — the colour
+    // there is the information, not decoration.
+    "@media (forced-colors: active) {" +
+    "  [data-sh-keep-colour], [data-sh-keep-colour] * { forced-color-adjust: none; }" +
+    "}" +
     `body { background-image: linear-gradient(180deg, ${color.fog0} 0%, ${color.fog1} 55%, ${color.fog2} 100%); background-attachment: fixed; }`;
   document.head.appendChild(style);
 }

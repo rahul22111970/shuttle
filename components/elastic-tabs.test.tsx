@@ -8,7 +8,7 @@ const SECTIONS = [
 
 const selectedLabels = () =>
   screen
-    .getAllByRole("button")
+    .getAllByRole("tab")
     .map((n, i) => (n.props.accessibilityState?.selected ? SECTIONS[i].label : null))
     .filter(Boolean);
 
@@ -28,6 +28,6 @@ it("and only ever one tab is selected", async () => {
 it("a press asks for the tab that was pressed", async () => {
   const onPick = jest.fn();
   await render(<ElasticTabs sections={SECTIONS} value="night" onPick={onPick} />);
-  fireEvent.press(screen.getAllByRole("button")[1]);
+  fireEvent.press(screen.getAllByRole("tab")[1]);
   expect(onPick).toHaveBeenCalledWith("games");
 });

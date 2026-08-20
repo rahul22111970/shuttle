@@ -153,7 +153,7 @@ export default function ScorerView(props: ScorerViewProps) {
         <Text style={styles.call}>{`Serving ${serving.toUpperCase()} · ${call}`}</Text>
       ) : null}
       {stake ? <Text style={styles.stake}>{stake}</Text> : null}
-      <View style={styles.zones}>
+      <View dataSet={{ shKeepColour: "scorer" }} style={styles.zones}>
         {(["a", "b"] as const).map((side) => (
           <Pressable
             key={side}

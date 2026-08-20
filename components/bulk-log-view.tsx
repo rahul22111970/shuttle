@@ -2,7 +2,7 @@
 // a live preview of what will be written, one button that says how many.
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
-import { BackBar, Button, Card, ErrorNote, Screen } from "./ui";
+import { BackBar, Button, Card, ErrorNote, GrowingInput, Screen } from "./ui";
 import type { BulkResult, ParsedGame } from "../lib/bulk";
 
 export type PreviewRow = { kind: "game" | "error"; line: number; text: string };
@@ -91,16 +91,12 @@ export default function BulkLogView(props: BulkLogViewProps) {
         <Text style={styles.quiet}>
           One game a line. Names, score, names. Or A vs B, score at the end.
         </Text>
-        <TextInput
-          accessibilityLabel="Scores"
-          style={styles.box}
+        <GrowingInput
+          label="Scores"
           value={props.text}
-          onChangeText={props.onText}
-          multiline
+          onChange={props.onText}
           placeholder="Rahul & Sai 21-15 Gautam & Mitrajit"
-          placeholderTextColor={color.ink3}
-          autoCapitalize="none"
-          autoCorrect={false}
+          minHeight={132}
         />
       </Card>
       {props.rows.length > 0 ? (
@@ -147,17 +143,6 @@ const styles = StyleSheet.create({
     color: color.court,
     textAlign: "center",
     paddingVertical: 12,
-  },
-  box: {
-    borderWidth: 1,
-    borderColor: color.lineStrong,
-    borderRadius: radius.control,
-    padding: space.md,
-    fontFamily: font.body,
-    fontSize: size.body,
-    color: color.ink,
-    minHeight: 132,
-    textAlignVertical: "top",
   },
   row: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   rowError: { fontFamily: font.body, fontSize: size.body, color: color.cork },

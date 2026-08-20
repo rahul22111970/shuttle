@@ -23,6 +23,7 @@ it("matches the palette in DESIGN.md exactly", () => {
     chalk: "#FFFFFF",
     inkWash: "rgba(20,24,27,0.05)",
     inkWash2: "rgba(20,24,27,0.12)",
+    scrim: "rgba(20,24,27,0.46)",
   });
 });
 

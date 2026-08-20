@@ -34,6 +34,9 @@ const light = {
   // neutral fills from the mockup: chips at rest, L badges, tool buttons
   inkWash: "rgba(20,24,27,0.05)",
   inkWash2: "rgba(20,24,27,0.12)",
+
+  // behind a modal. Deep enough that the page reads as inert, not dimmed.
+  scrim: "rgba(20,24,27,0.46)",
 } as const;
 
 // The hall after lights-out, from mockup/shuttle-matchday.html. courtDeep is
@@ -62,6 +65,10 @@ const dark = {
 
   inkWash: "rgba(231,236,238,0.07)",
   inkWash2: "rgba(231,236,238,0.16)",
+
+  // darker in the dark: the hall behind is already black, so a light scrim
+  // would lift it rather than push it back
+  scrim: "rgba(6,9,10,0.62)",
 } as const satisfies Record<keyof typeof light, string>;
 
 export const PALETTES = { light, dark } as const;
