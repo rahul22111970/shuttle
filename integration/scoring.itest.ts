@@ -63,7 +63,7 @@ afterAll(async () => {
 });
 
 it("scores a full 1×21 golden game; projection winner equals engine winner", async () => {
-  let live = await startMatch(groupId, PRESETS.casual1x21, [
+  let live = await startMatch(groupId, PRESETS.bwf1x21, [
     { player_id: userId, side: "a" },
   ]);
   // a runs to 21 while b picks up 5
@@ -81,7 +81,7 @@ it("scores a full 1×21 golden game; projection winner equals engine winner", as
 });
 
 it("undo removes the last point from engine state AND the stored snapshot", async () => {
-  let live = await startMatch(groupId, PRESETS.casual1x21, []);
+  let live = await startMatch(groupId, PRESETS.bwf1x21, []);
   live = await scorePoint(live, "a");
   live = await scorePoint(live, "a");
   live = await scorePoint(live, "b");
@@ -99,7 +99,7 @@ it("undo removes the last point from engine state AND the stored snapshot", asyn
 });
 
 it("quick-log creates match, result event and snapshot in one flow", async () => {
-  const row = await quickLog(groupId, PRESETS.casual1x21, [], { a: 21, b: 14 });
+  const row = await quickLog(groupId, PRESETS.bwf1x21, [], { a: 21, b: 14 });
   expect(row.status).toBe("complete");
   const stored = await fetchMatch(row.id);
   expect(stored?.status).toBe("complete");
@@ -111,7 +111,7 @@ it("quick-log creates match, result event and snapshot in one flow", async () =>
 });
 
 it("a stale seq surfaces as the typed error, not a throw-through", async () => {
-  let live = await startMatch(groupId, PRESETS.casual1x21, []);
+  let live = await startMatch(groupId, PRESETS.bwf1x21, []);
   live = await scorePoint(live, "a");
   // a second device stuck on the old handle tries seq 1 again
   const staleHandle: LiveMatch = { matchId: live.matchId, state: live.state, nextSeq: 1 };

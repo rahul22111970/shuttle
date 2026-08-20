@@ -83,7 +83,7 @@ it("a completed doubles writes 4 rows equal to the engine fixture, once", async 
   const [b, c, d] = fixtureIds;
   const row = await quickLog(
     groupId,
-    PRESETS.casual1x21,
+    PRESETS.bwf1x21,
     [
       { player_id: userId, side: "a" },
       { player_id: b, side: "a" },
@@ -118,7 +118,7 @@ it("a completed doubles writes 4 rows equal to the engine fixture, once", async 
 });
 
 it("an unrateable match (no participants) writes nothing — named: unrated_inserts_nothing", async () => {
-  const row = await quickLog(groupId, PRESETS.casual1x21, [], { a: 21, b: 7 });
+  const row = await quickLog(groupId, PRESETS.bwf1x21, [], { a: 21, b: 7 });
   const rows = await recordRatings(row.id);
   expect(rows).toEqual([]);
   const stored = await admin
@@ -132,7 +132,7 @@ it("a fabricated pre-existing row is a loud RatingConflictError, never 'already 
   const [b] = fixtureIds;
   const row = await quickLog(
     groupId,
-    PRESETS.casual1x21,
+    PRESETS.bwf1x21,
     [
       { player_id: userId, side: "b" },
       { player_id: b, side: "a" },
@@ -165,7 +165,7 @@ it("rating_replay_equality: rebuild from history equals stored rows", async () =
   const [, c] = fixtureIds;
   const row = await quickLog(
     groupId,
-    PRESETS.casual1x21,
+    PRESETS.bwf1x21,
     [
       { player_id: userId, side: "a" },
       { player_id: c, side: "b" },

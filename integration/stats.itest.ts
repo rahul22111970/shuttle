@@ -81,14 +81,14 @@ it("returns one player's matches across two groups, sides and partners resolved"
   // group A: a doubles win with the partner; group B: a singles loss
   await quickLog(
     groupIds[0],
-    PRESETS.casual1x21,
+    PRESETS.bwf1x21,
     [
       { player_id: userId, side: "a" },
       { player_id: partnerId, side: "a" },
     ],
     { a: 21, b: 12 }
   );
-  await quickLog(groupIds[1], PRESETS.casual1x21, [{ player_id: userId, side: "b" }], {
+  await quickLog(groupIds[1], PRESETS.bwf1x21, [{ player_id: userId, side: "b" }], {
     a: 21,
     b: 9,
   });

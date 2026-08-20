@@ -5,6 +5,8 @@ import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { useLive } from "../../lib/use-live";
+import { getActiveSport, setActiveSport } from "../../lib/groups";
+import { asSport, SPORT_NAME, SPORTS, type Sport } from "../../lib/sport";
 import { createGroup, listGroups, type Group, type Session } from "../../lib/session";
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
@@ -28,9 +30,40 @@ function nightLabel(next: Session | null): { text: string; live: boolean } {
   };
 }
 
+// Two chips, one choice. Used for picking which sport to look at and for
+// picking the sport a new group will play.
+function SportPicker({
+  value,
+  onPick,
+}: {
+  value: Sport | null;
+  onPick: (sport: Sport) => void;
+}) {
+  return (
+    <View style={styles.sportRow}>
+      {SPORTS.map((s) => (
+        <Pressable
+          key={s}
+          accessibilityRole="button"
+          accessibilityState={{ selected: value === s }}
+          style={[styles.sportChip, value === s && styles.sportChipOn]}
+          onPress={() => onPick(s)}
+        >
+          <Text style={[styles.sportChipText, value === s && styles.sportChipTextOn]}>
+            {SPORT_NAME[s]}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 export default function Groups() {
   const { session } = useAuth();
   const selfId = session?.user.id ?? "";
+  // null until the user picks, and only ever asked for when they hold both
+  const [sport, setSport] = useState<Sport | null>(getActiveSport);
+  const [newSport, setNewSport] = useState<Sport | null>(null);
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "error" }
@@ -103,9 +136,37 @@ export default function Groups() {
     );
   }
 
+  // one sport in the list means no question to ask; two means the sport is
+  // the first choice, and the group list waits behind it
+  const held = new Set(state.rows.map((g) => asSport(g.sport)));
+  const bothSports = held.size > 1;
+  const onlySport = held.size === 1 ? ([...held][0] as Sport) : null;
+  const chosen = bothSports ? (sport !== null && held.has(sport) ? sport : null) : onlySport;
+  const rows = chosen ? state.rows.filter((g) => asSport(g.sport) === chosen) : [];
+  const createSport = newSport ?? chosen ?? "badminton";
+
   return (
     <Screen testID="groups-screen">
-      <AppBar title="Groups" sub={state.rows.length > 0 ? "Tap a group to play" : undefined} />
+      <AppBar
+        title="Groups"
+        sub={
+          bothSports && chosen === null
+            ? "Pick a sport"
+            : state.rows.length > 0
+              ? "Tap a group to play"
+              : undefined
+        }
+      />
+      {bothSports ? (
+        <SportPicker
+          value={chosen}
+          onPick={(s) => {
+            setSport(s);
+            setActiveSport(s);
+            setNewSport(null);
+          }}
+        />
+      ) : null}
       {state.rows.length === 0 ? (
         <Card>
           <Text style={styles.title}>No group yet</Text>
@@ -113,8 +174,13 @@ export default function Groups() {
             A group is your regular crew. Nights, scores and money all live in it.
           </Text>
         </Card>
+      ) : bothSports && chosen === null ? (
+        <Card>
+          <Text style={styles.title}>Two sports</Text>
+          <Text style={styles.copy}>Pick the one you are playing. Your groups follow.</Text>
+        </Card>
       ) : (
-        state.rows.map((g) => {
+        rows.map((g) => {
           const night = nightLabel(g.next);
           return (
             <Pressable
@@ -134,6 +200,7 @@ export default function Groups() {
                   {g.members} {g.members === 1 ? "player" : "players"}
                 </Text>
               </View>
+              {bothSports ? <Chip label={SPORT_NAME[asSport(g.sport)]} /> : null}
               {g.captain_id === selfId ? <Chip label="Captain" active /> : null}
               <Text style={styles.rowGo}>›</Text>
             </Pressable>
@@ -142,6 +209,10 @@ export default function Groups() {
       )}
       <Card>
         <Text style={styles.title}>Start a new group</Text>
+        <Text style={styles.quiet}>
+          A group plays one sport. It cannot change later, so pick now.
+        </Text>
+        <SportPicker value={createSport} onPick={setNewSport} />
         <TextInput
           style={styles.input}
           value={name}
@@ -159,8 +230,11 @@ export default function Groups() {
             setBusy(true);
             setActionError(false);
             try {
-              const g = await createGroup(name.trim());
+              const g = await createGroup(name.trim(), createSport);
               setName("");
+              setSport(createSport);
+              setActiveSport(createSport);
+              setNewSport(null);
               await load();
               router.push(`/group/${g.id}`);
             } catch {
@@ -201,6 +275,22 @@ const styles = StyleSheet.create({
   rowNight: { fontFamily: font.semibold, fontSize: 13, color: color.ink2 },
   rowNightLive: { color: color.court },
   rowGo: { fontFamily: font.bold, fontSize: 20, color: color.ink3 },
+  sportRow: {
+    width: "100%",
+    maxWidth: layout.column,
+    flexDirection: "row",
+    gap: space.sm,
+  },
+  sportChip: {
+    flex: 1,
+    alignItems: "center",
+    borderRadius: 999,
+    paddingVertical: 9,
+    backgroundColor: color.inkWash,
+  },
+  sportChipOn: { backgroundColor: color.ink },
+  sportChipText: { fontFamily: font.bold, fontSize: 13, color: color.ink2 },
+  sportChipTextOn: { color: color.fog0 },
   input: {
     borderWidth: 1,
     borderColor: color.lineStrong,

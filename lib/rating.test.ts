@@ -1,4 +1,4 @@
-import { PRESETS } from "@shuttle/score";
+import { pickleball, PRESETS } from "@shuttle/score";
 import type { MatchState } from "@shuttle/score";
 import {
   BASE_K,
@@ -12,7 +12,7 @@ import { maxMarginFor, pointMarginFor, ratingRowsFor, type RatingRow } from "./r
 
 const snapshot = (over: Partial<MatchState>): MatchState =>
   ({
-    config: PRESETS.casual1x21,
+    config: PRESETS.bwf1x21,
     points: [],
     games: [{ a: 21, b: 15 }],
     gamesWon: { a: 1, b: 0 },
@@ -30,8 +30,10 @@ const matchOf = (
 
 const fresh = (): PlayerRating => ({ rating: INITIAL_RATING, matchesPlayed: 0 });
 
-it("maxMargin: casual 21, bwf3x21 with cap 30 is 60, americano is its pot", () => {
-  expect(maxMarginFor(PRESETS.casual1x21)).toBe(21);
+it("maxMargin is the cap a match can reach, americano is its pot", () => {
+  // a deuce game can run to its cap, so that is the widest possible margin
+  expect(maxMarginFor(PRESETS.bwf1x21)).toBe(30);
+  expect(maxMarginFor(pickleball(11, true))).toBe(11);
   expect(maxMarginFor(PRESETS.bwf3x21)).toBe((PRESETS.bwf3x21.game.cap ?? 21) * 2);
   expect(maxMarginFor({ kind: "americano", totalPoints: 24 })).toBe(24);
 });
@@ -97,7 +99,7 @@ it("a decided singles writes 2 rows matching the engine fixture", () => {
     ]),
     state
   );
-  const d = singlesDeltas(fresh(), fresh(), 6, 21);
+  const d = singlesDeltas(fresh(), fresh(), 6, maxMarginFor(PRESETS.bwf1x21));
   expect(rows).toHaveLength(2);
   const w = rows.find((r) => r.player_id === "w1") as RatingRow;
   const l = rows.find((r) => r.player_id === "l1") as RatingRow;
@@ -132,7 +134,7 @@ it("a decided doubles writes 4 rows; the stronger partner gains less", () => {
     [state.get("strong") as PlayerRating, state.get("weak") as PlayerRating],
     [state.get("o1") as PlayerRating, state.get("o2") as PlayerRating],
     6,
-    21
+    maxMarginFor(PRESETS.bwf1x21)
   );
   expect(gain("strong")).toBe(
     Math.round(1400 + d.winners[0]) - 1400

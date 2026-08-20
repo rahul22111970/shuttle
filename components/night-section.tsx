@@ -4,6 +4,7 @@
 import { useCallback, useState } from "react";
 import { useLive } from "../lib/use-live";
 import SessionView from "./session-view";
+import { asSport } from "../lib/sport";
 import LiveNight from "./live-night";
 import {
   canCaptain,
@@ -89,6 +90,7 @@ export default function NightSection({ group, selfId }: { group: Group; selfId: 
         session={data.session}
         groupId={group.id}
         groupName={group.name}
+        sport={asSport(group.sport)}
         captainId={group.captain_id}
         isCaptain={canCaptain(group, selfId, data.members)}
         members={data.members}

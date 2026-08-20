@@ -3,13 +3,19 @@
 // other screens with ?group&session; falls back to the active group.
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { PRESETS } from "@shuttle/score";
 import BulkLogView, { previewRows } from "../components/bulk-log-view";
 import { parseBulk } from "../lib/bulk";
 import { foley } from "../lib/foley";
 import { quickLog, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
-import { listGroupMembers, listGroups, nextSession, type Member } from "../lib/session";
+import { defaultMatch, type Sport } from "../lib/sport";
+import {
+  groupSport,
+  listGroupMembers,
+  listGroups,
+  nextSession,
+  type Member,
+} from "../lib/session";
 
 const back = () => (router.canGoBack() ? router.back() : router.replace("/groups"));
 
@@ -19,7 +25,13 @@ export default function BulkLog() {
     | { kind: "loading" }
     | { kind: "error" }
     | { kind: "no-group" }
-    | { kind: "ready"; groupId: string; liveSessionId: string | null; members: Member[] }
+    | {
+        kind: "ready";
+        groupId: string;
+        sport: Sport;
+        liveSessionId: string | null;
+        members: Member[];
+      }
   >({ kind: "loading" });
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,13 +46,15 @@ export default function BulkLog() {
         setState({ kind: "no-group" });
         return;
       }
-      const [members, sess] = await Promise.all([
+      const [members, sess, sport] = await Promise.all([
         listGroupMembers(groupId),
         session ? Promise.resolve(null) : nextSession(groupId),
+        groupSport(groupId),
       ]);
       setState({
         kind: "ready",
         groupId,
+        sport,
         liveSessionId: sess && sess.status === "live" ? sess.id : null,
         members,
       });
@@ -91,7 +105,7 @@ export default function BulkLog() {
           try {
             await quickLog(
               state.groupId,
-              PRESETS.casual1x21,
+              defaultMatch(state.sport, participants.length === 4),
               participants,
               g.score,
               session || state.liveSessionId || undefined

@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { asSport, type Sport } from "./sport";
 
 export type Group = {
   id: string;
@@ -6,6 +7,8 @@ export type Group = {
   captain_id: string;
   // the group's own sign-in code (0013); members read it, share it
   code: string;
+  // 0016: badminton or pickleball, fixed at creation
+  sport: Sport;
   created_at: string;
 };
 
@@ -45,11 +48,11 @@ async function currentUserId(): Promise<string> {
 // ponytail: two statements, no transaction; a crash between them orphans a
 // captain-only group that is visible but unusable. Move to a create_group
 // RPC when it bites.
-export async function createGroup(name: string): Promise<Group> {
+export async function createGroup(name: string, sport: Sport = "badminton"): Promise<Group> {
   const uid = await currentUserId();
   const { data, error } = await supabase
     .from("groups")
-    .insert({ name, captain_id: uid })
+    .insert({ name, captain_id: uid, sport })
     .select()
     .single<Group>();
   if (error) throw error;
@@ -58,6 +61,18 @@ export async function createGroup(name: string): Promise<Group> {
     .insert({ group_id: data.id, player_id: uid });
   if (membership.error) throw membership.error;
   return data;
+}
+
+// One column, for the screens that arrive with a group id in the URL and
+// need the sport before they can pick a match config.
+export async function groupSport(groupId: string): Promise<Sport> {
+  const { data, error } = await supabase
+    .from("groups")
+    .select("sport")
+    .eq("id", groupId)
+    .maybeSingle<{ sport: string }>();
+  if (error) throw error;
+  return asSport(data?.sport);
 }
 
 export async function createSession(groupId: string, startsAt: string): Promise<Session> {

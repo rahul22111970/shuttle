@@ -1,4 +1,5 @@
-// The Games section controller: say a result any time, then the group's
+// The Games section controller: the three doors into a game — say it, score
+// it live, or type it — then the group's
 // completed games in a chosen window, grouped by day, newest first. Recent
 // games can be removed (voice makes mistakes) by whoever logged them or a
 // captain; the players' ladders rebuild on the spot.
@@ -10,6 +11,7 @@ import VoiceLog from "./voice-log";
 import { cutoffFor, groupByDay, type LogWindow } from "../lib/gamelog";
 import { deleteMatch } from "../lib/scoring";
 import { canCaptain, listGroupMembers, type Group, type Member } from "../lib/session";
+import { asSport } from "../lib/sport";
 import { supabase } from "../lib/supabase";
 import { useLive } from "../lib/use-live";
 import { Button } from "./ui";
@@ -118,7 +120,16 @@ export default function GamesSection({ group, selfId }: { group: Group; selfId: 
 
   return (
     <>
-      <VoiceLog members={state.members} groupId={group.id} onLogged={load} />
+      <VoiceLog
+        members={state.members}
+        groupId={group.id}
+        sport={asSport(group.sport)}
+        onLogged={load}
+      />
+      <Button
+        label="Score live"
+        onPress={() => router.push(`/new-match?group=${group.id}`)}
+      />
       <Button
         label="Enter a result"
         variant="quiet"

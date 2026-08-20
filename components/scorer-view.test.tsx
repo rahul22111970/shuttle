@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react-native";
-import { applyMatchPoint, createMatch, PRESETS } from "@shuttle/score";
+import { applyMatchPoint, createMatch, pickleball, PRESETS, type Side } from "@shuttle/score";
 import ScorerView from "./scorer-view";
 
 const noop = () => {};
@@ -8,7 +8,7 @@ type ScoringProps = Extract<Parameters<typeof ScorerView>[0], { kind: "scoring" 
 
 const scoring = (over: Partial<ScoringProps> = {}): ScoringProps => ({
   kind: "scoring",
-  state: createMatch(PRESETS.casual1x21),
+  state: createMatch(PRESETS.bwf1x21),
   scorerName: "Asha",
   pendingSide: null,
   writeFailed: false,
@@ -36,7 +36,7 @@ it("renders the error state by name", async () => {
 });
 
 it("renders the offline-write-failed state by name, keeping the score", async () => {
-  let state = createMatch(PRESETS.casual1x21);
+  let state = createMatch(PRESETS.bwf1x21);
   state = applyMatchPoint(state, "a");
   await render(<ScorerView {...scoring({ state, writeFailed: true })} />);
   expect(
@@ -51,7 +51,7 @@ it("shows the scorer chip with the attributed name", async () => {
 });
 
 it("puts the service dot with the side that won the last rally", async () => {
-  let state = createMatch(PRESETS.casual1x21);
+  let state = createMatch(PRESETS.bwf1x21);
   state = applyMatchPoint(state, "b");
   await render(<ScorerView {...scoring({ state })} />);
   // b serves now; both zones exist and undo is available
@@ -88,4 +88,51 @@ it("a finished game inside a session offers the next game first", async () => {
   );
   expect(screen.getByText("Score the next game")).toBeTruthy();
   expect(screen.getByText("Back to the night")).toBeTruthy();
+});
+
+const play = (config: Parameters<typeof createMatch>[0], seq: readonly Side[]) =>
+  seq.reduce((s, side) => applyMatchPoint(s, side), createMatch(config));
+
+it("a pickleball game says who serves and calls the score three numbers", async () => {
+  // A opens as second server (0-0-2), loses the rally, B takes over as 1
+  const state = play(pickleball(11, true), ["b", "b"]);
+  await render(<ScorerView {...scoring({ state })} />);
+  expect(screen.getByText("Serving B · 1–0–1")).toBeTruthy();
+  expect(screen.getByLabelText("Rally to side A")).toBeTruthy();
+  expect(
+    screen.getByText("Tap whoever won the rally. Only the serving side scores.")
+  ).toBeTruthy();
+});
+
+it("pickleball singles calls two numbers", async () => {
+  const state = play(pickleball(11, false), ["a", "a"]);
+  await render(<ScorerView {...scoring({ state })} />);
+  expect(screen.getByText("Serving A · 2–0")).toBeTruthy();
+});
+
+it("badminton keeps the point wording and no score call", async () => {
+  await render(<ScorerView {...scoring()} />);
+  expect(screen.getByLabelText("Point to side A")).toBeTruthy();
+  expect(screen.queryByText(/Serving/)).toBeNull();
+});
+
+it("names the deuce at 20-all", async () => {
+  const level = (n: number): Side[] =>
+    Array.from({ length: n * 2 }, (_, i) => (i % 2 === 0 ? "a" : "b"));
+  await render(<ScorerView {...scoring({ state: play(PRESETS.bwf1x21, level(20)) })} />);
+  expect(screen.getByText("Deuce. Win by two.")).toBeTruthy();
+});
+
+it("names the game point", async () => {
+  await render(
+    <ScorerView {...scoring({ state: play(PRESETS.bwf1x21, Array<Side>(20).fill("a")) })} />
+  );
+  expect(screen.getByText("Game point A.")).toBeTruthy();
+});
+
+it("only the serving side can be at game point under side-out scoring", async () => {
+  // A holds serve from the start and runs to 10 in an 11-point game
+  const state = play(pickleball(11, false), Array<Side>(10).fill("a"));
+  await render(<ScorerView {...scoring({ state })} />);
+  expect(screen.getByText("Game point A.")).toBeTruthy();
 });

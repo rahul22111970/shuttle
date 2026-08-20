@@ -5,8 +5,8 @@
 // card, and a typed fallback covers quiet rooms and unsupported browsers.
 import { useRef, useState } from "react";
 import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
-import { PRESETS } from "@shuttle/score";
 import { foley } from "../lib/foley";
+import { defaultMatch, type Sport } from "../lib/sport";
 import { quickLog, type Participant } from "../lib/scoring";
 import { parseSpoken } from "../lib/spoken";
 import type { ParsedGame } from "../lib/bulk";
@@ -47,11 +47,13 @@ function recognitionCtor(): (new () => Recognition) | null {
 export default function VoiceLog({
   members,
   groupId,
+  sport,
   sessionId,
   onLogged,
 }: {
   members: readonly Member[];
   groupId: string;
+  sport: Sport;
   sessionId?: string | null;
   onLogged: () => void;
 }) {
@@ -118,7 +120,13 @@ export default function VoiceLog({
         ...g.a.map((player_id) => ({ player_id, side: "a" as const })),
         ...g.b.map((player_id) => ({ player_id, side: "b" as const })),
       ];
-      await quickLog(groupId, PRESETS.casual1x21, participants, g.score, sessionId ?? undefined);
+      await quickLog(
+        groupId,
+        defaultMatch(sport, participants.length === 4),
+        participants,
+        g.score,
+        sessionId ?? undefined
+      );
       foley.drive();
       setTyped("");
       setPhase({ kind: "logged", line: line(g) });

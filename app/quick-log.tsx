@@ -3,13 +3,19 @@
 // the feed shows the game.
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { PRESETS } from "@shuttle/score";
 import QuickLogView, { logLabelFor, type PickRow } from "../components/quick-log-view";
 import { foley } from "../lib/foley";
 import { useAuth } from "../lib/auth";
 import { quickLog, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
-import { listGroupMembers, listGroups, nextSession, type Member } from "../lib/session";
+import { defaultMatch, type Sport } from "../lib/sport";
+import {
+  groupSport,
+  listGroupMembers,
+  listGroups,
+  nextSession,
+  type Member,
+} from "../lib/session";
 import { supabase } from "../lib/supabase";
 
 const backToToday = () =>
@@ -26,7 +32,13 @@ export default function QuickLog() {
     | { kind: "loading" }
     | { kind: "error" }
     | { kind: "no-group" }
-    | { kind: "ready"; groupId: string; liveSessionId: string | null; players: PickRow[] }
+    | {
+        kind: "ready";
+        groupId: string;
+        sport: Sport;
+        liveSessionId: string | null;
+        players: PickRow[];
+      }
   >({ kind: "loading" });
   const [scoreA, setScoreA] = useState("");
   const [scoreB, setScoreB] = useState("");
@@ -42,7 +54,7 @@ export default function QuickLog() {
         setState({ kind: "no-group" });
         return;
       }
-      const [members, recent, sess] = await Promise.all([
+      const [members, recent, sess, sport] = await Promise.all([
         listGroupMembers(group.id),
         supabase
           .from("matches")
@@ -52,6 +64,7 @@ export default function QuickLog() {
           .order("created_at", { ascending: false })
           .limit(10),
         sessionParam ? Promise.resolve(null) : nextSession(group.id),
+        groupSport(group.id),
       ]);
       if (recent.error) throw recent.error;
       // recency rank: first appearance across the latest matches wins
@@ -73,6 +86,7 @@ export default function QuickLog() {
       setState({
         kind: "ready",
         groupId: group.id,
+        sport,
         liveSessionId: sess && sess.status === "live" ? sess.id : null,
         players,
       });
@@ -130,7 +144,8 @@ export default function QuickLog() {
             .map((p) => ({ player_id: p.id, side: p.side as "a" | "b" }));
           await quickLog(
             state.groupId,
-            PRESETS.casual1x21,
+            // the seating decides the format, same rule the live scorer uses
+            defaultMatch(state.sport, participants.length === 4),
             participants,
             { a: Number(scoreA), b: Number(scoreB) },
             sessionParam || state.liveSessionId || undefined

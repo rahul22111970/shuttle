@@ -5,8 +5,8 @@ import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useLive } from "../lib/use-live";
-import { PRESETS } from "@shuttle/score";
 import { foley } from "../lib/foley";
+import { defaultMatch, rulesLine, seatingLabel, type Sport } from "../lib/sport";
 import { nightSummary } from "../lib/stats";
 import { generateRound, nextGame, talliesForSession, type RoundGeneratedPayload } from "../lib/rounds";
 import { startMatch, type Participant } from "../lib/scoring";
@@ -43,6 +43,7 @@ export default function LiveNight({
   session,
   groupId,
   groupName,
+  sport,
   captainId,
   isCaptain,
   members,
@@ -52,6 +53,7 @@ export default function LiveNight({
   session: Session;
   groupId: string;
   groupName: string;
+  sport: Sport;
   // the owner: money collects to their UPI
   captainId: string;
   // owner or co-captain: runs the night
@@ -200,6 +202,9 @@ export default function LiveNight({
   const pairingLine = deal
     ? `${deal.a.map(name).join(" & ")} v ${deal.b.map(name).join(" & ")}`
     : null;
+  // the seating decides the format: two on court is singles, and pickleball
+  // singles drops the second server
+  const dealConfig = defaultMatch(sport, (deal?.a.length ?? 2) === 2);
 
   if (!loaded && !failed) {
     return (
@@ -265,9 +270,11 @@ export default function LiveNight({
             ) : deal ? (
               <>
                 <Text style={styles.dealNames}>{pairingLine}</Text>
-                <Text style={styles.quiet}>Fewest games first, by arrival.</Text>
+                <Text style={styles.quiet}>
+                  {`${seatingLabel(deal.a.length)}. Fewest games first, by arrival.`}
+                </Text>
+                <Text style={styles.quiet}>{rulesLine(dealConfig)}</Text>
                 <Button
-                  variant="quiet"
                   label="Start this game live"
                   busy={busy === "deal"}
                   busyLabel="Setting up…"
@@ -276,12 +283,7 @@ export default function LiveNight({
                       ...deal.a.map((player_id) => ({ player_id, side: "a" as const })),
                       ...deal.b.map((player_id) => ({ player_id, side: "b" as const })),
                     ];
-                    const live = await startMatch(
-                      groupId,
-                      PRESETS.casual1x21,
-                      participants,
-                      session.id
-                    );
+                    const live = await startMatch(groupId, dealConfig, participants, session.id);
                     foley.serve();
                     router.push(`/match/${live.matchId}`);
                   })}
@@ -292,13 +294,24 @@ export default function LiveNight({
               <ErrorNote>That did not go through. Try again.</ErrorNote>
             ) : null}
             <Button
+              label="Score live · pick the players"
+              variant={deal ? "quiet" : "primary"}
+              busy={busy === "score"}
+              busyLabel="Setting up…"
+              onPress={act("score", async () => {
+                router.push(`/new-match?group=${groupId}&session=${session.id}`);
+              })}
+            />
+            <Button
               label="Enter a result"
+              variant="quiet"
               onPress={() => router.push(`/quick-log?group=${groupId}&session=${session.id}`)}
             />
           </Card>
           <VoiceLog
             members={members}
             groupId={groupId}
+            sport={sport}
             sessionId={session.id}
             onLogged={load}
           />
@@ -308,15 +321,6 @@ export default function LiveNight({
               label="Paste a whole night"
               variant="quiet"
               onPress={() => router.push(`/bulk-log?group=${groupId}&session=${session.id}`)}
-            />
-            <Button
-              label="Score live"
-              variant="quiet"
-              busy={busy === "score"}
-              busyLabel="Setting up…"
-              onPress={act("score", async () => {
-                router.push(`/new-match?group=${groupId}&session=${session.id}`);
-              })}
             />
             <Text style={styles.quiet}>
               Played already? Enter the final score. Or keep points live as they happen.

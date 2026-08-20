@@ -3,13 +3,14 @@
 // straight into the live scorer.
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { PRESETS } from "@shuttle/score";
+import type { PickleballPoints } from "@shuttle/score";
 import NewMatchView, { sidesReady } from "../components/new-match-view";
 import type { PickRow } from "../components/quick-log-view";
 import { useAuth } from "../lib/auth";
 import { startMatch, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
-import { getRoster, listGroupMembers, listGroups } from "../lib/session";
+import { defaultMatch, rulesLine, seatingLabel, type Sport } from "../lib/sport";
+import { groupSport, getRoster, listGroupMembers, listGroups } from "../lib/session";
 
 export default function NewMatch() {
   const { group, session } = useLocalSearchParams<{ group?: string; session?: string }>();
@@ -18,10 +19,14 @@ export default function NewMatch() {
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "error" }
-    | { kind: "ready"; groupId: string; players: PickRow[] }
+    | { kind: "ready"; groupId: string; sport: Sport; players: PickRow[] }
   >({ kind: "loading" });
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState(false);
+  // pickleball's real formats (USAP 15.C.1); badminton club play has one
+  // answer so it gets no chooser
+  const [points, setPoints] = useState<PickleballPoints>(11);
+  const [rally, setRally] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -30,9 +35,10 @@ export default function NewMatch() {
         setState({ kind: "error" });
         return;
       }
-      const [members, roster] = await Promise.all([
+      const [members, roster, sport] = await Promise.all([
         listGroupMembers(groupId),
         session ? getRoster(session) : Promise.resolve(null),
+        groupSport(groupId),
       ]);
       const here = new Set(roster?.checkedIn ?? []);
       const order = (id: string) => (id === selfId ? 0 : here.has(id) ? 1 : 2);
@@ -43,7 +49,7 @@ export default function NewMatch() {
           name: m.name,
           side: m.id === selfId ? ("a" as const) : ("none" as const),
         }));
-      setState({ kind: "ready", groupId, players });
+      setState({ kind: "ready", groupId, sport, players });
     } catch {
       setState({ kind: "error" });
     }
@@ -56,9 +62,20 @@ export default function NewMatch() {
   if (state.kind === "loading") return <NewMatchView kind="loading" />;
   if (state.kind === "error") return <NewMatchView kind="error" onRetry={load} />;
 
+  const perSide = state.players.filter((p) => p.side === "a").length;
+  const doubles = perSide !== 1;
+  const config = defaultMatch(state.sport, doubles, points, rally);
+
   return (
     <NewMatchView
       kind="ready"
+      sport={state.sport}
+      seating={sidesReady(state.players) ? seatingLabel(perSide) : null}
+      rules={rulesLine(config)}
+      points={points}
+      onPoints={setPoints}
+      rally={rally}
+      onRally={setRally}
       onBack={() => (router.canGoBack() ? router.back() : router.replace("/groups"))}
       players={state.players}
       busy={busy}
@@ -84,7 +101,7 @@ export default function NewMatch() {
             .map((p) => ({ player_id: p.id, side: p.side as "a" | "b" }));
           const live = await startMatch(
             state.groupId,
-            PRESETS.casual1x21,
+            defaultMatch(state.sport, participants.length === 4, points, rally),
             participants,
             session || undefined
           );

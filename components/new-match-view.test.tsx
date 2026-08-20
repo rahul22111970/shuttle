@@ -17,6 +17,13 @@ const ready = (over: Record<string, unknown> = {}) =>
     busy: false,
     actionError: false,
     startable: false,
+    sport: "badminton",
+    seating: null,
+    rules: "One game to 21, win by two from 20-all, and 30 takes it.",
+    points: 11,
+    onPoints: noop,
+    rally: false,
+    onRally: noop,
     onBack: noop,
     onCycle: noop,
     onStart: noop,
@@ -37,7 +44,11 @@ it("sidesReady is the 1v1-or-2v2 oracle", () => {
 it("the picker carries its title, hint and side badges", async () => {
   await render(<NewMatchView {...ready()} />);
   expect(screen.getByText("Who plays")).toBeTruthy();
-  expect(screen.getByText("Tap a name for side A, again for side B.")).toBeTruthy();
+  expect(
+    screen.getByText(
+      "Tap a name for side A, again for side B. One each side is singles, two is doubles."
+    )
+  ).toBeTruthy();
   expect(screen.getByText("Asha · A")).toBeTruthy();
   expect(screen.getByText("Bela · B")).toBeTruthy();
   expect(screen.getByText("Chirag")).toBeTruthy();
@@ -61,4 +72,31 @@ it("error state locates the failure and offers retry", async () => {
     screen.getByText("Could not reach the hall. Check your network and try again.")
   ).toBeTruthy();
   expect(screen.getByText("Try again")).toBeTruthy();
+});
+
+it("says the rules and the seating, and hides pickleball's formats from badminton", async () => {
+  await render(<NewMatchView {...ready({ seating: "Singles", startable: true })} />);
+  expect(screen.getByText("Singles")).toBeTruthy();
+  expect(
+    screen.getByText("One game to 21, win by two from 20-all, and 30 takes it.")
+  ).toBeTruthy();
+  expect(screen.queryByText("Format")).toBeNull();
+});
+
+it("pickleball picks its points and its scoring rule", async () => {
+  await render(
+    <NewMatchView
+      {...ready({
+        sport: "pickleball",
+        seating: "Doubles",
+        rules: "One game to 11, win by two. Only the serving side scores.",
+      })}
+    />
+  );
+  expect(screen.getByText("Format")).toBeTruthy();
+  expect(screen.getByText("to 11")).toBeTruthy();
+  expect(screen.getByText("to 15")).toBeTruthy();
+  expect(screen.getByText("to 21")).toBeTruthy();
+  expect(screen.getByText("Traditional")).toBeTruthy();
+  expect(screen.getByText("Rally")).toBeTruthy();
 });

@@ -179,6 +179,8 @@ export async function quickLog(
     finished: true,
     winner,
     events: [],
+    serving: null,
+    serverNumber: null,
     quickLog: true,
   };
   await append(row.id, 1, { type: "result", payload: { score: finalScore } }, snapshot);

@@ -2,8 +2,13 @@
 // digits, the service dot on whoever serves, the scorer chip naming who
 // holds the phone. Match-complete reads GAMES, never score — a finished
 // standard match zeroes its score field (S1-02).
+//
+// A tap always means "this side won the rally". Under badminton's rally
+// scoring that is the same as a point. Under pickleball's side-out scoring
+// it often is not, so the zones say rally, the serve indicator is the
+// engine's own, and the pickleball score call sits above the digits.
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
-import type { MatchState, Side } from "@shuttle/score";
+import { applyMatchPoint, scoreCall, type MatchState, type Side } from "@shuttle/score";
 import { color, font, radius, shadow, size, space, tracking } from "../theme/tokens";
 import { Button, Card, ErrorNote, Screen, Wordmark } from "./ui";
 
@@ -32,9 +37,39 @@ export type ScorerViewProps =
       onNextGame?: () => void;
     };
 
-// rally scoring: whoever won the last point serves; side a opens by convention
+// The engine already knows who serves; this only covers a finished state,
+// which the scoring screen never renders.
 function servingSide(state: MatchState): Side {
-  return state.points.length === 0 ? "a" : state.points[state.points.length - 1];
+  return state.serving ?? (state.points[state.points.length - 1] ?? "a");
+}
+
+// What is at stake, asked of the engine rather than re-derived: play the
+// next rally for each side and see what it would end. Exact for side-out
+// scoring too, where a rally won by the receivers ends nothing.
+function tension(state: MatchState): string | null {
+  // the row said live but the log replayed as finished: nothing is at stake
+  // and applyMatchPoint would throw
+  if (state.finished) return null;
+  const ends = (side: Side) => {
+    const next = applyMatchPoint(state, side);
+    return next.finished ? "match" : next.games.length > state.games.length ? "game" : null;
+  };
+  const a = ends("a");
+  const b = ends("b");
+  const word = (kind: "match" | "game") =>
+    kind === "match" && state.config.kind === "standard" && state.config.bestOf > 1
+      ? "Match point"
+      : "Game point";
+  if (a && b) return "Next rally takes it.";
+  if (a) return `${word(a)} A.`;
+  if (b) return `${word(b)} B.`;
+  if (state.config.kind === "standard") {
+    const { settingAt } = state.config.game;
+    if (settingAt !== null && state.score.a >= settingAt && state.score.a === state.score.b) {
+      return "Deuce. Win by two.";
+    }
+  }
+  return null;
 }
 
 export default function ScorerView(props: ScorerViewProps) {
@@ -90,6 +125,9 @@ export default function ScorerView(props: ScorerViewProps) {
 
   const { state, scorerName, pendingSide, onTap, onUndo, onLeave } = props;
   const serving = servingSide(state);
+  const sideOut = state.config.kind === "standard" && state.config.serve !== undefined;
+  const call = sideOut ? scoreCall(state) : null;
+  const stake = tension(state);
   const gamesNote =
     state.games.length > 0 ? state.games.map((g) => `${g.a}–${g.b}`).join(" · ") : null;
 
@@ -104,14 +142,22 @@ export default function ScorerView(props: ScorerViewProps) {
         >
           <Text style={styles.backbText}>‹</Text>
         </Pressable>
-        <Text style={styles.headNote}>The game stays live. Come back from the session tab.</Text>
+        <Text style={styles.headNote}>
+          {sideOut
+            ? "Tap whoever won the rally. Only the serving side scores."
+            : "The game stays live. Come back from the session tab."}
+        </Text>
       </View>
+      {call ? (
+        <Text style={styles.call}>{`Serving ${serving.toUpperCase()} · ${call}`}</Text>
+      ) : null}
+      {stake ? <Text style={styles.stake}>{stake}</Text> : null}
       <View style={styles.zones}>
         {(["a", "b"] as const).map((side) => (
           <Pressable
             key={side}
             accessibilityRole="button"
-            accessibilityLabel={`Point to side ${side.toUpperCase()}`}
+            accessibilityLabel={`${sideOut ? "Rally" : "Point"} to side ${side.toUpperCase()}`}
             accessibilityState={{ disabled: pendingSide !== null }}
             disabled={pendingSide !== null}
             style={({ pressed }) => [
@@ -210,6 +256,19 @@ const styles = StyleSheet.create({
   digitsServing: { color: color.chalk },
   digitsPending: { opacity: 0.45 },
   games: { fontFamily: font.body, fontSize: size.body, color: color.ink2, textAlign: "center" },
+  call: {
+    fontFamily: font.monoBold,
+    fontSize: size.lead,
+    color: color.courtDeep,
+    textAlign: "center",
+    fontVariant: ["tabular-nums"],
+  },
+  stake: {
+    fontFamily: font.semibold,
+    fontSize: size.body,
+    color: color.ink2,
+    textAlign: "center",
+  },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3, textAlign: "center" },
   title: { fontFamily: font.display, fontSize: size.display, color: color.ink, letterSpacing: size.display * tracking.display },
   gamesLine: { fontFamily: font.mono, fontSize: size.lead, color: color.ink2, fontVariant: ["tabular-nums"] },
