@@ -83,6 +83,7 @@ export default function QuickLog() {
           name: m.name,
           side: m.id === selfId ? ("a" as const) : ("none" as const),
         }));
+      foley.use(sport);
       setState({
         kind: "ready",
         groupId: group.id,

@@ -5,6 +5,7 @@ import ScorerView from "../../components/scorer-view";
 import { useAuth } from "../../lib/auth";
 import { foley } from "../../lib/foley";
 import { recordRatings } from "../../lib/rating";
+import { groupSport } from "../../lib/session";
 import {
   fetchMatch,
   fetchMatchEvents,
@@ -39,6 +40,9 @@ export default function MatchScorer() {
         return;
       }
       setRow(match);
+      // a deep link into the scorer skips the group room, so the sport is
+      // fetched here rather than assumed from whatever screen ran last
+      foley.use(await groupSport(match.group_id));
       if (match.status === "live") {
         const events = await fetchMatchEvents(id);
         setLive({

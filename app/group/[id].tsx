@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { setActiveGroupId } from "../../lib/groups";
+import { foley } from "../../lib/foley";
+import { asSport } from "../../lib/sport";
 import { listGroups, type Group } from "../../lib/session";
 import { useAuth } from "../../lib/auth";
 import { color, font, layout, space } from "../../theme/tokens";
@@ -43,6 +45,8 @@ export default function GroupRoom() {
       }
       // remember the last opened group: Me and the quick-log default follow
       setActiveGroupId(group.id);
+      // and the sound of the room follows the sport it plays
+      foley.use(asSport(group.sport));
       setState({ kind: "ready", group });
     } catch {
       setState({ kind: "error" });

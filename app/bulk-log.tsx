@@ -51,6 +51,7 @@ export default function BulkLog() {
         session ? Promise.resolve(null) : nextSession(groupId),
         groupSport(groupId),
       ]);
+      foley.use(sport);
       setState({
         kind: "ready",
         groupId,

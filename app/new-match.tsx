@@ -9,6 +9,7 @@ import type { PickRow } from "../components/quick-log-view";
 import { useAuth } from "../lib/auth";
 import { startMatch, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
+import { foley } from "../lib/foley";
 import { defaultMatch, rulesLine, seatingLabel, type Sport } from "../lib/sport";
 import { groupSport, getRoster, listGroupMembers, listGroups } from "../lib/session";
 
@@ -49,6 +50,7 @@ export default function NewMatch() {
           name: m.name,
           side: m.id === selfId ? ("a" as const) : ("none" as const),
         }));
+      foley.use(sport);
       setState({ kind: "ready", groupId, sport, players });
     } catch {
       setState({ kind: "error" });
