@@ -27,7 +27,15 @@ type Fetched = {
   match_participants: { player_id: string; side: "a" | "b" }[];
 };
 
-export default function GamesSection({ group, selfId }: { group: Group; selfId: string }) {
+export default function GamesSection({
+  group,
+  selfId,
+  nonce = 0,
+}: {
+  group: Group;
+  selfId: string;
+  nonce?: number;
+}) {
   const [window, setWindow] = useState<LogWindow>("week");
   const [state, setState] = useState<
     | { kind: "loading" }
@@ -109,7 +117,7 @@ export default function GamesSection({ group, selfId }: { group: Group; selfId: 
     } catch {
       if (seq === loadSeq.current) setState({ kind: "error" });
     }
-  }, [group, selfId, window]);
+  }, [group, selfId, window, nonce]);
 
   // focus, not mount: a result logged through the pushed quick-log screen
   // must appear the moment the section regains focus

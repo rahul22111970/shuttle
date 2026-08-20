@@ -23,10 +23,11 @@ import { supabase } from "../lib/supabase";
 import { TextInput } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import AddPlayer from "./add-player";
+import NumberRoll from "./number-roll";
 import LedgerPanel from "./ledger-panel";
 import VoiceLog from "./voice-log";
 import RoundsView, { type CourtCard, type StandingRow } from "./rounds-view";
-import { Button, Card, Chip, ErrorNote } from "./ui";
+import { Button, Card, Chip, ErrorNote, Skeleton, SKEL } from "./ui";
 
 type MatchLite = {
   id: string;
@@ -206,15 +207,7 @@ export default function LiveNight({
   // singles drops the second server
   const dealConfig = defaultMatch(sport, (deal?.a.length ?? 2) === 2);
 
-  if (!loaded && !failed) {
-    return (
-      <Card>
-        <Text style={styles.title}>{groupName}</Text>
-        <Text style={styles.liveNote}>The night is on.</Text>
-        <Text style={styles.quiet}>Fetching the night…</Text>
-      </Card>
-    );
-  }
+  if (!loaded && !failed) return <Skeleton bars={SKEL.chips} />;
 
   return (
     <>
@@ -237,7 +230,10 @@ export default function LiveNight({
             </Pressable>
           ))}
         </View>
-        <Text style={styles.quiet}>{checkedIn.length} checked in</Text>
+        <View style={styles.countRow}>
+          <NumberRoll value={checkedIn.length} size={size.label} style={styles.quiet} />
+          <Text style={styles.quiet}> checked in</Text>
+        </View>
         {!selfCheckedIn ? (
           <Button
             label="I'm here"
@@ -480,6 +476,7 @@ const styles = StyleSheet.create({
     color: color.ink2,
     fontVariant: ["tabular-nums"],
   },
+  countRow: { flexDirection: "row", alignItems: "center" },
   liveRow: { gap: space.sm, paddingVertical: space.xs },
   liveRowBody: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   liveRowNames: { flex: 1, fontFamily: font.semibold, fontSize: 14, color: color.ink },

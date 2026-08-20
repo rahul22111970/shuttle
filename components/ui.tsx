@@ -1,22 +1,179 @@
 // The shared primitives every screen was quietly duplicating (S0-10 review
 // note, consolidated at S1-10): centered fog screen, ring-shadow card,
 // court button, wordmark, error line. Tokens only, here and nowhere else.
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, type ViewStyle } from "react-native";
-import type { ReactNode } from "react";
+import {
+  Animated,
+  PanResponder,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ViewStyle,
+} from "react-native";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { prefersReducedMotion, PULL, rubber, SETTLE, timing } from "../lib/motion";
 import { color, font, layout, radius, shadow, size, space, tracking } from "../theme/tokens";
 
-export function Screen({ children, testID }: { children: ReactNode; testID?: string }) {
+export function Screen({
+  children,
+  testID,
+  onRefresh,
+}: {
+  children: ReactNode;
+  testID?: string;
+  // opt in and the screen gains pattern 46. Leave it out and this renders
+  // exactly the ScrollView it always did — no responder in the way.
+  onRefresh?: () => Promise<unknown>;
+}) {
   // a screen must scroll: a fixed View silently swallowed everything below
   // the fold on real phones. Taps land while the keyboard is up.
-  return (
+  const pull = usePull(onRefresh);
+  const body = (
     <ScrollView
       style={styles.screenScroll}
       contentContainerStyle={styles.screen}
       keyboardShouldPersistTaps="handled"
       testID={testID}
+      scrollEventThrottle={16}
+      onScroll={onRefresh ? (e) => pull.onScroll(e) : undefined}
+      {...(onRefresh ? pull.handlers : {})}
     >
       {children}
     </ScrollView>
+  );
+  if (!onRefresh) return body;
+  return (
+    <View style={styles.pullRoot}>
+      <View style={styles.pullTrack} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.pullFill,
+            { transform: [{ scaleX: pull.arc }] },
+            pull.armed && styles.pullFillArmed,
+          ]}
+        />
+      </View>
+      <Animated.View style={{ flex: 1, transform: [{ translateY: pull.offset }] }}>
+        {body}
+      </Animated.View>
+    </View>
+  );
+}
+
+// Pattern 46, hand-rolled: react-native-web ships RefreshControl as a stub
+// that drops every prop and renders a plain View, so the platform gives us
+// nothing here. The constants are the source pattern's, unchanged — arm at
+// 70, hold at 54, and a 12px backtrack disarms, because letting go while
+// pulling BACK means you changed your mind.
+function usePull(onRefresh?: () => Promise<unknown>) {
+  const offset = useRef(new Animated.Value(0)).current;
+  const arc = useRef(new Animated.Value(0)).current;
+  const [armed, setArmed] = useState(false);
+  const at = useRef({ top: 0, peak: 0, raw: 0, own: false });
+
+  const settle = (to: number) => {
+    setArmed(false);
+    at.current.peak = 0;
+    timing(offset, to, SETTLE).start();
+    timing(arc, to > 0 ? 1 : 0, SETTLE, false).start();
+  };
+
+  const handlers = useRef(
+    PanResponder.create({
+      // the takeover test: only a downward drag with the list already at the
+      // top is ours. Everything else stays a scroll.
+      onMoveShouldSetPanResponder: (_e, g) =>
+        !!onRefresh && at.current.top <= 0 && g.dy > 2 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderMove: (_e, g) => {
+        if (g.dy <= 0) return settle(0);
+        at.current.own = true;
+        at.current.raw = g.dy;
+        at.current.peak = Math.max(at.current.peak, g.dy);
+        const eff = rubber(g.dy, 400);
+        offset.setValue(prefersReducedMotion() ? 0 : eff);
+        arc.setValue(Math.min(1, eff / PULL.arm));
+        setArmed(eff >= PULL.arm && at.current.peak - g.dy < PULL.backtrack);
+      },
+      onPanResponderRelease: () => {
+        // judged once, on let go
+        const commit = at.current.own && armedRef.current;
+        at.current.own = false;
+        if (!commit || !onRefresh) return settle(0);
+        settle(PULL.hold);
+        onRefresh().finally(() => settle(0));
+      },
+      onPanResponderTerminate: () => settle(0),
+    })
+  ).current.panHandlers;
+
+  // the responder closure is created once; armed has to reach it by ref
+  const armedRef = useRef(false);
+  useEffect(() => {
+    armedRef.current = armed;
+  }, [armed]);
+
+  return {
+    handlers,
+    armed,
+    offset,
+    arc,
+    onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      at.current.top = e.nativeEvent.contentOffset.y;
+    },
+  };
+}
+
+// The shapes, named for what they stand in for. Heights are the real
+// components' type sizes, so the skeleton is the same height as what lands.
+export const SKEL = {
+  card: [{ w: "34%", h: size.label }, { w: "82%", h: size.body }, { w: "60%", h: size.body }],
+  rows: [{ w: "70%", h: size.lead }, { w: "45%", h: size.body }, { w: "62%", h: size.body }, { w: "38%", h: size.body }],
+  chips: [{ w: "34%", h: size.label }, { w: "92%", h: 28 }, { w: "74%", h: 28 }],
+} as const;
+
+// Pattern 48. The skeleton is built from the same token numbers the real
+// card is, so it predicts the layout instead of guessing at it, and the
+// card keeps its height so nothing jumps when the content lands. One
+// shimmer for the whole card, never one per bar.
+export function Skeleton({
+  bars,
+  testID = "skeleton",
+}: {
+  bars: readonly { w: string; h: number }[];
+  testID?: string;
+}) {
+  const shimmer = useRef(new Animated.Value(0.5)).current;
+  useEffect(() => {
+    if (prefersReducedMotion()) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 720, useNativeDriver: false }),
+        Animated.timing(shimmer, { toValue: 0.5, duration: 720, useNativeDriver: false }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmer]);
+  return (
+    <Card testID={testID}>
+      <Animated.View style={{ opacity: shimmer, gap: space.sm, width: "100%" }}>
+        {bars.map((b, i) => (
+          <View
+            key={i}
+            style={{
+              width: b.w as ViewStyle["width"],
+              height: b.h,
+              borderRadius: 3,
+              backgroundColor: color.inkWash,
+            }}
+          />
+        ))}
+      </Animated.View>
+    </Card>
   );
 }
 
@@ -150,6 +307,22 @@ export function Chip({ label, active = false }: { label: string; active?: boolea
 }
 
 const styles = StyleSheet.create({
+  pullRoot: { flex: 1, overflow: "hidden" },
+  pullTrack: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    zIndex: 2,
+    backgroundColor: "transparent",
+  },
+  pullFill: {
+    height: 2,
+    backgroundColor: color.ink3,
+    transformOrigin: "left",
+  },
+  pullFillArmed: { backgroundColor: color.court },
   screenScroll: {
     flex: 1,
     backgroundColor: Platform.OS === "web" ? "transparent" : color.fog0,

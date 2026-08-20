@@ -105,7 +105,8 @@ it("a season with games but no eligible pair still explains the pairs card", asy
 
 it("loading and error states are drawn", async () => {
   await render(<StatsView kind="loading" />);
-  expect(screen.getByText("Fetching the season…")).toBeTruthy();
+  // the season now loads as a skeleton the size of the board it becomes
+  expect(screen.getByTestId("skeleton")).toBeTruthy();
   await render(<StatsView kind="error" onRetry={() => {}} />);
   expect(
     screen.getByText("Could not reach the hall. Check your network and try again.")

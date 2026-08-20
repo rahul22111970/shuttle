@@ -11,7 +11,7 @@ import { createGroup, listGroups, type Group, type Session } from "../../lib/ses
 import { useAuth } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { color, font, layout, radius, shadow, size, space, tracking } from "../../theme/tokens";
-import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "../../components/ui";
+import { AppBar, Button, Card, Chip, ErrorNote, Screen, Skeleton, SKEL } from "../../components/ui";
 
 type Row = Group & { members: number; next: Session | null };
 
@@ -121,7 +121,7 @@ export default function Groups() {
     return (
       <Screen testID="groups-screen">
         <AppBar title="Groups" />
-        <Text style={styles.quiet}>Fetching your groups…</Text>
+        <Skeleton bars={SKEL.rows} />
       </Screen>
     );
   }
@@ -146,7 +146,7 @@ export default function Groups() {
   const createSport = newSport ?? chosen ?? "badminton";
 
   return (
-    <Screen testID="groups-screen">
+    <Screen testID="groups-screen" onRefresh={load}>
       <AppBar
         title="Groups"
         sub={

@@ -5,7 +5,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
-import { Button, Card, Chip, ErrorNote } from "./ui";
+import { Button, Card, Chip, ErrorNote, Skeleton, SKEL } from "./ui";
 
 export type BoardRow = {
   playerId: string;
@@ -84,7 +84,7 @@ function FormDots({ form }: { form: readonly Form[] }) {
 
 export default function StatsView(props: StatsViewProps) {
   if (props.kind === "loading") {
-    return <Text style={styles.quiet}>Fetching the season…</Text>;
+    return <Skeleton bars={SKEL.rows} />;
   }
 
   if (props.kind === "error") {

@@ -10,12 +10,20 @@ import { listGroups, type Group } from "../lib/session";
 import { supabase } from "../lib/supabase";
 import { color, font, radius, size, space, tracking } from "../theme/tokens";
 import AddPlayer from "./add-player";
-import { Button, Card, Chip, ErrorNote } from "./ui";
+import { Button, Card, Chip, ErrorNote, Skeleton, SKEL } from "./ui";
 
 type MemberRow = { id: string; name: string; isCaptain: boolean };
 type Candidate = { id: string; name: string };
 
-export default function MembersSection({ group, selfId }: { group: Group; selfId: string }) {
+export default function MembersSection({
+  group,
+  selfId,
+  nonce = 0,
+}: {
+  group: Group;
+  selfId: string;
+  nonce?: number;
+}) {
   const owner = group.captain_id === selfId;
   const [state, setState] = useState<
     | { kind: "loading" }
@@ -71,12 +79,12 @@ export default function MembersSection({ group, selfId }: { group: Group; selfId
     } catch {
       setState({ kind: "error" });
     }
-  }, [group.id, owner, selfId]);
+  }, [group.id, owner, selfId, nonce]);
 
   useLive(load);
 
   if (state.kind === "loading") {
-    return <Text style={styles.quiet}>Fetching the group…</Text>;
+    return <Skeleton bars={SKEL.chips} />;
   }
   if (state.kind === "error") {
     return (

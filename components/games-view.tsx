@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { LogWindow } from "../lib/gamelog";
-import { Card, ErrorNote, Button } from "./ui";
+import { Card, ErrorNote, Button, Skeleton, SKEL } from "./ui";
 
 export type GameRow = {
   id: string;
@@ -44,7 +44,7 @@ export default function GamesView(props: GamesViewProps) {
   const [removeArmed, setRemoveArmed] = useState<string | null>(null);
 
   if (props.kind === "loading") {
-    return <Text style={styles.quiet}>Fetching the log…</Text>;
+    return <Skeleton bars={SKEL.rows} />;
   }
 
   if (props.kind === "error") {

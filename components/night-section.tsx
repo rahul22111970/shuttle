@@ -28,7 +28,15 @@ type Data = {
   roster: Roster;
 };
 
-export default function NightSection({ group, selfId }: { group: Group; selfId: string }) {
+export default function NightSection({
+  group,
+  selfId,
+  nonce = 0,
+}: {
+  group: Group;
+  selfId: string;
+  nonce?: number;
+}) {
   const [data, setData] = useState<Data | null>(null);
   const [failed, setFailed] = useState(false);
   const [busyAction, setBusyAction] = useState<
@@ -48,7 +56,7 @@ export default function NightSection({ group, selfId }: { group: Group; selfId: 
     } catch {
       setFailed(true);
     }
-  }, [group.id]);
+  }, [group.id, nonce]);
 
   // focus, not mount: rounds, arrivals and roster changes land while this
   // section is away (the members list went stale until a hard reload before)

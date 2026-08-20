@@ -25,13 +25,59 @@ import pSmash from "../assets/foley/pickleball/smash.mp3";
 
 const webOnly = Platform.OS === "web" && typeof window !== "undefined";
 
-type Cut = { el: HTMLAudioElement } | null;
+// Pattern 75 from ATELIER PRIME: the gesture ritual, adapted from howler.
+//
+// The bug this replaces was real and silent. Every play() cloned its source
+// element, and a CLONE has never been played inside a user gesture — iOS
+// Safari's autoplay policy is per-element, so on iPhone the whole foley
+// layer was dead and the catch{} swallowed the proof. A pool of elements
+// that are all primed during the first real gesture fixes it, and pooling
+// keeps the overlap that cloning was there for.
+type Cut = { pool: HTMLAudioElement[]; at: number } | null;
+
+const POOL = 3; // a tap every ~1s against a 0.2s cut; three never collide
 
 function load(src: unknown): Cut {
   if (!webOnly) return null;
-  const el = new window.Audio(String(src));
-  el.preload = "auto";
-  return { el };
+  const pool = Array.from({ length: POOL }, () => {
+    const el = new window.Audio(String(src));
+    el.preload = "auto";
+    return el;
+  });
+  return { pool, at: 0 };
+}
+
+let unlocked = false;
+const GESTURES = ["touchstart", "touchend", "click", "keydown"] as const;
+
+function unlock(): void {
+  if (unlocked || typeof document === "undefined") return;
+  unlocked = true;
+  for (const bank of Object.values(BANKS)) {
+    for (const cut of [...bank.drives, bank.smash, bank.drop, bank.serve]) {
+      if (!cut) continue;
+      for (const el of cut.pool) {
+        // prime silently: the policy only cares that play() was called from
+        // inside the gesture, not that anything was heard
+        const was = el.volume;
+        el.volume = 0;
+        el.play()
+          .then(() => {
+            el.pause();
+            el.currentTime = 0;
+            el.volume = was;
+          })
+          .catch(() => {
+            el.volume = was;
+          });
+      }
+    }
+  }
+  for (const ev of GESTURES) document.removeEventListener(ev, unlock, true);
+}
+
+if (webOnly && typeof document !== "undefined") {
+  for (const ev of GESTURES) document.addEventListener(ev, unlock, true);
 }
 
 type Bank = {
@@ -64,8 +110,11 @@ let driveAt = 0;
 function play(cut: Cut, rate = 1): void {
   if (!cut) return;
   try {
-    // clone so rapid taps overlap instead of restarting one element
-    const el = cut.el.cloneNode(true) as HTMLAudioElement;
+    // round-robin the pool so rapid taps overlap instead of restarting one
+    // element, and so every element that sounds is one the gesture primed
+    const el = cut.pool[cut.at];
+    cut.at = (cut.at + 1) % cut.pool.length;
+    el.currentTime = 0;
     el.playbackRate = rate;
     void el.play().catch(() => {});
   } catch {

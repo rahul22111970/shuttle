@@ -9,6 +9,7 @@
 // engine's own, and the pickleball score call sits above the digits.
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { applyMatchPoint, scoreCall, type MatchState, type Side } from "@shuttle/score";
+import SevenSegment from "./seven-segment";
 import { color, font, radius, shadow, size, space, tracking } from "../theme/tokens";
 import { Button, Card, ErrorNote, Screen, Wordmark } from "./ui";
 
@@ -173,15 +174,14 @@ export default function ScorerView(props: ScorerViewProps) {
                 {side.toUpperCase()}
               </Text>
             </View>
-            <Text
-              style={[
-                styles.digits,
-                serving === side && styles.digitsServing,
-                pendingSide === side && styles.digitsPending,
-              ]}
-            >
-              {state.score[side]}
-            </Text>
+            <View style={pendingSide === side && styles.digitsPending}>
+              <SevenSegment
+                value={state.score[side]}
+                size={128}
+                ink={serving === side ? color.chalk : color.ink}
+                ghost={serving === side ? 0.05 : 0.045}
+              />
+            </View>
           </Pressable>
         ))}
       </View>

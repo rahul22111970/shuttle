@@ -73,10 +73,13 @@ export default function MatchScorer() {
     setPendingSide(side ?? (live.state.points[live.state.points.length - 1] as Side));
     setWriteFailed(false);
     setCaughtUp(false);
+    // DESIGN.md's sound contract says sub-100ms after input, and this used
+    // to wait on the RPC — half a second of silence on hall wifi. The tap
+    // makes the sound; the write still owns whether the point stands.
+    if (side) foley.drive();
     try {
       const next = side ? await scorePoint(live, side) : await undoPoint(live);
       setLive(next);
-      if (side) foley.drive();
       if (next.state.finished) {
         foley.smash();
         setRow((r) => (r ? { ...r, status: "complete", snapshot: next.state } : r));

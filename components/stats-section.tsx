@@ -16,7 +16,7 @@ import { useLive } from "../lib/use-live";
 
 const NO_HIGHLIGHTS: Highlights = { mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null };
 
-export default function StatsSection({ groupId }: { groupId: string }) {
+export default function StatsSection({ groupId, nonce = 0 }: { groupId: string; nonce?: number }) {
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "error" }
@@ -100,7 +100,7 @@ export default function StatsSection({ groupId }: { groupId: string }) {
     } catch {
       paint({ kind: "error" });
     }
-  }, [groupId]);
+  }, [groupId, nonce]);
 
   useLive(load);
 
