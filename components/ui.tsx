@@ -174,6 +174,7 @@ export function GrowingInput({
   minHeight = 120,
   maxHeight = 360,
   testID,
+  footer,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -182,26 +183,33 @@ export function GrowingInput({
   minHeight?: number;
   maxHeight?: number;
   testID?: string;
+  // pinned inside the box's bottom edge (suggestion chips); the input pads
+  // itself so text never slides underneath, and since contentSize is
+  // scrollHeight the growth formula already counts that padding
+  footer?: ReactNode;
 }) {
   const [height, setHeight] = useState(minHeight);
   return (
-    <TextInput
-      testID={testID}
-      style={[styles.growing, { height }]}
-      value={value}
-      onChangeText={onChange}
-      onContentSizeChange={(e) =>
-        setHeight(
-          Math.min(Math.max(e.nativeEvent.contentSize.height + 24, minHeight), maxHeight)
-        )
-      }
-      scrollEnabled={height >= maxHeight}
-      multiline
-      placeholder={placeholder}
-      accessibilityLabel={label}
-      placeholderTextColor={color.ink3}
-      textAlignVertical="top"
-    />
+    <View style={styles.growWrap}>
+      <TextInput
+        testID={testID}
+        style={[styles.growing, { height }, footer != null && styles.growingPadded]}
+        value={value}
+        onChangeText={onChange}
+        onContentSizeChange={(e) =>
+          setHeight(
+            Math.min(Math.max(e.nativeEvent.contentSize.height + 24, minHeight), maxHeight)
+          )
+        }
+        scrollEnabled={height >= maxHeight}
+        multiline
+        placeholder={placeholder}
+        accessibilityLabel={label}
+        placeholderTextColor={color.ink3}
+        textAlignVertical="top"
+      />
+      {footer != null ? <View style={styles.growFooter}>{footer}</View> : null}
+    </View>
   );
 }
 
@@ -442,6 +450,14 @@ const styles = StyleSheet.create({
     ...inputBase,
     backgroundColor: color.fog1,
     lineHeight: size.body * 1.5,
+  },
+  growWrap: { alignSelf: "stretch" },
+  growingPadded: { paddingBottom: space.md + 44 },
+  growFooter: {
+    position: "absolute",
+    bottom: space.md,
+    left: space.md,
+    right: space.md,
   },
   pullRoot: { flex: 1, overflow: "hidden" },
   pullTrack: {

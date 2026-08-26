@@ -1,6 +1,6 @@
 // Bulk log, presentational and pure: one box to paste a night of scores,
 // a live preview of what will be written, one button that says how many.
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import { BackBar, Button, Card, ErrorNote, GrowingInput, Screen } from "./ui";
 import type { BulkResult, ParsedGame, Suggestion } from "../lib/bulk";
@@ -100,21 +100,31 @@ export default function BulkLogView(props: BulkLogViewProps) {
           onChange={props.onText}
           placeholder="Rahul & Sai 21-15 Gautam & Mitrajit"
           minHeight={132}
-        />
-        {props.suggestions.length > 0 ? (
-          <View style={styles.suggestWrap}>
-            {props.suggestions.map((s) => (
-              <Pressable
-                key={s.id}
-                accessibilityRole="button"
-                onPress={() => props.onPick(s)}
-                style={styles.suggest}
+          footer={
+            props.suggestions.length > 0 ? (
+              <ScrollView
+                horizontal
+                keyboardShouldPersistTaps="always"
+                showsHorizontalScrollIndicator={false}
               >
-                <Text style={styles.suggestName}>{s.name}</Text>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+                <View style={styles.suggestWrap}>
+                  {props.suggestions.map((s) => (
+                    <Pressable
+                      key={s.id}
+                      accessibilityRole="button"
+                      // keep focus (and the keyboard) in the box through the tap
+                      onPressIn={(e) => e.preventDefault?.()}
+                      onPress={() => props.onPick(s)}
+                      style={styles.suggest}
+                    >
+                      <Text style={styles.suggestName}>{s.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </ScrollView>
+            ) : undefined
+          }
+        />
       </Card>
       {props.rows.length > 0 ? (
         <Card>
@@ -161,7 +171,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: 12,
   },
-  suggestWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  suggestWrap: { flexDirection: "row", gap: space.sm },
   suggest: {
     borderRadius: 999,
     paddingVertical: 8,
