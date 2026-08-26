@@ -1,5 +1,6 @@
 // The quick log, presentational and pure. One screen: tap players onto
 // sides, type the final score, one button that says what it will do.
+import { useRef } from "react";
 import { StyleSheet, Text, TextInput, View, Pressable } from "react-native";
 import { color, font, radius, size, space, tracking } from "../theme/tokens";
 import { BackBar, Button, Card, ErrorNote, Screen } from "./ui";
@@ -20,6 +21,9 @@ export type QuickLogViewProps =
       onBack: () => void;
       onBulk: () => void;
       players: readonly PickRow[];
+      // the sport's usual winning score (21 badminton, 11 pickleball); the
+      // chip under each box fills it in one tap
+      gamePoint: number;
       scoreA: string;
       scoreB: string;
       busy: boolean;
@@ -54,6 +58,8 @@ export function logLabelFor(
 }
 
 export default function QuickLogView(props: QuickLogViewProps) {
+  const aRef = useRef<TextInput>(null);
+  const bRef = useRef<TextInput>(null);
   if (props.kind === "loading") {
     return (
       <Screen>
@@ -104,27 +110,59 @@ export default function QuickLogView(props: QuickLogViewProps) {
       <Card>
         <Text style={styles.title}>Final score</Text>
         <View style={styles.scoreRow}>
-          <TextInput
-            accessibilityLabel="Side A score"
-            style={styles.scoreBox}
-            value={props.scoreA}
-            onChangeText={props.onScoreA}
-            keyboardType="number-pad"
-            maxLength={2}
-            placeholder="21"
-            placeholderTextColor={color.ink3}
-          />
+          <View style={styles.scoreCol}>
+            <TextInput
+              ref={aRef}
+              accessibilityLabel="Side A score"
+              style={styles.scoreBox}
+              value={props.scoreA}
+              onChangeText={(v) => {
+                props.onScoreA(v);
+                // two digits fill the box, so the cursor moves on by itself
+                if (v.length === 2) bRef.current?.focus();
+              }}
+              keyboardType="number-pad"
+              maxLength={2}
+              placeholder="21"
+              placeholderTextColor={color.ink3}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Side A scored ${props.gamePoint}`}
+              onPress={() => {
+                props.onScoreA(String(props.gamePoint));
+                if (!props.scoreB) bRef.current?.focus();
+              }}
+              style={styles.fill}
+            >
+              <Text style={styles.fillText}>{props.gamePoint}</Text>
+            </Pressable>
+          </View>
           <Text style={styles.scoreDash}>–</Text>
-          <TextInput
-            accessibilityLabel="Side B score"
-            style={styles.scoreBox}
-            value={props.scoreB}
-            onChangeText={props.onScoreB}
-            keyboardType="number-pad"
-            maxLength={2}
-            placeholder="15"
-            placeholderTextColor={color.ink3}
-          />
+          <View style={styles.scoreCol}>
+            <TextInput
+              ref={bRef}
+              accessibilityLabel="Side B score"
+              style={styles.scoreBox}
+              value={props.scoreB}
+              onChangeText={props.onScoreB}
+              keyboardType="number-pad"
+              maxLength={2}
+              placeholder="15"
+              placeholderTextColor={color.ink3}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Side B scored ${props.gamePoint}`}
+              onPress={() => {
+                props.onScoreB(String(props.gamePoint));
+                if (!props.scoreA) aRef.current?.focus();
+              }}
+              style={styles.fill}
+            >
+              <Text style={styles.fillText}>{props.gamePoint}</Text>
+            </Pressable>
+          </View>
         </View>
         <Button
           label={props.logLabel ?? "Log the game"}
@@ -156,6 +194,19 @@ const styles = StyleSheet.create({
   pickName: { fontFamily: font.bold, fontSize: 13, color: color.ink2 },
   pickNameOn: { color: color.court },
   scoreRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  scoreCol: { alignItems: "center", gap: space.sm },
+  fill: {
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 13,
+    backgroundColor: color.inkWash,
+  },
+  fillText: {
+    fontFamily: font.mono,
+    fontSize: size.label,
+    color: color.ink2,
+    fontVariant: ["tabular-nums"],
+  },
   scoreBox: {
     borderWidth: 1,
     borderColor: color.lineStrong,

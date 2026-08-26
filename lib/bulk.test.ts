@@ -1,4 +1,4 @@
-import { parseBulk } from "./bulk";
+import { parseBulk, suggest } from "./bulk";
 
 const M = [
   { id: "rp", name: "Rahul Pareek" },
@@ -188,4 +188,31 @@ it("a bad line never blocks its neighbours, and line numbers count blanks", () =
   expect(r.games.map((g) => g.line)).toEqual([1, 4]);
   expect(r.errors).toHaveLength(1);
   expect(r.errors[0].line).toBe(3);
+});
+
+// the autocomplete oracle: what the trailing half-word offers, and what
+// tapping it must replace
+it("suggest completes a half-typed first name", () => {
+  const s = suggest("ra", M);
+  expect(s.map((x) => x.name)).toEqual(["Rahul Pareek", "Rahul Deo", "Rajat"]);
+  expect(s[0].matched).toBe("ra");
+});
+
+it("suggest works on the trailing token of a longer line", () => {
+  const s = suggest("Rahul Pareek & Sai 21-15 ga", M);
+  expect(s.map((x) => x.name)).toEqual(["Gautam"]);
+  expect(s[0].matched).toBe("ga");
+});
+
+it("suggest prefers the two-word tail so a surname keeps its first name", () => {
+  const s = suggest("rahul pa", M);
+  expect(s.map((x) => x.name)).toEqual(["Rahul Pareek"]);
+  expect(s[0].matched).toBe("rahul pa");
+});
+
+it("suggest stays quiet on scores, trailing space and fully typed names", () => {
+  expect(suggest("rahul 21", M)).toEqual([]);
+  expect(suggest("rahul ", M)).toEqual([]);
+  expect(suggest("", M)).toEqual([]);
+  expect(suggest("gautam", M)).toEqual([]);
 });

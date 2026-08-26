@@ -1,9 +1,9 @@
 // Bulk log, presentational and pure: one box to paste a night of scores,
 // a live preview of what will be written, one button that says how many.
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import { BackBar, Button, Card, ErrorNote, GrowingInput, Screen } from "./ui";
-import type { BulkResult, ParsedGame } from "../lib/bulk";
+import type { BulkResult, ParsedGame, Suggestion } from "../lib/bulk";
 
 export type PreviewRow = { kind: "game" | "error"; line: number; text: string };
 
@@ -44,6 +44,9 @@ export type BulkLogViewProps =
       onBack: () => void;
       text: string;
       onText: (v: string) => void;
+      // members the half-typed trailing word could become; tap completes it
+      suggestions: readonly Suggestion[];
+      onPick: (s: Suggestion) => void;
       rows: readonly PreviewRow[];
       count: number;
       busy: boolean;
@@ -98,6 +101,20 @@ export default function BulkLogView(props: BulkLogViewProps) {
           placeholder="Rahul & Sai 21-15 Gautam & Mitrajit"
           minHeight={132}
         />
+        {props.suggestions.length > 0 ? (
+          <View style={styles.suggestWrap}>
+            {props.suggestions.map((s) => (
+              <Pressable
+                key={s.id}
+                accessibilityRole="button"
+                onPress={() => props.onPick(s)}
+                style={styles.suggest}
+              >
+                <Text style={styles.suggestName}>{s.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </Card>
       {props.rows.length > 0 ? (
         <Card>
@@ -144,6 +161,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: 12,
   },
+  suggestWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  suggest: {
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 13,
+    backgroundColor: color.inkWash,
+  },
+  suggestName: { fontFamily: font.bold, fontSize: 13, color: color.ink2 },
   row: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   rowError: { fontFamily: font.body, fontSize: size.body, color: color.cork },
   actions: { width: "100%", maxWidth: layout.column, gap: space.sm },

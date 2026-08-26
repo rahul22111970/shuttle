@@ -209,6 +209,41 @@ export function parseSide(
   return { ids };
 }
 
+export type Suggestion = { id: string; name: string; matched: string };
+
+// Autocomplete for the box: the word(s) being typed at the end -> members
+// they could become. `matched` is the exact tail to swap for the full name.
+// Two words tried before one, the same greed parseSide uses, so "rahul pa"
+// offers Rahul Pareek instead of restarting at "pa". Only the end of the
+// text is considered; editing an earlier line gets no suggestions.
+// ponytail: end-of-text only, wire cursor position through if mid-line edits hurt
+const TAILS = [/[^\s&,/]+[ \t]+[^\s&,/]+$/, /[^\s&,/]+$/];
+
+export function suggest(text: string, members: readonly Member[]): Suggestion[] {
+  if (!text || /\s$/.test(text)) return [];
+  for (const re of TAILS) {
+    const m = re.exec(text);
+    // a tail with a digit is a score being typed, not a name
+    if (!m || /\d/.test(m[0])) continue;
+    const ws = words(m[0]);
+    const hits = members.filter((mem) => {
+      const nw = words(mem.name);
+      return (
+        nw.length >= ws.length &&
+        ws.every((w, i) => nw[i].startsWith(w)) &&
+        // the fully typed name has nothing left to complete
+        nw.join(" ") !== ws.join(" ")
+      );
+    });
+    if (hits.length > 0) {
+      return hits
+        .slice(0, 8)
+        .map((mem) => ({ id: mem.id, name: mem.name, matched: m[0] }));
+    }
+  }
+  return [];
+}
+
 export function parseBulk(text: string, members: readonly Member[]): BulkResult {
   const games: ParsedGame[] = [];
   const errors: LineError[] = [];

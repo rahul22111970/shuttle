@@ -118,6 +118,7 @@ export default function QuickLog() {
         )
       }
       players={state.players}
+      gamePoint={defaultMatch(state.sport, true).game.pointsToWin}
       scoreA={scoreA}
       scoreB={scoreB}
       busy={busy}

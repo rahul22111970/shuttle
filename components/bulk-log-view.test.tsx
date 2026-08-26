@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen } from "@testing-library/react-native";
 import BulkLogView, { previewRows, type PreviewRow } from "./bulk-log-view";
 
 const noop = () => {};
@@ -9,6 +9,8 @@ const ready = (over: Record<string, unknown> = {}) =>
     onBack: noop,
     text: "",
     onText: noop,
+    suggestions: [],
+    onPick: noop,
     rows: [] as PreviewRow[],
     count: 0,
     busy: false,
@@ -108,4 +110,12 @@ it("previewRows resolves names, puts the winner first and sorts by line", () => 
     "Rahul Pareek & Sai Kiran d. Gautam & Mitrajit · 21–15",
   ]);
   expect(rows.map((r) => r.kind)).toEqual(["game", "error", "game"]);
+});
+
+it("suggestion chips render and a tap hands back the pick", async () => {
+  const onPick = jest.fn();
+  const s = { id: "rp", name: "Rahul Pareek", matched: "ra" };
+  await render(<BulkLogView {...ready({ suggestions: [s], onPick })} />);
+  fireEvent.press(screen.getByText("Rahul Pareek"));
+  expect(onPick).toHaveBeenCalledWith(s);
 });

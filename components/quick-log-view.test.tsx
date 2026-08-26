@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react-native";
+import { render, screen, userEvent } from "@testing-library/react-native";
 import QuickLogView, { logLabelFor, type PickRow } from "./quick-log-view";
 
 const noop = () => {};
@@ -13,6 +13,7 @@ const ready = (over: Record<string, unknown> = {}) =>
   ({
     kind: "ready",
     players,
+    gamePoint: 21,
     scoreA: "",
     scoreB: "",
     busy: false,
@@ -90,4 +91,14 @@ it("error state locates the failure and offers retry", async () => {
     screen.getByText("Could not reach the hall. Check your network and try again.")
   ).toBeTruthy();
   expect(screen.getByText("Try again")).toBeTruthy();
+});
+
+it("the game-point chips fill a box in one tap", async () => {
+  const onScoreA = jest.fn();
+  const onScoreB = jest.fn();
+  await render(<QuickLogView {...ready({ onScoreA, onScoreB })} />);
+  await userEvent.press(screen.getByLabelText("Side A scored 21"));
+  expect(onScoreA).toHaveBeenCalledWith("21");
+  await userEvent.press(screen.getByLabelText("Side B scored 21"));
+  expect(onScoreB).toHaveBeenCalledWith("21");
 });

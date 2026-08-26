@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import BulkLogView, { previewRows } from "../components/bulk-log-view";
-import { parseBulk } from "../lib/bulk";
+import { parseBulk, suggest } from "../lib/bulk";
 import { foley } from "../lib/foley";
 import { quickLog, type Participant } from "../lib/scoring";
 import { pickActive } from "../lib/groups";
@@ -83,6 +83,11 @@ export default function BulkLog() {
       text={text}
       onText={(v) => {
         setText(v);
+        setPartial(null);
+      }}
+      suggestions={suggest(text, state.members)}
+      onPick={(s) => {
+        setText(text.slice(0, text.length - s.matched.length) + s.name + " ");
         setPartial(null);
       }}
       rows={previewRows(result, nameOf)}
