@@ -1,5 +1,6 @@
 // Bulk log, presentational and pure: one box to paste a night of scores,
 // a live preview of what will be written, one button that says how many.
+import { useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { color, font, layout, radius, size, space, tracking } from "../theme/tokens";
 import { BackBar, Button, Card, ErrorNote, GrowingInput, Screen } from "./ui";
@@ -60,6 +61,19 @@ export type BulkLogViewProps =
     };
 
 export default function BulkLogView(props: BulkLogViewProps) {
+  const inputRef = useRef<TextInput>(null);
+  // hand focus straight back to the box after a chip tap, synchronously so
+  // it counts as part of the tap gesture (mobile Safari refuses it later);
+  // the caret moves once the completed value has landed
+  const refocus = () => {
+    const el = inputRef.current as unknown as HTMLTextAreaElement | null;
+    if (!el) return;
+    el.focus?.();
+    requestAnimationFrame(() => {
+      const len = el.value?.length ?? 0;
+      el.setSelectionRange?.(len, len);
+    });
+  };
   if (props.kind === "loading") {
     return (
       <Screen testID="bulk-log">
@@ -100,6 +114,7 @@ export default function BulkLogView(props: BulkLogViewProps) {
           onChange={props.onText}
           placeholder="Rahul & Sai 21-15 Gautam & Mitrajit"
           minHeight={132}
+          inputRef={inputRef}
           footer={
             props.suggestions.length > 0 ? (
               <ScrollView
@@ -114,7 +129,10 @@ export default function BulkLogView(props: BulkLogViewProps) {
                       accessibilityRole="button"
                       // keep focus (and the keyboard) in the box through the tap
                       onPressIn={(e) => e.preventDefault?.()}
-                      onPress={() => props.onPick(s)}
+                      onPress={() => {
+                        props.onPick(s);
+                        refocus();
+                      }}
                       style={styles.suggest}
                     >
                       <Text style={styles.suggestName}>{s.name}</Text>

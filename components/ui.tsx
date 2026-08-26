@@ -15,7 +15,7 @@ import {
   type NativeSyntheticEvent,
   type ViewStyle,
 } from "react-native";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type Ref } from "react";
 import { prefersReducedMotion, PULL, rubber, SETTLE, timing } from "../lib/motion";
 import { maskPhone, PHONE_DIGITS } from "../lib/mask";
 import { announce } from "../lib/announce";
@@ -175,6 +175,7 @@ export function GrowingInput({
   maxHeight = 360,
   testID,
   footer,
+  inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -183,6 +184,8 @@ export function GrowingInput({
   minHeight?: number;
   maxHeight?: number;
   testID?: string;
+  // the host node, so a footer tap can hand focus straight back to the box
+  inputRef?: Ref<TextInput>;
   // suggestion chips, laid right under the line being typed. They only ever
   // show while typing at the end of the value, so the row sits at
   // padding + logical lines x lineHeight; a wrapped line puts it one line
@@ -195,6 +198,7 @@ export function GrowingInput({
   return (
     <View style={styles.growWrap}>
       <TextInput
+        ref={inputRef}
         testID={testID}
         style={[styles.growing, { height }, footer != null && styles.growingPadded]}
         value={value}
