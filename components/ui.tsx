@@ -183,9 +183,12 @@ export function GrowingInput({
   minHeight?: number;
   maxHeight?: number;
   testID?: string;
-  // pinned inside the box's bottom edge (suggestion chips); the input pads
-  // itself so text never slides underneath, and since contentSize is
-  // scrollHeight the growth formula already counts that padding
+  // suggestion chips, laid right under the line being typed. They only ever
+  // show while typing at the end of the value, so the row sits at
+  // padding + logical lines x lineHeight; a wrapped line puts it one line
+  // high, which is near enough. The input pads its bottom so the row always
+  // has room inside the box.
+  // ponytail: logical lines only; measure wraps if long lines become common
   footer?: ReactNode;
 }) {
   const [height, setHeight] = useState(minHeight);
@@ -208,7 +211,16 @@ export function GrowingInput({
         placeholderTextColor={color.ink3}
         textAlignVertical="top"
       />
-      {footer != null ? <View style={styles.growFooter}>{footer}</View> : null}
+      {footer != null ? (
+        <View
+          style={[
+            styles.growFooter,
+            { top: space.md + value.split("\n").length * (size.body * 1.5) + 4 },
+          ]}
+        >
+          {footer}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -455,7 +467,6 @@ const styles = StyleSheet.create({
   growingPadded: { paddingBottom: space.md + 44 },
   growFooter: {
     position: "absolute",
-    bottom: space.md,
     left: space.md,
     right: space.md,
   },
