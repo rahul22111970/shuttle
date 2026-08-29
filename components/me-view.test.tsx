@@ -42,6 +42,24 @@ it("a new player sees name, detail and every empty state", async () => {
   expect(screen.getByText("Sign out")).toBeTruthy();
 });
 
+it("a chosen look folds the picker behind the pencil", async () => {
+  await render(<MeView {...ready({ avatar: "preset:bolt" })} />);
+  expect(screen.queryByText("Upload a photo")).toBeNull();
+  expect(screen.queryByLabelText("Avatar shuttle")).toBeNull();
+  await userEvent.press(screen.getByLabelText("Change your look"));
+  expect(screen.getByText("Upload a photo")).toBeTruthy();
+  expect(screen.getByLabelText("Avatar shuttle")).toBeTruthy();
+  // the pencil becomes a close, and closing folds it again
+  await userEvent.press(screen.getByLabelText("Keep your look"));
+  expect(screen.queryByText("Upload a photo")).toBeNull();
+});
+
+it("no look yet: the picker is open and there is no pencil", async () => {
+  await render(<MeView {...ready()} />);
+  expect(screen.getByText("Upload a photo")).toBeTruthy();
+  expect(screen.queryByLabelText("Change your look")).toBeNull();
+});
+
 it("the rating hero shows the current number and its state", async () => {
   await render(
     <MeView {...ready({ rating: { blended: 1252, groups: [{ groupId: "g1", name: "Tuesday Gang", current: 1252, provisional: true, series: [1232, 1252] }] } })} />
@@ -213,3 +231,4 @@ it("the admin card lists every group only when adminGroups is set", async () => 
   expect(screen.getByText("8 players · 13 games")).toBeTruthy();
   expect(screen.getByText("3 players · 0 games")).toBeTruthy();
 });
+

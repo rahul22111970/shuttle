@@ -1,7 +1,8 @@
 // The Me tab, presentational and pure. The player's name up top, the
 // form card (win % hero, streak, last-10 dots), partner chemistry bars,
 // recent games in the feed idiom, sign out at the bottom.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { INITIAL_RATING } from "@shuttle/rating";
 import { color, font, layout, size, space, tracking } from "../theme/tokens";
@@ -117,6 +118,13 @@ export default function MeView(props: MeViewProps) {
   // two-tap confirm for the captain wipe; the second label restates the
   // destruction. Armed per group id, since an owner can hold several.
   const [wipeArmed, setWipeArmed] = useState<string | null>(null);
+  // once a look is chosen the picker folds away behind the pencil; a
+  // successful save (the avatar prop changing) folds it again
+  const [editingLook, setEditingLook] = useState(false);
+  const avatar = props.kind === "ready" ? props.avatar : null;
+  useEffect(() => {
+    setEditingLook(false);
+  }, [avatar]);
 
   if (props.kind === "loading") {
     return (
@@ -146,34 +154,55 @@ export default function MeView(props: MeViewProps) {
         <Text style={styles.title}>Your look</Text>
         <View style={styles.lookRow}>
           <Avatar name={props.name} avatar={props.avatar} size={56} />
-          <Text style={[styles.quiet, styles.lookHint]}>How the group sees you. Pick one, or use a photo.</Text>
+          {props.avatar === null || editingLook ? (
+            <Text style={[styles.quiet, styles.lookHint]}>
+              How the group sees you. Pick one, or use a photo.
+            </Text>
+          ) : (
+            <View style={styles.lookHint} />
+          )}
+          {props.avatar !== null ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={editingLook ? "Keep your look" : "Change your look"}
+              onPress={() => setEditingLook((v) => !v)}
+              style={styles.lookEdit}
+              testID="look-edit"
+            >
+              <Feather name={editingLook ? "x" : "edit-2"} size={16} color={color.ink2} />
+            </Pressable>
+          ) : null}
         </View>
-        <View style={styles.presetWrap}>
-          {AVATAR_PRESETS.map((p) => {
-            const active = props.avatar === `preset:${p.key}`;
-            return (
-              <Pressable
-                key={p.key}
-                accessibilityRole="button"
-                accessibilityLabel={`Avatar ${p.key}`}
-                accessibilityState={{ selected: active }}
-                disabled={props.avatarBusy}
-                onPress={() => props.onPickPreset(p.key)}
-                style={[styles.presetRing, active && styles.presetRingOn]}
-              >
-                <Avatar name={props.name} avatar={`preset:${p.key}`} size={40} decorative />
-              </Pressable>
-            );
-          })}
-        </View>
-        <Button
-          label="Upload a photo"
-          variant="quiet"
-          busy={props.avatarBusy}
-          busyLabel="Saving…"
-          onPress={props.onUploadPhoto}
-        />
-        {props.avatarError ? <ErrorNote>{props.avatarError}</ErrorNote> : null}
+        {props.avatar === null || editingLook ? (
+          <>
+            <View style={styles.presetWrap}>
+              {AVATAR_PRESETS.map((p) => {
+                const active = props.avatar === `preset:${p.key}`;
+                return (
+                  <Pressable
+                    key={p.key}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Avatar ${p.key}`}
+                    accessibilityState={{ selected: active }}
+                    disabled={props.avatarBusy}
+                    onPress={() => props.onPickPreset(p.key)}
+                    style={[styles.presetRing, active && styles.presetRingOn]}
+                  >
+                    <Avatar name={props.name} avatar={`preset:${p.key}`} size={40} decorative />
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Button
+              label="Upload a photo"
+              variant="quiet"
+              busy={props.avatarBusy}
+              busyLabel="Saving…"
+              onPress={props.onUploadPhoto}
+            />
+            {props.avatarError ? <ErrorNote>{props.avatarError}</ErrorNote> : null}
+          </>
+        ) : null}
       </Card>
       <Card testID="rating-card">
         <Text style={styles.title}>Rating</Text>
@@ -440,6 +469,14 @@ const styles = StyleSheet.create({
   dotD: { backgroundColor: color.line },
   lookRow: { flexDirection: "row", alignItems: "center", gap: space.md },
   lookHint: { flex: 1 },
+  lookEdit: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.inkWash,
+  },
   presetWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   presetRing: { padding: 2, borderRadius: 24, borderWidth: 2, borderColor: color.card },
   presetRingOn: { borderColor: color.court },

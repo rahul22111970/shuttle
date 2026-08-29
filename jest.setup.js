@@ -12,3 +12,11 @@ process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??= "sb_publishable_fake";
 if (process.env.INTEGRATION) {
   global.fetch = require("node-fetch");
 }
+
+// Feather icons load a font through expo-asset at render time, which the
+// jest asset registry cannot serve; the tests care about labels, not glyphs.
+jest.mock("@expo/vector-icons", () => {
+  const { Text } = require("react-native");
+  const { createElement } = require("react");
+  return { Feather: (props) => createElement(Text, props, props.name) };
+});

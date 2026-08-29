@@ -66,9 +66,15 @@ try {
   if (saved.data?.avatar !== "preset:shuttle")
     throw new Error(`preset not saved: ${saved.data?.avatar}`);
   console.log("PASS preset pick persists to the profile");
+
+  // choosing folds the picker: only the look and the pencil remain
+  await page.getByText("Upload a photo").waitFor({ state: "hidden", timeout: 5000 });
+  await page.getByLabel("Change your look").waitFor({ timeout: 5000 });
+  console.log("PASS picker folds away once a look is chosen");
   await page.screenshot({ path: "/tmp/probe-look.png", fullPage: false });
 
-  // upload a real image through the picker's file input
+  // the pencil reopens it; upload a real image through the file input
+  await page.getByLabel("Change your look").click();
   const [chooser] = await Promise.all([
     page.waitForEvent("filechooser", { timeout: 15000 }),
     page.getByText("Upload a photo").click(),
@@ -89,6 +95,8 @@ try {
   );
   if (!shown) throw new Error("uploaded photo not rendered");
   console.log("PASS uploaded photo renders on Me");
+  await page.getByText("Upload a photo").waitFor({ state: "hidden", timeout: 5000 });
+  console.log("PASS the picker folds again after the upload");
   await page.screenshot({ path: "/tmp/probe-look2.png", fullPage: false });
 } catch (e) {
   failed = e;
