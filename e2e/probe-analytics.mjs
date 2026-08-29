@@ -177,6 +177,17 @@ try {
   console.log(`PASS rating line painted (stroke ${svg.stroke})`);
   await page.waitForTimeout(400);
   await page.screenshot({ path: "/tmp/probe-player.png", fullPage: true });
+
+  // the same analytics live inside Me under its own tab
+  await page.goto(`${APP}/me`);
+  await page.getByText("Overview").waitFor({ timeout: 15000 });
+  await page.getByText("Analytics", { exact: true }).click();
+  await page.getByText("Head to head").waitFor({ timeout: 15000 });
+  await page.getByText("Your record against each rival, wins first.").waitFor({ timeout: 5000 });
+  const meLine = await page.evaluate(() => !!document.querySelector("svg path"));
+  if (!meLine) throw new Error("no rating line on Me analytics");
+  console.log("PASS Me has an Analytics tab with the full personal set");
+  await page.screenshot({ path: "/tmp/probe-me-analytics.png", fullPage: true });
 } catch (e) {
   failed = e;
 } finally {

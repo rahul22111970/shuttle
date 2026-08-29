@@ -13,6 +13,7 @@ const ready = (over: Record<string, unknown> = {}) =>
     avatarError: null,
     onPickPreset: noop,
     onUploadPhoto: noop,
+    analytics: null,
     rating: { blended: 1200, groups: [] },
     winPct: null,
     streak: 0,
@@ -58,6 +59,18 @@ it("no look yet: the picker is open and there is no pencil", async () => {
   await render(<MeView {...ready()} />);
   expect(screen.getByText("Upload a photo")).toBeTruthy();
   expect(screen.queryByLabelText("Change your look")).toBeNull();
+});
+
+it("Me has two sections and the Analytics tab swaps the page for its node", async () => {
+  const { Text } = require("react-native");
+  await render(<MeView {...ready({ analytics: <Text>ANALYTICS HERE</Text> })} />);
+  expect(screen.getByText("Overview")).toBeTruthy();
+  expect(screen.queryByText("ANALYTICS HERE")).toBeNull();
+  await userEvent.press(screen.getByText("Analytics"));
+  expect(screen.getByText("ANALYTICS HERE")).toBeTruthy();
+  expect(screen.queryByText("Your look")).toBeNull();
+  await userEvent.press(screen.getByText("Overview"));
+  expect(screen.getByText("Your look")).toBeTruthy();
 });
 
 it("the rating hero shows the current number and its state", async () => {
@@ -231,4 +244,5 @@ it("the admin card lists every group only when adminGroups is set", async () => 
   expect(screen.getByText("8 players · 13 games")).toBeTruthy();
   expect(screen.getByText("3 players · 0 games")).toBeTruthy();
 });
+
 

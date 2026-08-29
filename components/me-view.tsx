@@ -5,12 +5,19 @@ import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { INITIAL_RATING } from "@shuttle/rating";
-import { color, font, layout, size, space, tracking } from "../theme/tokens";
+import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
 import type { ThemeChoice } from "../lib/theme";
 import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
 import Avatar from "./avatar";
+import ElasticTabs from "./elastic-tabs";
 import { AVATAR_PRESETS } from "../lib/avatar";
+import type { ReactNode } from "react";
+
+const ME_SECTIONS = [
+  { key: "overview", label: "Overview" },
+  { key: "analytics", label: "Analytics" },
+] as const;
 
 export type MeFeedRow = {
   id: string;
@@ -66,6 +73,9 @@ export type MeViewProps =
       avatarError: string | null;
       onPickPreset: (key: string) => void;
       onUploadPhoto: () => void;
+      // the Analytics section's content (the shared player-analytics
+      // cards), mounted only while that tab is open
+      analytics: ReactNode;
       rating: RatingLine;
       winPct: number | null;
       streak: number;
@@ -121,6 +131,7 @@ export default function MeView(props: MeViewProps) {
   // once a look is chosen the picker folds away behind the pencil; a
   // successful save (the avatar prop changing) folds it again
   const [editingLook, setEditingLook] = useState(false);
+  const [section, setSection] = useState<(typeof ME_SECTIONS)[number]["key"]>("overview");
   const avatar = props.kind === "ready" ? props.avatar : null;
   useEffect(() => {
     setEditingLook(false);
@@ -150,6 +161,20 @@ export default function MeView(props: MeViewProps) {
   return (
     <Screen testID="me-screen">
       <AppBar title={props.name} sub={props.detail} />
+      <ElasticTabs
+        sections={ME_SECTIONS}
+        value={section}
+        // a tab detour also disarms the captain wipe, so the two-tap
+        // confirm can never carry across pages
+        onPick={(k) => {
+          setWipeArmed(null);
+          setSection(k);
+        }}
+      />
+      {section === "analytics" ? (
+        props.analytics
+      ) : (
+        <>
       <Card testID="look-card">
         <Text style={styles.title}>Your look</Text>
         <View style={styles.lookRow}>
@@ -409,6 +434,8 @@ export default function MeView(props: MeViewProps) {
         </View>
       </Card>
       <Button label="Sign out" variant="quiet" onPress={props.onSignOut} />
+        </>
+      )}
     </Screen>
   );
 }

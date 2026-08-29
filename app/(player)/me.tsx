@@ -12,6 +12,7 @@ import MeView, {
 } from "../../components/me-view";
 import { INITIAL_RATING, PROVISIONAL_MATCHES } from "@shuttle/rating";
 import * as ImagePicker from "expo-image-picker";
+import PlayerAnalytics from "../../components/player-analytics";
 import { PhotoTooBigError, PhotoTypeError, saveAvatar, uploadAvatarPhoto } from "../../lib/avatar";
 import { useAuth } from "../../lib/auth";
 import { listGroups } from "../../lib/session";
@@ -268,6 +269,7 @@ export default function Me() {
       avatarError={avatarError}
       onPickPreset={pickPreset}
       onUploadPhoto={uploadPhoto}
+      analytics={<PlayerAnalytics playerId={selfId} self />}
       rating={state.rating}
       winPct={state.winPct}
       streak={state.streak}
