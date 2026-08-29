@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react-native";
 import StatsView, { type Highlights, type StatsViewProps } from "./stats-view";
 
-const NO_HIGHLIGHTS: Highlights = { mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null };
+const NO_HIGHLIGHTS: Highlights = { mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null, comeback: null };
 
 const row = (playerId: string, name: string, rating: number, over: Record<string, unknown> = {}) => ({
   playerId,
@@ -10,6 +10,7 @@ const row = (playerId: string, name: string, rating: number, over: Record<string
   wins: 0,
   losses: 0,
   winPct: null,
+  weekDelta: null,
   form: [],
   ...over,
 });
@@ -21,6 +22,9 @@ const ready = (over: Record<string, unknown> = {}) =>
     duos: [],
     onOpenPlayer: () => {},
     highlights: NO_HIGHLIGHTS,
+    sentences: [],
+    heat: { weeks: [], max: 0, total: 0 },
+    capped: false,
     ...over,
   }) as StatsViewProps;
 
@@ -75,7 +79,8 @@ it("a leaderboard row carries rank, name, W-L, win % and rating", async () => {
 it("an undecided player shows a dash, not 0%", async () => {
   await render(<StatsView {...ready({ board: [row("p1", "Asha", 1200)] })} />);
   const r = within(screen.getByTestId("board-row-p1"));
-  expect(r.getByText("–")).toBeTruthy();
+  // one dash for win %, one for weekly movement
+  expect(r.getAllByText("–")).toHaveLength(2);
   expect(r.getByText("0-0")).toBeTruthy();
 });
 

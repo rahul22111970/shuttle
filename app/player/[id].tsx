@@ -13,6 +13,8 @@ import {
   winPct,
   type Form,
 } from "../../lib/stats";
+import { deuceRecord, headToHead } from "../../lib/insights";
+import { RatingLine, SplitBar, type LinePoint } from "../../components/charts";
 import { listGroups } from "../../lib/session";
 import { supabase } from "../../lib/supabase";
 import { color, font, size, space, tracking } from "../../theme/tokens";
@@ -27,6 +29,10 @@ type Data = {
   streak: number;
   lastTen: Form[];
   ratings: GroupRating[];
+  // their longest ladder, drawn as the line
+  line: { groupName: string; series: LinePoint[]; hasDecay: boolean } | null;
+  rivalry: { opponentId: string; name: string; wins: number; losses: number }[];
+  deuce: { won: number; lost: number };
   bestPartner: { name: string; winPct: number | null; played: number } | null;
 };
 
@@ -48,6 +54,9 @@ export default function PlayerCard() {
         listGroups(),
       ]);
       if (prof.error) throw prof.error;
+      // ponytail: rides the 1000-row PostgREST cap ascending, which would
+      // drop the NEWEST rows at ~1000 rated games for one player - page
+      // like api/rating-decay.ts if anyone ever gets there
       const ratingRes = await supabase
         .from("rating_history")
         .select("group_id, rating_after, created_at, match_id")
@@ -57,10 +66,10 @@ export default function PlayerCard() {
         .order("id", { ascending: true });
       if (ratingRes.error) throw ratingRes.error;
       // decay rows move the number but only match rows count as played
-      const perGroup = new Map<string, { series: number[]; played: number }>();
+      const perGroup = new Map<string, { series: LinePoint[]; played: number }>();
       for (const r of ratingRes.data) {
         const g = perGroup.get(r.group_id) ?? { series: [], played: 0 };
-        g.series.push(r.rating_after);
+        g.series.push({ value: r.rating_after, decay: r.match_id === null });
         if (r.match_id !== null) g.played += 1;
         perGroup.set(r.group_id, g);
       }
@@ -71,24 +80,46 @@ export default function PlayerCard() {
           return {
             groupId: g.id,
             name: g.name,
-            current: series[series.length - 1],
+            current: series[series.length - 1].value,
             provisional: played < PROVISIONAL_MATCHES,
           };
         });
+      // the line: their longest ladder, decay weeks as hollow dots
+      const primary = [...perGroup.entries()].sort(
+        (x, y) => y[1].series.length - x[1].series.length
+      )[0];
+      const line = primary
+        ? {
+            groupName: groups.find((g) => g.id === primary[0])?.name ?? "Their ladder",
+            series: primary[1].series,
+            hasDecay: primary[1].series.some((p) => p.decay),
+          }
+        : null;
+
       const chem = chemistry(played);
-      let bestPartner: Data["bestPartner"] = null;
-      if (chem.length > 0) {
-        const namesRes = await supabase
+      const rivalry = headToHead(played).slice(0, 6);
+      const deuce = deuceRecord(played);
+      // every name this card mentions, one query
+      const nameIds = [
+        ...new Set([...rivalry.map((r) => r.opponentId), ...chem.slice(0, 1).map((c) => c.partnerId)]),
+      ];
+      let names = new Map<string, string>();
+      if (nameIds.length > 0) {
+        const res = await supabase
           .from("profiles")
-          .select("display_name")
-          .eq("id", chem[0].partnerId)
-          .single();
-        bestPartner = {
-          name: namesRes.data?.display_name ?? "Player",
-          winPct: chem[0].winPct,
-          played: chem[0].played,
-        };
+          .select("id, display_name")
+          .in("id", nameIds);
+        if (res.error) throw res.error;
+        names = new Map(res.data.map((r) => [r.id, r.display_name]));
       }
+      const bestPartner: Data["bestPartner"] =
+        chem.length > 0
+          ? {
+              name: names.get(chem[0].partnerId) ?? "Player",
+              winPct: chem[0].winPct,
+              played: chem[0].played,
+            }
+          : null;
       setState({
         kind: "ready",
         data: {
@@ -98,6 +129,9 @@ export default function PlayerCard() {
           streak: currentStreak(played),
           lastTen: lastTen(played),
           ratings,
+          line,
+          rivalry: rivalry.map((r) => ({ ...r, name: names.get(r.opponentId) ?? "Player" })),
+          deuce,
           bestPartner,
         },
       });
@@ -147,7 +181,20 @@ export default function PlayerCard() {
             <Text style={styles.figure}>{streakLabel(d.streak)}</Text>
             <Text style={styles.statLabel}>Streak</Text>
           </View>
+          <View style={styles.stat}>
+            <Text style={styles.figure}>
+              {d.deuce.won + d.deuce.lost === 0
+                ? "–"
+                : `${Math.round((d.deuce.won / (d.deuce.won + d.deuce.lost)) * 100)}%`}
+            </Text>
+            <Text style={styles.statLabel}>Deuce</Text>
+          </View>
         </View>
+        {d.deuce.won + d.deuce.lost > 0 ? (
+          <Text style={styles.quiet}>
+            {`Deuce: ${d.deuce.won}-${d.deuce.lost} in games that got there.`}
+          </Text>
+        ) : null}
         {d.lastTen.length > 0 ? (
           <View style={styles.dots}>
             {d.lastTen.map((f, i) => (
@@ -164,6 +211,14 @@ export default function PlayerCard() {
       </Card>
       <Card>
         <Text style={styles.title}>Rating</Text>
+        {d.line && d.line.series.length >= 2 ? (
+          <>
+            <RatingLine series={d.line.series} />
+            <Text style={styles.quiet}>
+              {`${d.line.groupName}, every rated game.${d.line.hasDecay ? " Hollow dots are idle weeks." : ""}`}
+            </Text>
+          </>
+        ) : null}
         {d.ratings.length === 0 ? (
           <Text style={styles.copy}>{`Unrated so far. Everyone starts at ${INITIAL_RATING}.`}</Text>
         ) : (
@@ -180,6 +235,23 @@ export default function PlayerCard() {
           ))
         )}
       </Card>
+      {d.rivalry.length > 0 ? (
+        <Card>
+          <Text style={styles.title}>Head to head</Text>
+          {d.rivalry.map((r) => (
+            <View key={r.opponentId} style={styles.h2hRow}>
+              <View style={styles.h2hHead}>
+                <Text style={styles.ratingGroup} numberOfLines={1}>
+                  {r.name}
+                </Text>
+                <Text style={styles.h2hRecord}>{`${r.wins}-${r.losses}`}</Text>
+              </View>
+              <SplitBar wins={r.wins} losses={r.losses} />
+            </View>
+          ))}
+          <Text style={styles.quiet}>Their record against each rival, wins first.</Text>
+        </Card>
+      ) : null}
       {d.bestPartner ? (
         <Card>
           <Text style={styles.title}>Best partner</Text>
@@ -202,7 +274,7 @@ const styles = StyleSheet.create({
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
   statRow: { flexDirection: "row", gap: space.xl },
-  stat: { gap: 2 },
+  stat: { gap: 2, flexShrink: 1 },
   figure: {
     fontFamily: font.monoBold,
     fontSize: 28,
@@ -215,6 +287,14 @@ const styles = StyleSheet.create({
   dotW: { backgroundColor: color.court },
   dotL: { backgroundColor: color.inkWash2 },
   dotD: { backgroundColor: color.line },
+  h2hRow: { gap: space.xs },
+  h2hHead: { flexDirection: "row", justifyContent: "space-between", gap: space.sm },
+  h2hRecord: {
+    fontFamily: font.monoBold,
+    fontSize: 13,
+    color: color.ink,
+    fontVariant: ["tabular-nums"],
+  },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
   ratingGroup: { flex: 1, fontFamily: font.semibold, fontSize: 14, color: color.ink },
   ratingFig: {

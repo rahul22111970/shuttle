@@ -16,6 +16,8 @@ export type PlayedMatch = {
   partnerIds: readonly string[];
   // opposing player ids
   opponentIds: readonly string[];
+  // the config's deuce threshold, for clutch stats; null = no deuce rule
+  settingAt?: number | null;
 };
 
 export type Form = "w" | "l" | "d";
@@ -187,7 +189,8 @@ export async function fetchPlayedMatches(playerId: string): Promise<PlayedMatch[
         createdAt: r.created_at,
         side,
         winner: snap.winner,
-        games: snap.games.length > 0 ? snap.games : [snap.score],
+        settingAt: snap.config?.kind === "standard" ? snap.config.game?.settingAt ?? null : null,
+        games: Array.isArray(snap.games) && snap.games.length > 0 ? snap.games : [snap.score],
         partnerIds: r.match_participants
           .filter((p) => p.side === side && p.player_id !== playerId)
           .map((p) => p.player_id),

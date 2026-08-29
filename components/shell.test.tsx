@@ -11,7 +11,10 @@ it("Stats greets a fresh group with the teaching empty state", async () => {
       kind="ready"
       board={[]}
       duos={[]}
-      highlights={{ mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null }}
+      highlights={{ mostGames: null, bestDuo: null, hotStreak: null, biggestWin: null, comeback: null }}
+      sentences={[]}
+      heat={{ weeks: [], max: 0, total: 0 }}
+      capped={false}
       onOpenPlayer={() => {}}
     />
   );

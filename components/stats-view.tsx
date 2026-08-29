@@ -6,12 +6,15 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
 import Settle from "./settle";
+import { Heatmap, WeekDelta } from "./charts";
 import { Button, Card, Chip, ErrorNote, Skeleton, SKEL } from "./ui";
 
 export type BoardRow = {
   playerId: string;
   name: string;
   rating: number;
+  // rating movement over the last 7 days; null before the first rated game
+  weekDelta: number | null;
   wins: number;
   losses: number;
   winPct: number | null;
@@ -26,6 +29,14 @@ export type Highlights = {
   bestDuo: { names: string; winPct: number; games: number } | null;
   hotStreak: { name: string; streak: number } | null;
   biggestWin: { winners: string; losers: string; score: string } | null;
+  // live-scored games only; the engine replays the rally sequence
+  comeback: { names: string; deficit: number; score: string } | null;
+};
+
+export type Heat = {
+  weeks: readonly (readonly { date: string; count: number }[])[];
+  max: number;
+  total: number;
 };
 
 export type StatsViewProps =
@@ -36,6 +47,11 @@ export type StatsViewProps =
       board: readonly BoardRow[];
       duos: readonly DuoRow[];
       highlights: Highlights;
+      // the 2-3 auto-surfaced lines the section leads with
+      sentences: readonly string[];
+      heat: Heat;
+      // true when the 300-match window is full: older games are not counted
+      capped: boolean;
       onOpenPlayer: (playerId: string) => void;
     };
 
@@ -51,6 +67,11 @@ export function highlightLines(h: Highlights): { key: string; text: string }[] {
     lines.push({
       key: "win",
       text: `Biggest win: ${h.biggestWin.score}, ${h.biggestWin.winners} over ${h.biggestWin.losers}.`,
+    });
+  if (h.comeback)
+    lines.push({
+      key: "comeback",
+      text: `Biggest comeback: ${h.comeback.names}, from ${h.comeback.deficit} down, ${h.comeback.score} (live scored).`,
     });
   return lines;
 }
@@ -113,6 +134,16 @@ export default function StatsView(props: StatsViewProps) {
 
   return (
     <>
+      {props.sentences.length > 0 ? (
+        <Card testID="pulse-card">
+          <Text style={styles.title}>This week</Text>
+          {props.sentences.map((s) => (
+            <Text key={s} style={styles.copy}>
+              {s}
+            </Text>
+          ))}
+        </Card>
+      ) : null}
       <Card testID="podium-card">
         <Text style={styles.title}>Podium</Text>
         <View style={styles.podium}>
@@ -149,11 +180,26 @@ export default function StatsView(props: StatsViewProps) {
             <Text style={[styles.pct, styles.pctCell]}>
               {r.winPct === null ? "–" : `${r.winPct}%`}
             </Text>
-            <Text style={[styles.ratingFig, styles.ratingCell]}>{r.rating}</Text>
+            <View style={styles.ratingCol}>
+              <Text style={styles.ratingFig}>{r.rating}</Text>
+              <WeekDelta delta={r.weekDelta} />
+            </View>
           </Pressable>
           </Settle>
         ))}
-        <Text style={styles.quiet}>Tap a row for the player's card.</Text>
+        <Text style={styles.quiet}>
+          Movement is the last 7 days. Tap a row for the player's card.
+        </Text>
+        {props.capped ? (
+          <Text style={styles.quiet}>Counting the latest 300 games.</Text>
+        ) : null}
+      </Card>
+      <Card testID="rhythm-card">
+        <Text style={styles.title}>Rhythm</Text>
+        <Heatmap weeks={props.heat.weeks} max={props.heat.max} />
+        <Text style={styles.quiet}>
+          {`${props.heat.total} ${props.heat.total === 1 ? "game" : "games"} in the last ${props.heat.weeks.length} weeks.`}
+        </Text>
       </Card>
       <Card testID="duos-card">
         <Text style={styles.title}>Best pairs</Text>
@@ -230,7 +276,8 @@ const styles = StyleSheet.create({
   nameCell: { flex: 1, flexShrink: 1 },
   wlCell: { width: 34, textAlign: "right" },
   pctCell: { width: 36, textAlign: "right" },
-  ratingCell: { width: 38, textAlign: "right" },
+  ratingCell: { width: 44, textAlign: "right" },
+  ratingCol: { width: 44, alignItems: "flex-end", gap: 1 },
   rank: { fontFamily: font.mono, fontSize: 12.5, color: color.ink3, fontVariant: ["tabular-nums"] },
   playerName: { fontFamily: font.semibold, fontSize: 14, color: color.ink },
   formCell: { flexDirection: "row", gap: 2, width: 43 },
