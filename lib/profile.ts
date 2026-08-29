@@ -8,6 +8,8 @@ export type Profile = {
   phone: string | null;
   account_type: AccountType;
   upi_vpa: string | null;
+  // 'preset:<key>' | 'photo:<path>' | null (initials)
+  avatar: string | null;
   created_at: string;
 };
 

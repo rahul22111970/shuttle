@@ -11,6 +11,8 @@ import MeView, {
   type RatingLine,
 } from "../../components/me-view";
 import { INITIAL_RATING, PROVISIONAL_MATCHES } from "@shuttle/rating";
+import * as ImagePicker from "expo-image-picker";
+import { PhotoTooBigError, PhotoTypeError, saveAvatar, uploadAvatarPhoto } from "../../lib/avatar";
 import { useAuth } from "../../lib/auth";
 import { listGroups } from "../../lib/session";
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from "../../lib/theme";
@@ -52,8 +54,10 @@ function feedRow(m: PlayedMatch, name: (id: string) => string, selfName: string)
 }
 
 export default function Me() {
-  const { profile, session } = useAuth();
+  const { profile, session, setProfile } = useAuth();
   const selfId = session?.user.id ?? "";
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "error" }
@@ -214,6 +218,43 @@ export default function Me() {
   const heading = profile.display_name;
   const detail = `Player · ${profile.phone ?? "no phone"}`;
 
+  const pickPreset = async (key: string) => {
+    setAvatarBusy(true);
+    setAvatarError(null);
+    try {
+      setProfile(await saveAvatar(selfId, `preset:${key}`));
+    } catch {
+      setAvatarError("That did not save. Check your network and try again.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const uploadPhoto = async () => {
+    setAvatarError(null);
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (res.canceled || !res.assets?.[0]) return;
+    setAvatarBusy(true);
+    try {
+      setProfile(await uploadAvatarPhoto(selfId, res.assets[0].uri));
+    } catch (e) {
+      setAvatarError(
+        e instanceof PhotoTooBigError
+          ? "That photo is over 5 MB. Pick a smaller one."
+          : e instanceof PhotoTypeError
+            ? "Use a JPG, PNG or WebP photo."
+            : "That did not save. Check your network and try again."
+      );
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
   if (state.kind === "loading") return <MeView kind="loading" name={heading} />;
   if (state.kind === "error") return <MeView kind="error" name={heading} onRetry={load} />;
 
@@ -222,6 +263,11 @@ export default function Me() {
       kind="ready"
       name={heading}
       detail={detail}
+      avatar={profile.avatar ?? null}
+      avatarBusy={avatarBusy}
+      avatarError={avatarError}
+      onPickPreset={pickPreset}
+      onUploadPhoto={uploadPhoto}
       rating={state.rating}
       winPct={state.winPct}
       streak={state.streak}

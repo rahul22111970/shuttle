@@ -114,6 +114,7 @@ export default function StatsSection({ groupId, nonce = 0 }: { groupId: string; 
         board: leaderboard.map((r) => ({
           playerId: r.playerId,
           name: name(r.playerId),
+          avatar: members.find((m: Member) => m.id === r.playerId)?.avatar ?? null,
           rating: r.rating,
           weekDelta: movement.get(r.playerId) ?? null,
           wins: r.wins,

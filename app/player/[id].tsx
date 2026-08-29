@@ -15,6 +15,7 @@ import {
 } from "../../lib/stats";
 import { deuceRecord, headToHead } from "../../lib/insights";
 import { RatingLine, SplitBar, type LinePoint } from "../../components/charts";
+import Avatar from "../../components/avatar";
 import { listGroups } from "../../lib/session";
 import { supabase } from "../../lib/supabase";
 import { color, font, size, space, tracking } from "../../theme/tokens";
@@ -24,6 +25,7 @@ type GroupRating = { groupId: string; name: string; current: number; provisional
 
 type Data = {
   name: string;
+  avatar: string | null;
   games: number;
   winPct: number | null;
   streak: number;
@@ -49,7 +51,7 @@ export default function PlayerCard() {
   const load = useCallback(async () => {
     try {
       const [prof, played, groups] = await Promise.all([
-        supabase.from("profiles").select("display_name").eq("id", id).single(),
+        supabase.from("profiles").select("display_name, avatar").eq("id", id).single(),
         fetchPlayedMatches(id),
         listGroups(),
       ]);
@@ -124,6 +126,7 @@ export default function PlayerCard() {
         kind: "ready",
         data: {
           name: prof.data.display_name,
+          avatar: prof.data.avatar ?? null,
           games: played.length,
           winPct: winPct(played),
           streak: currentStreak(played),
@@ -167,7 +170,10 @@ export default function PlayerCard() {
     <Screen testID="player-card">
       <BackBar title={d.name} onBack={back} />
       <Card>
-        <Text style={styles.title}>Form</Text>
+        <View style={styles.formHead}>
+          <Text style={styles.title}>Form</Text>
+          <Avatar name={d.name} avatar={d.avatar} size={44} />
+        </View>
         <View style={styles.statRow}>
           <View style={styles.stat}>
             <Text style={styles.figure}>{d.games}</Text>
@@ -273,6 +279,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   copy: { fontFamily: font.body, fontSize: size.body, color: color.ink2 },
   quiet: { fontFamily: font.body, fontSize: size.label, color: color.ink3 },
+  formHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   statRow: { flexDirection: "row", gap: space.xl },
   stat: { gap: 2, flexShrink: 1 },
   figure: {

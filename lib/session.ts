@@ -181,21 +181,26 @@ export async function listGroups(): Promise<Group[]> {
   return (data ?? []) as Group[];
 }
 
-export type Member = { id: string; name: string; is_captain: boolean };
+export type Member = { id: string; name: string; is_captain: boolean; avatar?: string | null };
 
 export async function listGroupMembers(groupId: string): Promise<Member[]> {
   const { data, error } = await supabase
     .from("group_members")
-    .select("player_id, is_captain, profiles(display_name)")
+    .select("player_id, is_captain, profiles(display_name, avatar)")
     .eq("group_id", groupId);
   if (error) throw error;
   return (data ?? []).map((row) => {
     const r = row as unknown as {
       player_id: string;
       is_captain: boolean;
-      profiles: { display_name: string } | null;
+      profiles: { display_name: string; avatar: string | null } | null;
     };
-    return { id: r.player_id, name: r.profiles?.display_name ?? "Player", is_captain: r.is_captain };
+    return {
+      id: r.player_id,
+      name: r.profiles?.display_name ?? "Player",
+      is_captain: r.is_captain,
+      avatar: r.profiles?.avatar ?? null,
+    };
   });
 }
 

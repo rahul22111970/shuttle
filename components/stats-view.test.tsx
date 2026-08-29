@@ -6,6 +6,7 @@ const NO_HIGHLIGHTS: Highlights = { mostGames: null, bestDuo: null, hotStreak: n
 const row = (playerId: string, name: string, rating: number, over: Record<string, unknown> = {}) => ({
   playerId,
   name,
+  avatar: null,
   rating,
   wins: 0,
   losses: 0,

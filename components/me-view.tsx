@@ -8,6 +8,8 @@ import { color, font, layout, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
 import type { ThemeChoice } from "../lib/theme";
 import { AppBar, Button, Card, Chip, ErrorNote, Screen } from "./ui";
+import Avatar from "./avatar";
+import { AVATAR_PRESETS } from "../lib/avatar";
 
 export type MeFeedRow = {
   id: string;
@@ -57,6 +59,12 @@ export type MeViewProps =
       kind: "ready";
       name: string;
       detail: string;
+      // 'preset:<key>' | 'photo:<path>' | null
+      avatar: string | null;
+      avatarBusy: boolean;
+      avatarError: string | null;
+      onPickPreset: (key: string) => void;
+      onUploadPhoto: () => void;
       rating: RatingLine;
       winPct: number | null;
       streak: number;
@@ -134,6 +142,39 @@ export default function MeView(props: MeViewProps) {
   return (
     <Screen testID="me-screen">
       <AppBar title={props.name} sub={props.detail} />
+      <Card testID="look-card">
+        <Text style={styles.title}>Your look</Text>
+        <View style={styles.lookRow}>
+          <Avatar name={props.name} avatar={props.avatar} size={56} />
+          <Text style={[styles.quiet, styles.lookHint]}>How the group sees you. Pick one, or use a photo.</Text>
+        </View>
+        <View style={styles.presetWrap}>
+          {AVATAR_PRESETS.map((p) => {
+            const active = props.avatar === `preset:${p.key}`;
+            return (
+              <Pressable
+                key={p.key}
+                accessibilityRole="button"
+                accessibilityLabel={`Avatar ${p.key}`}
+                accessibilityState={{ selected: active }}
+                disabled={props.avatarBusy}
+                onPress={() => props.onPickPreset(p.key)}
+                style={[styles.presetRing, active && styles.presetRingOn]}
+              >
+                <Avatar name={props.name} avatar={`preset:${p.key}`} size={40} decorative />
+              </Pressable>
+            );
+          })}
+        </View>
+        <Button
+          label="Upload a photo"
+          variant="quiet"
+          busy={props.avatarBusy}
+          busyLabel="Saving…"
+          onPress={props.onUploadPhoto}
+        />
+        {props.avatarError ? <ErrorNote>{props.avatarError}</ErrorNote> : null}
+      </Card>
       <Card testID="rating-card">
         <Text style={styles.title}>Rating</Text>
         <View style={styles.formRow}>
@@ -397,6 +438,11 @@ const styles = StyleSheet.create({
   dotW: { backgroundColor: color.court },
   dotL: { backgroundColor: color.inkWash2 },
   dotD: { backgroundColor: color.line },
+  lookRow: { flexDirection: "row", alignItems: "center", gap: space.md },
+  lookHint: { flex: 1 },
+  presetWrap: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
+  presetRing: { padding: 2, borderRadius: 24, borderWidth: 2, borderColor: color.card },
+  presetRingOn: { borderColor: color.court },
   themeRow: { flexDirection: "row", gap: space.sm },
   chemRow: { gap: space.xs },
   chemHead: { flexDirection: "row", justifyContent: "space-between" },

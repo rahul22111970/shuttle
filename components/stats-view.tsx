@@ -6,12 +6,14 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { color, font, size, space, tracking } from "../theme/tokens";
 import type { Form } from "../lib/stats";
 import Settle from "./settle";
+import Avatar from "./avatar";
 import { Heatmap, WeekDelta } from "./charts";
 import { Button, Card, Chip, ErrorNote, Skeleton, SKEL } from "./ui";
 
 export type BoardRow = {
   playerId: string;
   name: string;
+  avatar: string | null;
   rating: number;
   // rating movement over the last 7 days; null before the first rated game
   weekDelta: number | null;
@@ -82,6 +84,7 @@ function PodiumSpot({ row, place }: { row: BoardRow; place: 1 | 2 | 3 }) {
   const first = place === 1;
   return (
     <View style={[styles.spot, !first && styles.spotSide]}>
+      <Avatar name={row.name} avatar={row.avatar} size={first ? 44 : 34} />
       <Chip label={MEDALS[place - 1]} active={first} />
       <Text style={first ? styles.spotNameFirst : styles.spotName} numberOfLines={1}>
         {row.name}
@@ -156,6 +159,7 @@ export default function StatsView(props: StatsViewProps) {
         <Text style={styles.title}>Leaderboard</Text>
         <View style={styles.boardRow}>
           <Text style={[styles.headLabel, styles.rankCell]}>#</Text>
+          <View style={styles.avatarCell} />
           <Text style={[styles.headLabel, styles.nameCell]}>Player</Text>
           <View style={styles.formCell} />
           <Text style={[styles.headLabel, styles.wlCell]}>W-L</Text>
@@ -172,6 +176,7 @@ export default function StatsView(props: StatsViewProps) {
             onPress={() => props.onOpenPlayer(r.playerId)}
           >
             <Text style={[styles.rank, styles.rankCell]}>{i + 1}</Text>
+            <Avatar name={r.name} avatar={r.avatar} size={22} decorative />
             <Text style={[styles.playerName, styles.nameCell]} numberOfLines={1}>
               {r.name}
             </Text>
@@ -273,6 +278,7 @@ const styles = StyleSheet.create({
   boardRowLine: { borderTopWidth: 1, borderTopColor: color.line, paddingTop: space.sm },
   headLabel: { fontFamily: font.medium, fontSize: size.label, color: color.ink3, textTransform: "uppercase", letterSpacing: size.label * tracking.label },
   rankCell: { width: 16 },
+  avatarCell: { width: 22 },
   nameCell: { flex: 1, flexShrink: 1 },
   wlCell: { width: 34, textAlign: "right" },
   pctCell: { width: 36, textAlign: "right" },
