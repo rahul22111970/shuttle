@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import fc from "fast-check";
 import {
   BASE_K,
+  DECAY_FLOOR,
   doublesDeltas,
   expectedScore,
   INITIAL_RATING,
@@ -10,6 +11,8 @@ import {
   PROVISIONAL_K,
   PROVISIONAL_MATCHES,
   singlesDeltas,
+  WEEKLY_DECAY_POINTS,
+  weeklyDecayAfter,
   type PlayerRating,
 } from "@shuttle/rating";
 
@@ -191,4 +194,13 @@ it("constants module is the single source: no rating literal outside it", () => 
   // or 64 as numeric literals; they may only arrive via constants imports
   const src = readFileSync(`${__dirname}/index.ts`, "utf8");
   expect(src.match(/\b(1200|400|32|64)\b/)).toBeNull();
+});
+
+// decay: the number a sit-out week leaves behind
+it("weeklyDecayAfter deducts the weekly step and stops at the floor", () => {
+  expect(weeklyDecayAfter(1200)).toBe(1200 - WEEKLY_DECAY_POINTS);
+  expect(weeklyDecayAfter(DECAY_FLOOR + 3)).toBe(DECAY_FLOOR);
+  expect(weeklyDecayAfter(DECAY_FLOOR)).toBeNull();
+  expect(weeklyDecayAfter(DECAY_FLOOR - 50)).toBeNull();
+  expect(() => weeklyDecayAfter(NaN)).toThrow();
 });

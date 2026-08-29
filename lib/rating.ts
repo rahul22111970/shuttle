@@ -8,6 +8,7 @@ import {
   doublesDeltas,
   kFor,
   singlesDeltas,
+  weeklyDecayAfter,
   type PlayerRating,
 } from "@shuttle/rating";
 import { supabase } from "./supabase";
@@ -69,12 +70,14 @@ export async function ratingStateFor(
   if (playerIds.length === 0) return state;
   let query = supabase
     .from("rating_history")
-    .select("player_id, rating_after, created_at")
+    .select("player_id, rating_after, created_at, match_id")
     .eq("group_id", groupId)
     .in("player_id", playerIds as string[])
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
-  if (excludeMatchId) query = query.neq("match_id", excludeMatchId);
+  // a bare .neq would also drop decay rows: null match_id fails SQL's <>
+  if (excludeMatchId)
+    query = query.or(`match_id.neq.${excludeMatchId},match_id.is.null`);
   if (beforeCutoff) query = query.lt("created_at", beforeCutoff);
   const res = await query;
   if (res.error) throw res.error;
@@ -83,7 +86,8 @@ export async function ratingStateFor(
     if (!prev) continue;
     state.set(row.player_id, {
       rating: row.rating_after,
-      matchesPlayed: prev.matchesPlayed + 1,
+      // decay rows move the rating but were not matches played
+      matchesPlayed: prev.matchesPlayed + (row.match_id === null ? 0 : 1),
     });
   }
   return state;
@@ -235,6 +239,12 @@ export async function rebuildRatings(playerId: string, groupId: string): Promise
   let rating = INITIAL_RATING;
   let matchesPlayed = 0;
   for (const entry of own.data) {
+    // a decay row (no match) replays through the same engine step the job
+    // used; it moves the rating and counts as nothing else
+    if (entry.match_id === null) {
+      rating = weeklyDecayAfter(rating) ?? rating;
+      continue;
+    }
     const match = await fetchMatchForRating(entry.match_id);
     if (!match) continue;
     const others = await supabase

@@ -87,40 +87,51 @@ export default function Me() {
         groups.length > 0
           ? supabase
               .from("rating_history")
-              .select("group_id, rating_after, created_at")
+              .select("group_id, rating_after, created_at, match_id")
               .eq("player_id", selfId)
               .in("group_id", groups.map((g) => g.id))
               .order("created_at", { ascending: true })
               .order("id", { ascending: true })
           : Promise.resolve({
-              data: [] as { group_id: string; rating_after: number; created_at: string }[],
+              data: [] as {
+                group_id: string;
+                rating_after: number;
+                created_at: string;
+                match_id: string | null;
+              }[],
               error: null,
             }),
       ]);
       if (ratingRes.error) throw ratingRes.error;
-      const perGroup = new Map<string, number[]>();
+      // decay rows move the number but only match rows count as played
+      const perGroup = new Map<string, { series: number[]; played: number }>();
       for (const r of ratingRes.data) {
-        perGroup.set(r.group_id, [...(perGroup.get(r.group_id) ?? []), r.rating_after]);
+        const entry = perGroup.get(r.group_id) ?? { series: [], played: 0 };
+        entry.series.push(r.rating_after);
+        if (r.match_id !== null) entry.played += 1;
+        perGroup.set(r.group_id, entry);
       }
+      const playedIn = (groupId: string) => perGroup.get(groupId)?.played ?? 0;
       const groupRatings: GroupRating[] = groups
         .filter((g) => perGroup.has(g.id))
         .map((g) => {
-          const series = perGroup.get(g.id)!;
+          const { series, played } = perGroup.get(g.id)!;
           return {
             groupId: g.id,
             name: g.name,
             current: series[series.length - 1],
-            provisional: series.length < PROVISIONAL_MATCHES,
+            provisional: played < PROVISIONAL_MATCHES,
             series,
           };
         });
       // blended: games-weighted mean of each ladder's current number
-      const totalGames = groupRatings.reduce((n, g) => n + g.series.length, 0);
+      const totalGames = groupRatings.reduce((n, g) => n + playedIn(g.groupId), 0);
       const blended =
         totalGames === 0
           ? INITIAL_RATING
           : Math.round(
-              groupRatings.reduce((s, g) => s + g.current * g.series.length, 0) / totalGames
+              groupRatings.reduce((s, g) => s + g.current * playedIn(g.groupId), 0) /
+                totalGames
             );
       const captainGroups = groups
         .filter((g) => g.captain_id === selfId)

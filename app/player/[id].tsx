@@ -50,25 +50,29 @@ export default function PlayerCard() {
       if (prof.error) throw prof.error;
       const ratingRes = await supabase
         .from("rating_history")
-        .select("group_id, rating_after, created_at")
+        .select("group_id, rating_after, created_at, match_id")
         .eq("player_id", id)
         .in("group_id", groups.map((g) => g.id))
         .order("created_at", { ascending: true })
         .order("id", { ascending: true });
       if (ratingRes.error) throw ratingRes.error;
-      const perGroup = new Map<string, number[]>();
+      // decay rows move the number but only match rows count as played
+      const perGroup = new Map<string, { series: number[]; played: number }>();
       for (const r of ratingRes.data) {
-        perGroup.set(r.group_id, [...(perGroup.get(r.group_id) ?? []), r.rating_after]);
+        const g = perGroup.get(r.group_id) ?? { series: [], played: 0 };
+        g.series.push(r.rating_after);
+        if (r.match_id !== null) g.played += 1;
+        perGroup.set(r.group_id, g);
       }
       const ratings: GroupRating[] = groups
         .filter((g) => perGroup.has(g.id))
         .map((g) => {
-          const series = perGroup.get(g.id)!;
+          const { series, played } = perGroup.get(g.id)!;
           return {
             groupId: g.id,
             name: g.name,
             current: series[series.length - 1],
-            provisional: series.length < PROVISIONAL_MATCHES,
+            provisional: played < PROVISIONAL_MATCHES,
           };
         });
       const chem = chemistry(played);

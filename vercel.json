@@ -3,5 +3,6 @@
   "buildCommand": "test -n \"$EXPO_PUBLIC_SUPABASE_URL\" && test -n \"$EXPO_PUBLIC_SUPABASE_ANON_KEY\" && npx expo export -p web",
   "outputDirectory": "dist",
   "framework": null,
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "crons": [{ "path": "/api/rating-decay", "schedule": "30 20 * * 0" }]
 }

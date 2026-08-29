@@ -2,7 +2,14 @@
 // numeric constant imported from constants.ts — the module the app also
 // renders, so the published math cannot drift from the running math.
 
-import { BASE_K, ELO_SCALE, PROVISIONAL_K, PROVISIONAL_MATCHES } from "./constants";
+import {
+  BASE_K,
+  DECAY_FLOOR,
+  ELO_SCALE,
+  PROVISIONAL_K,
+  PROVISIONAL_MATCHES,
+  WEEKLY_DECAY_POINTS,
+} from "./constants";
 
 export * from "./constants";
 
@@ -96,4 +103,14 @@ export function doublesDeltas(
     winners: [delta(winners[0], loserAvg, true), delta(winners[1], loserAvg, true)],
     losers: [delta(losers[0], winnerAvg, false), delta(losers[1], winnerAvg, false)],
   };
+}
+
+// Weekly inactivity decay: the rating a sit-out week leaves behind, or
+// null when there is nothing to write (already at or below the floor).
+// The caller decides WHO decays (group played, player did not); this
+// decides only the number, so the published math stays in one place.
+export function weeklyDecayAfter(rating: number): number | null {
+  if (!Number.isFinite(rating)) throw new Error("rating must be finite");
+  const after = Math.max(Math.round(rating) - WEEKLY_DECAY_POINTS, DECAY_FLOOR);
+  return after < rating ? after : null;
 }
